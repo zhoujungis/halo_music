@@ -1,0 +1,8 @@
+name = "halo-music"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "halo-music-db"
+database_id = "019a9fe9-3a0a-4362-82e7-22e38b72943a"

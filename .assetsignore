@@ -1,0 +1,6 @@
+.git/
+.codex/
+.agents/
+tools/
+*.ps1
+*.test.js
