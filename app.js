@@ -171,7 +171,7 @@ async function searchQQ(keyword, limit = 8) {
 }
 
 async function searchKuwo(keyword, limit = 8) {
-  const url = `https://kw-api.cenguigui.cn/?name=${encodeURIComponent(keyword)}&page=1&limit=${limit}`;
+  const url = `/api/kuwo?action=search&q=${encodeURIComponent(keyword)}&limit=${limit}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`酷我索引请求失败：${response.status}`);
   const json = await response.json();
@@ -273,21 +273,57 @@ async function fetchQQDetails(track) {
   track.detailsLoaded = Boolean(track.audioUrl);
 }
 
+function normalizeKuwoAudioUrl(value) {
+  const candidate = String(value || "").trim();
+  if (!candidate || /^(?:none|null|undefined)$/i.test(candidate)) return "";
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    url.protocol = "https:";
+    return url.toString();
+  } catch { return ""; }
+}
+
+async function resolveKuwoAudio(track) {
+  const user = `C_APK_guanwang_${Date.now()}${Math.floor(Math.random() * 1_000_000)}`;
+  for (const br of ["320kmp3", "128kmp3"]) {
+    const params = new URLSearchParams({
+      f: "web",
+      source: "kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk",
+      from: "PC",
+      type: "convert_url_with_sign",
+      br,
+      rid: String(track.songId),
+      user
+    });
+    try {
+      const response = await fetch(`https://mobi.kuwo.cn/mobi.s?${params}`, { cache: "no-store", referrer: "https://www.kuwo.cn/" });
+      if (!response.ok) continue;
+      const json = await response.json();
+      const data = json?.data || json;
+      const url = normalizeKuwoAudioUrl(data?.url);
+      if (url) return { url, duration: Number(data?.duration) || 0 };
+    } catch {}
+  }
+  throw new Error("酷我完整音源不可用");
+}
+
 async function fetchKuwoDetails(track) {
-  const url = `https://kw-api.cenguigui.cn/?id=${encodeURIComponent(track.songId)}&type=song&level=zp&format=json`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`酷我详情请求失败：${response.status}`);
-  const json = await response.json();
-  if (json.code !== 200 || !json.data) throw new Error("酷我详情无有效数据");
-  const data = json.data;
+  const [audio, lyricResult] = await Promise.all([
+    resolveKuwoAudio(track),
+    fetch(`/api/kuwo?action=lyric&id=${encodeURIComponent(track.songId)}`)
+      .then((response) => response.ok ? response.json() : null)
+      .catch(() => null)
+  ]);
+  const data = lyricResult?.data || {};
   track.title = data.name || track.title;
   track.artist = data.artist || track.artist;
   track.album = data.album || track.album;
   track.art = data.pic || track.art;
-  track.audioUrl = data.url || null;
-  track.audioCandidates = data.url ? [data.url] : [];
+  track.audioUrl = audio.url;
+  track.audioCandidates = [audio.url];
   track.lyrics = parseLrc(data.lyric || "");
-  track.length = parseDuration(data.duration || track.length);
+  track.length = parseDuration(audio.duration || track.length);
   track.detailsLoaded = Boolean(track.audioUrl);
 }
 

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler pages dev .",
     "deploy": "wrangler pages deploy .",
-    "test": "node --test auth.test.js import.test.js playlist-import.test.js playback.test.js"
+    "test": "node --test auth.test.js import.test.js playlist-import.test.js playback.test.js kuwo.test.js"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

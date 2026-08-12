@@ -3615,7 +3615,7 @@
 
     // 酷我搜索
     async function searchKuwo(kw, limit){
-      const url=`https://kw-api.cenguigui.cn/?name=${encodeURIComponent(kw)}&page=1&limit=${encodeURIComponent(limit)}`;
+      const url=`/api/kuwo?action=search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
       let added=0;
       try{
         const res=await fetch(url);
@@ -3925,30 +3925,64 @@
       await fetchQQDetails(track);
     }
 
-    async function fetchKuwoDetails(track){
-      const api=`https://kw-api.cenguigui.cn/?id=${encodeURIComponent(track.songid)}&type=song&level=zp&format=json`;
-      const res=await fetch(api);
-      const j=await res.json();
-      if(!j || j.code!==200 || !j.data) throw new Error('kuwo kw-api detail failed');
+    function normalizeKuwoAudioUrl(value){
+      const candidate=String(value||'').trim();
+      if(!candidate||/^(?:none|null|undefined)$/i.test(candidate))return '';
+      try{
+        const url=new URL(candidate);
+        if(url.protocol!=='http:'&&url.protocol!=='https:')return '';
+        url.protocol='https:';
+        return url.toString();
+      }catch(e){return '';}
+    }
 
-      const d=j.data;
+    async function resolveKuwoAudio(track){
+      const user=`C_APK_guanwang_${Date.now()}${Math.floor(Math.random()*1000000)}`;
+      for(const br of ['320kmp3','128kmp3']){
+        const params=new URLSearchParams({
+          f:'web',
+          source:'kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk',
+          from:'PC',
+          type:'convert_url_with_sign',
+          br,
+          rid:String(track.songid),
+          user
+        });
+        try{
+          const res=await fetch(`https://mobi.kuwo.cn/mobi.s?${params}`,{cache:'no-store',referrer:'https://www.kuwo.cn/'});
+          if(!res.ok)continue;
+          const json=await res.json();
+          const data=json?.data||json;
+          const url=normalizeKuwoAudioUrl(data?.url);
+          if(url)return {url,duration:Number(data?.duration)||0,bitrate:Number(data?.bitrate)||0,format:data?.format||''};
+        }catch(e){}
+      }
+      throw new Error('kuwo full audio unavailable');
+    }
+
+    async function fetchKuwoDetails(track){
+      const [audio,lyricResult]=await Promise.all([
+        resolveKuwoAudio(track),
+        fetch(`/api/kuwo?action=lyric&id=${encodeURIComponent(track.songid)}`)
+          .then(res=>res.ok?res.json():null)
+          .catch(()=>null)
+      ]);
+      const d=lyricResult?.data||{};
       Object.assign(track,{
         title:d.name || track.title,
         artist:d.artist || track.artist,
         album:d.album || track.album,
         cover:d.pic || track.cover,
-        audioUrl:d.url || track.audioUrl,
+        audioUrl:audio.url,
         lrc: d.lyric || track.lrc || null,
         lrcUrl: null,
         detailsLoaded:true
       });
 
-      // 酷我：根据最终 url 后缀判断音质
-      if (track.audioUrl) {
-        const q = inferQualityFromUrl(track.audioUrl);
-        track.quality = q.tag;
-        track.qualityLabel = q.label;
-      }
+      if(audio.duration)track.duration=audio.duration;
+
+      track.quality=audio.bitrate>=320?'320k':null;
+      track.qualityLabel=audio.bitrate>=320?'320K':null;
     }
 
     async function fetchJooxDetails(track){

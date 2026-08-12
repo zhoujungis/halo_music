@@ -5,3 +5,5 @@ tools/
 *.test.js
 *.ps1
 .DS_Store
+*.log
+.tmp-*.mjs
