@@ -1172,11 +1172,26 @@
       background:rgba(4,6,20,0.96);
       color:var(--text-main);
       font:inherit;
-      font-size:16px;
+      font-size:12px;
       line-height:1.6;
       outline:none;
     }
     .modal textarea:focus { border-color:rgba(200,238,98,.55); box-shadow:0 0 0 3px rgba(200,238,98,.08); }
+    @media (max-width:760px) {
+      .modal input,
+      .modal textarea,
+      .playlist-select-tools select { font-size:16px; }
+      #import-playlist-url {
+        min-width:0;
+        max-width:100%;
+        font-size:16px !important;
+        line-height:1.5;
+        overflow-wrap:anywhere;
+        word-break:break-all;
+        -webkit-text-size-adjust:100%;
+        touch-action:manipulation;
+      }
+    }
     .import-providers { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
     .import-provider {
       display:inline-flex;
@@ -1297,6 +1312,17 @@
     .auth-copy { min-width: 0; display: grid; gap: 1px; }
     .auth-copy strong { overflow: hidden; max-width: 86px; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
     .auth-copy small { color: #747c72; font-size: 8px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link-btn { height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; color: #b9c4b5; background: #111419; border: 1px solid var(--border-subtle); border-radius: 8px; font-size: 12px; cursor: pointer; transition: .18s ease; }
+    .nav-link-btn:hover { color: var(--accent); border-color: rgba(200,238,98,.48); background: #161a1c; }
+    .nav-link-btn.donate { color: #e8b45a; border-color: rgba(232,180,90,.28); }
+    .nav-link-btn.donate:hover { color: #f2c66e; border-color: rgba(232,180,90,.55); background: rgba(232,180,90,.07); }
+    .modal-qr { width: 240px; height: 240px; margin: 0 auto; display: block; border-radius: 10px; background: #fff; padding: 8px; }
+    .modal-contact-img { display: block; max-height: 58vh; width: auto; max-width: 100%; margin: 0 auto; border-radius: 10px; }
+    .modal-caption { margin-top: 12px; text-align: center; color: #a9b4a5; font-size: 13px; }
+    .modal-contact-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+    .modal-contact-row strong { min-width: 74px; color: var(--text-main); font-size: 13px; }
+    .modal-contact-row span { color: #a9b4a5; font-size: 13px; word-break: break-all; }
     .layout { grid-template-columns: minmax(250px, .78fr) minmax(420px, 1.36fr) minmax(270px, .86fr); gap: 12px; }
     .panel { padding: 13px; border-radius: 12px; background: var(--panel-glass-soft); border-color: var(--border-subtle); box-shadow: none; }
     .panel::before { display: none; }
@@ -1333,26 +1359,12 @@
       .player-panel { grid-area: player; }.search-panel { grid-area: search; }.playlist-panel { grid-area: playlist; }
     }
     @media (max-width: 760px) {
-      html, body { width:100%; max-width:100%; height: auto; min-height: 100%; overflow-x:hidden; overflow-y:auto; }.app { width:100%; max-width:100vw; min-height: 100dvh; height: auto; margin: 0; padding: 10px; border: 0; border-radius: 0; background: rgba(11,13,16,.92); }.ripple-target { overflow: visible; }
+      html, body { height: auto; min-height: 100%; overflow: auto; }.app { min-height: 100dvh; height: auto; margin: 0; padding: 10px; border: 0; border-radius: 0; background: rgba(11,13,16,.92); }.ripple-target { overflow: visible; }
       header { position: sticky; top: 8px; z-index: 10; align-items: center; padding: 9px; gap: 8px; }.title-text p, .shortcut-hint { display: none; }.header-controls { width: auto; gap: 6px; }.auth-button { min-width: auto; padding: 4px; }.auth-copy { display: none; }.auth-avatar { width: 29px; height: 29px; }#shortcut-toggle-btn { display: none; }
       .layout { display: flex; flex-direction: column; min-height: auto; gap: 10px; }.search-panel { order: 1; min-height: 350px; }.player-panel { order: 2; min-height: 620px; }.playlist-panel { order: 3; min-height: 460px; }.panel { padding: 11px; border-radius: 10px; }.panel-header { margin-bottom: 9px; }.chip { max-width: 142px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .player-top { min-height: 122px; }.cover-wrapper { width: 112px; height: 112px; }.track-title { font-size: 16px; }.player-actions { gap: 5px; }.player-btn-row { gap: 4px; }.status-pill { font-size: 8px; }.control-row { flex-wrap: wrap; justify-content: center; gap: 10px; }.control-secondary { width: min(190px, 80vw); }
       .lyrics-container { min-height: 310px; }.lyrics-inner { padding-inline: 10px; }.lyrics-line { font-size: 15px; }.playlist-tabs { max-width: 205px; overflow-x: auto; }.playlist-tab { white-space: nowrap; padding-inline: 8px; }.playlist-main { min-height: 380px; }.track-item { padding: 8px; }
-      footer { padding: 3px 4px 12px; text-align: center; }
-      .modal-backdrop {
-        width:100%;
-        height:100dvh;
-        align-items:flex-start;
-        overflow-x:hidden;
-        overflow-y:auto;
-        overscroll-behavior:contain;
-        padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
-      }
-      .modal { width:min(100%,430px); max-width:100%; max-height:calc(100dvh - 28px); margin:auto 0; overflow-y:auto; flex:0 0 auto; }
-      .modal input,
-      .modal textarea,
-      .playlist-select-tools select { font-size:16px; }
-      .import-modal { max-height:calc(100dvh - 28px); }
+      footer { padding: 3px 4px 12px; text-align: center; }.modal-backdrop { padding: 14px; }.modal { width: min(100%, 430px); max-height: calc(100dvh - 28px); overflow-y: auto; }
     }
 
     html[data-theme="light"] {
@@ -1583,22 +1595,27 @@
       .mini-badge { border: 0; background: transparent; color: #687068; }
 
       .player-panel .panel-header { margin-bottom: 12px; }
-      .player-top { min-height: 104px; padding: 0 2px; gap: 12px; align-items: stretch; }
-      .cover-wrapper { width: 104px; height: 104px; border-radius: 12px; box-shadow: 0 14px 30px rgba(0,0,0,.3); }
+      .player-top { min-height: 116px; padding: 0 2px; gap: 12px; align-items: flex-start; }
+      .cover-wrapper { width: 116px; height: 116px; border-radius: 12px; box-shadow: 0 14px 30px rgba(0,0,0,.3); }
       .cover-placeholder { justify-content: center; }
-      .player-main { min-height: 104px; }
+      .player-main { position: relative; min-width: 0; min-height: 116px; height: 116px; gap: 3px; }
       .track-text { max-width: 100%; min-width: 0; }
-      .track-title-row { gap: 4px; }
-      .track-title { max-height: 44px; color: #f1f3ed; font-size: 18px; line-height: 1.2; }
-      .track-artist { margin-top: 5px; font-size: 12px; }
-      .player-actions { position: static; right: auto; bottom: auto; flex-direction: row; align-items: center; align-self: flex-end; margin-top: auto; }
-      .player-btn-row { gap: 6px; }
+      .track-title-row { display: block; min-width: 0; }
+      .track-title { max-height: 22px; overflow: hidden; color: #f1f3ed; font-size: 18px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+      .track-artist { margin-top: 3px; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+      .track-tags { min-height: 20px; margin-top: 3px; flex-wrap: nowrap; overflow: hidden; }
+      .source-pill, .lossless-pill { flex: 0 1 auto; min-width: 0; padding: 2px 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .player-actions { position: absolute; right: 0; bottom: 0; z-index: 2; flex-direction: row; align-items: center; margin: 0; }
+      .player-btn-row { gap: 5px; }
       .status-pill { display: none; }
-      .player-controls { margin-top: auto; gap: 8px; }
+      .player-controls { margin-top: auto; gap: 4px; }
       .progress-row { gap: 4px; }
       .progress-time { width: 34px; font-size: 9px; }
       .progress-bar-wrapper { height: 5px; }
-      .control-row { justify-content: center; }
+      .control-row { justify-content: flex-start; }
+      .control-main { gap: 5px; }
+      .control-main .btn-icon, .player-btn-row .btn-icon { width: 34px; height: 34px; min-width: 34px; }
+      .control-main .play-btn { width: 40px; height: 40px; min-width: 40px; }
       .control-secondary { display: none; }
       .lyrics-container { margin-top: 8px; padding: 10px 8px 12px; border: 0; border-top: 1px solid rgba(238,243,231,.08); border-radius: 0; background: transparent; box-shadow: none; }
       .lyrics-container::before, .lyrics-container::after { display: none; }
@@ -1642,6 +1659,16 @@
       html[data-theme="light"] .playlist-bar { background: #f6f7f3; }
     }
 
+    @media (max-width: 360px) and (min-height: 501px) {
+      .player-top { min-height: 108px; gap: 9px; }
+      .cover-wrapper { width: 108px; height: 108px; }
+      .player-main { min-height: 108px; height: 108px; }
+      .control-main { gap: 3px; }
+      .control-main .btn-icon, .player-btn-row .btn-icon { width: 31px; height: 31px; min-width: 31px; }
+      .control-main .play-btn { width: 37px; height: 37px; min-width: 37px; }
+      .player-btn-row { gap: 4px; }
+    }
+
     @media (max-width: 760px) and (max-height: 500px) {
       .app { padding-top: 3px; padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
       header { min-height: 40px; padding-block: 2px; }
@@ -1656,7 +1683,7 @@
       .player-panel .panel-header { margin-bottom: 6px; }
       .player-top { min-height: 72px; gap: 9px; }
       .cover-wrapper { width: 72px; height: 72px; }
-      .player-main { min-height: 72px; }
+      .player-main { min-height: 72px; height: 72px; }
       .track-title { max-height: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
       .track-artist { margin-top: 3px; }
       .player-actions { margin-top: auto; }
@@ -2155,6 +2182,400 @@
       html[data-theme="light"] body[data-mobile-view="me"] .mobile-playlist-card { color: #20251f; background: #f5f7f2; border-color: rgba(30,42,30,.1); }
       html[data-theme="light"] body[data-mobile-view="me"] .mobile-playlist-card small { color: #687267; }
     }
+
+    /* Desktop studio: a quieter, editorial workspace with fewer card-library cues. */
+    @media (min-width: 761px) {
+      html, body { background: #0e100d; }
+      #bg-canvas {
+        opacity: .2;
+        background:
+          radial-gradient(circle at 74% -20%, rgba(111,129,75,.2), transparent 34%),
+          linear-gradient(145deg, #0e100d, #111410 58%, #0d100f);
+      }
+      .app {
+        width: calc(100% - 24px);
+        height: calc(100dvh - 24px);
+        margin: 12px;
+        padding: 0;
+        gap: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      header {
+        min-height: 72px;
+        padding: 0 4px;
+        border: 0;
+        border-bottom: 1px solid rgba(226,232,215,.13);
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      .logo-area { gap: 12px; }
+      .pikachu-box {
+        width: 38px;
+        height: 38px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+      }
+      .pikachu-box::before {
+        border-radius: 6px;
+        color: #18200e;
+        background: #b7ce72;
+        font-size: 15px;
+        letter-spacing: -.03em;
+      }
+      .title-text h1 { font-size: 16px; font-weight: 700; letter-spacing: .055em; }
+      .title-text p { margin-top: 5px; color: #6f776a; font-size: 9px; letter-spacing: .04em; }
+      .header-controls { gap: 7px; }
+      .shortcut-hint { display: none; }
+      .auth-button,
+      .shortcut-toggle-btn,
+      .lang-toggle {
+        border-color: rgba(226,232,215,.11);
+        background: rgba(24,27,22,.76);
+        box-shadow: none;
+      }
+      .auth-button { min-width: 108px; border-radius: 7px; }
+      .auth-avatar { border-radius: 5px; background: #697063; }
+      .shortcut-toggle-btn { border-radius: 7px; }
+      #shortcut-toggle-btn { font-size: 0; }
+      #shortcut-toggle-btn::before { content: "⌘"; font-size: 14px; }
+      .lang-toggle { border-radius: 7px; }
+      .lang-btn { border-radius: 5px; }
+      .lang-btn.active { color: #17200d; background: #b7ce72; }
+
+      .layout {
+        min-height: 0;
+        gap: 0;
+        overflow: hidden;
+        border: 1px solid rgba(226,232,215,.13);
+        border-radius: 13px;
+        background: #131510;
+        box-shadow: 0 26px 70px rgba(0,0,0,.26);
+      }
+      .panel,
+      .search-panel,
+      .player-panel,
+      .playlist-panel {
+        padding: 19px;
+        border: 0;
+        border-radius: 0;
+        background: #131510;
+        box-shadow: none;
+      }
+      .panel::before { display: none; }
+      .player-panel {
+        background: #181a16;
+        border-inline: 1px solid rgba(226,232,215,.1);
+      }
+      .panel-header {
+        min-height: 36px;
+        margin-bottom: 16px;
+        padding-bottom: 13px;
+        border-bottom: 1px solid rgba(226,232,215,.1);
+      }
+      .panel-title { gap: 0; color: #e8ebe2; font-size: 14px; font-weight: 650; letter-spacing: .01em; }
+      .panel-title .icon { display: none; }
+      .chip {
+        max-width: 160px;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        color: #71786d;
+        background: transparent;
+        font-size: 8px;
+        letter-spacing: .04em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .btn {
+        min-height: 34px;
+        padding: 7px 13px;
+        border-radius: 7px;
+        color: #18200e;
+        background: #b7ce72;
+        box-shadow: none;
+        font-size: 11px;
+        font-weight: 650;
+      }
+      .btn:hover { filter: none; background: #c5dc80; }
+      .btn-secondary {
+        color: #cdd2c8;
+        background: #252b24;
+        border: 1px solid rgba(226,232,215,.08);
+      }
+      .btn-secondary:hover { background: #30372e; }
+      .btn-ghost { color: #8c9487; background: transparent; border-color: rgba(226,232,215,.13); }
+      .btn-ghost:hover { color: #dce1d7; background: rgba(226,232,215,.045); }
+      .btn-icon { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; border-radius: 7px; }
+
+      .search-panel-content { gap: 10px; }
+      .search-row {
+        min-height: 45px;
+        padding: 4px 4px 4px 13px;
+        border: 1px solid rgba(226,232,215,.15);
+        border-radius: 8px;
+        background: #0f110e;
+        box-shadow: none;
+      }
+      .search-row:focus-within { border-color: rgba(183,206,114,.65); box-shadow: 0 0 0 3px rgba(183,206,114,.07); }
+      .search-prefix { display: none; }
+      .search-row .input { padding-left: 0; color: #e7eae2; font-size: 12px; }
+      .search-row .btn { min-height: 35px; border-radius: 6px; }
+      .source-row {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 0 12px;
+        padding: 7px 2px;
+        border-block: 1px solid rgba(226,232,215,.07);
+      }
+      .source-chip {
+        min-height: 28px;
+        padding: 3px 0;
+        border: 0;
+        border-radius: 0;
+        color: #969e91;
+        background: transparent;
+      }
+      .source-chip:has(input:checked) { color: #dde2d6; background: transparent; box-shadow: none; }
+      .source-chip input { width: 13px; height: 13px; accent-color: #aabf6c; }
+      .source-dot { width: 5px; height: 5px; box-shadow: none; }
+      .limit-row { min-height: 34px; justify-content: flex-start; color: #747c70; }
+      .limit-row select {
+        padding: 4px 20px 4px 7px;
+        border-color: rgba(226,232,215,.11);
+        border-radius: 5px;
+        color: #c5cbc0;
+        background: #1a1d18;
+      }
+      .limit-row .btn { margin-left: auto; }
+      .search-stats { padding: 2px 1px 7px; border-bottom: 1px solid rgba(226,232,215,.07); color: #70776c; }
+      .search-results-mini { margin-top: 0; padding-right: 0; }
+      .search-mini-item {
+        min-height: 51px;
+        margin: 0;
+        padding: 9px 2px;
+        border: 0;
+        border-bottom: 1px solid rgba(226,232,215,.07);
+        border-radius: 0;
+        background: transparent;
+      }
+      .search-mini-item:hover { background: rgba(183,206,114,.05); box-shadow: none; transform: none; }
+      .mini-title { color: #dce0d7; font-size: 12px; font-weight: 600; }
+      .mini-artist { margin-top: 3px; color: #737b70; }
+      .mini-badge { padding: 0; border: 0; border-radius: 0; color: #7d8679; background: transparent; }
+      .search-results-mini:empty { background: transparent; }
+      .search-results-mini:empty::before { display: none; }
+
+      .player-top { min-height: 158px; gap: 18px; }
+      .cover-wrapper { width: 158px; height: 158px; border-radius: 8px; box-shadow: 0 18px 36px rgba(0,0,0,.3); }
+      .cover-disc { animation-duration: 24s; }
+      .player-main { gap: 8px; }
+      .track-title { color: #f0f2ec; font-size: 22px; font-weight: 650; letter-spacing: -.02em; }
+      .track-artist { margin-top: 5px; color: #899185; font-size: 12px; }
+      .track-tags { margin-top: 8px; }
+      .source-pill,
+      .lossless-pill,
+      .status-pill {
+        padding: 3px 7px;
+        border-radius: 4px;
+        background: transparent;
+        font-size: 9px;
+      }
+      .source-pill { border-color: rgba(226,232,215,.14); }
+      .lossless-pill { color: #aac674; border-color: rgba(170,198,116,.35); }
+      .status-pill { color: #757d71; border-color: rgba(226,232,215,.1); }
+      .player-controls { gap: 10px; }
+      .progress-row { gap: 9px; }
+      .progress-time { width: 38px; color: #70786d; font-variant-numeric: tabular-nums; }
+      .progress-bar-wrapper { height: 3px; background: #30362d; }
+      .progress-bar { background: #a9c168; }
+      .progress-handle { width: 9px; height: 9px; border-color: #181a16; background: #b7ce72; box-shadow: none; }
+      .control-main { gap: 7px; }
+      .control-main .play-btn { width: 43px; height: 43px; border-radius: 50%; }
+      .volume-slider { accent-color: #a9c168; }
+      .lyrics-container {
+        margin-top: 18px;
+        padding: 18px 22px;
+        border: 0;
+        border-top: 1px solid rgba(226,232,215,.1);
+        border-radius: 0;
+        background: #121410;
+        box-shadow: none;
+      }
+      .lyrics-container::before,
+      .lyrics-container::after { display: none; }
+      .lyrics-inner { max-width: 620px; }
+      .lyrics-empty { color: #70776c; font-family: inherit; font-size: 13px; letter-spacing: 0; }
+      .lyrics-line { color: #7b8277; font-family: inherit; }
+      .lyrics-line.active { color: #bfd579; background: none; -webkit-text-fill-color: currentColor; text-shadow: none; }
+
+      .playlist-panel .panel-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .playlist-tabs {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3,minmax(0,1fr));
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid rgba(226,232,215,.1);
+        border-radius: 0;
+        background: transparent;
+      }
+      .playlist-tab {
+        padding: 7px 3px 9px;
+        border-radius: 0;
+        color: #777f73;
+        text-align: center;
+      }
+      .playlist-tab.active {
+        color: #dce2d4;
+        background: transparent;
+        box-shadow: inset 0 -2px #b7ce72;
+      }
+      .playlist-main { padding-right: 0; }
+      .playlist-bar { padding: 0 0 10px; background: #131510; border-bottom-color: rgba(226,232,215,.08); }
+      .playlist-info { color: #777f73; }
+      .playmode-btn {
+        width: 27px;
+        height: 27px;
+        border-radius: 6px;
+        color: #7d8579;
+        background: transparent;
+        box-shadow: none;
+        font-size: 0;
+      }
+      .playmode-btn::after { font-size: 14px; }
+      .playmode-btn[data-mode="list"]::after { content: "↻"; }
+      .playmode-btn[data-mode="single"]::after { content: "1"; font-size: 11px; font-weight: 700; }
+      .playmode-btn[data-mode="shuffle"]::after { content: "⇄"; }
+      .playmode-btn.active { color: #c6da89; background: rgba(183,206,114,.08); box-shadow: none; }
+      .playlist-select-tools select { border-radius: 6px; background: #1a1d18; }
+      .track-item {
+        min-height: 55px;
+        margin: 0;
+        padding: 9px 3px;
+        border: 0;
+        border-bottom: 1px solid rgba(226,232,215,.07);
+        border-radius: 0;
+        background: transparent;
+      }
+      .track-item:hover,
+      .track-item.active { background: rgba(183,206,114,.05); box-shadow: none; transform: none; }
+      .track-item.playing { border-color: rgba(183,206,114,.4); box-shadow: inset 2px 0 #b7ce72; }
+      .track-index { color: #646c61; font-variant-numeric: tabular-nums; }
+      .track-meta-title { color: #dce0d7; }
+      .track-meta-sub { color: #747c70; }
+      .track-actions .btn-icon { border: 0; background: transparent; }
+      .btn-fav-active { color: #e98597; background: transparent; box-shadow: none; }
+      footer { padding-top: 10px; color: #5f675c; letter-spacing: .02em; }
+    }
+
+    @media (min-width: 1181px) {
+      .layout { grid-template-columns: minmax(280px,.82fr) minmax(520px,1.5fr) minmax(300px,.88fr); }
+    }
+
+    @media (min-width: 761px) and (max-width: 1180px) {
+      .app { width: calc(100% - 20px); margin: 10px; height: calc(100dvh - 20px); }
+      .layout { gap: 1px; }
+      .player-panel { border-inline: 0; }
+    }
+
+    @media (min-width: 761px) {
+      html[data-theme="light"],
+      html[data-theme="light"] body { background: #ecece6; }
+      html[data-theme="light"] #bg-canvas { opacity: .35; background: radial-gradient(circle at 78% -20%, #d9dfcb, transparent 34%), #ecece6; }
+      html[data-theme="light"] .layout { background: #f5f5ef; border-color: rgba(37,45,34,.14); box-shadow: 0 24px 65px rgba(44,52,40,.12); }
+      html[data-theme="light"] .panel,
+      html[data-theme="light"] .search-panel,
+      html[data-theme="light"] .playlist-panel { background: #f5f5ef; }
+      html[data-theme="light"] .player-panel { background: #fafaf5; border-color: rgba(37,45,34,.1); }
+      html[data-theme="light"] .panel-header,
+      html[data-theme="light"] header { border-color: rgba(37,45,34,.13); }
+      html[data-theme="light"] .search-row,
+      html[data-theme="light"] .lyrics-container { background: #eeeee8; }
+      html[data-theme="light"] .search-row { border-color: rgba(37,45,34,.16); }
+      html[data-theme="light"] .playlist-bar { background: #f5f5ef; }
+      html[data-theme="light"] .panel-title,
+      html[data-theme="light"] .track-title,
+      html[data-theme="light"] .mini-title,
+      html[data-theme="light"] .track-meta-title { color: #252b22; }
+      html[data-theme="light"] .source-chip:has(input:checked) { color: #36402f; }
+      html[data-theme="light"] .search-mini-item:hover,
+      html[data-theme="light"] .track-item:hover,
+      html[data-theme="light"] .track-item.active { background: rgba(95,117,53,.06); }
+      html[data-theme="light"] .playlist-tabs,
+      html[data-theme="light"] .search-stats,
+      html[data-theme="light"] .track-item,
+      html[data-theme="light"] .search-mini-item,
+      html[data-theme="light"] .source-row,
+      html[data-theme="light"] .lyrics-container { border-color: rgba(37,45,34,.1); }
+      html[data-theme="light"] .auth-button,
+      html[data-theme="light"] .shortcut-toggle-btn,
+      html[data-theme="light"] .lang-toggle { background: #f5f5ef; border-color: rgba(37,45,34,.13); }
+    }
+
+    .announcement-modal { max-width: 520px; padding: 22px 24px 20px; }
+    .announcement-modal .modal-header { margin-bottom: 14px; }
+    .announcement-kicker { margin: 0 0 8px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .announcement-title { color: var(--text-main); font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+    .announcement-copy { margin: 0; color: #a3aaa0; font-size: 13px; line-height: 1.8; }
+    .app-download-callout {
+      position: relative;
+      display: grid;
+      gap: 4px;
+      margin: 15px 0 18px;
+      padding: 16px 18px;
+      overflow: hidden;
+      border: 1px solid rgba(200,238,98,.48);
+      border-radius: 13px;
+      background: linear-gradient(108deg, rgba(200,238,98,.17), rgba(200,238,98,.05) 58%, rgba(139,169,255,.1));
+      box-shadow: 0 0 26px rgba(200,238,98,.12), inset 0 1px rgba(255,255,255,.12);
+    }
+    .app-download-callout::after {
+      content: "";
+      position: absolute;
+      top: -88px;
+      right: -62px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(222,251,138,.2), transparent 68%);
+      pointer-events: none;
+    }
+    .app-download-eyebrow { color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+    .app-download-title { color: var(--text-main); font-size: clamp(21px, 4vw, 28px); font-weight: 800; letter-spacing: -.03em; line-height: 1.15; }
+    .app-download-detail { color: #bdc6b9; font-size: 12px; line-height: 1.65; }
+    .app-download-detail strong { color: #eff5e8; }
+    .announcement-section-label { margin: 0 0 -7px; color: #737d70; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .announcement-updates { display: grid; gap: 0; margin: 18px 0; border-block: 1px solid rgba(238,243,231,.1); }
+    .announcement-update { display: grid; grid-template-columns: 88px minmax(0,1fr); gap: 14px; padding: 14px 0; }
+    .announcement-update + .announcement-update { border-top: 1px solid rgba(238,243,231,.08); }
+    .announcement-update strong { color: #dce2d7; font-size: 12px; }
+    .announcement-update span { color: #8f978c; font-size: 12px; line-height: 1.7; }
+    .announcement-actions { display: flex; justify-content: flex-end; }
+    .announcement-actions .btn { min-width: 92px; }
+    .announcement-contact { display: flex; align-items: center; gap: 8px; margin: -2px 0 18px; color: #8f978c; font-size: 12px; }
+    .announcement-contact strong { color: #dce2d7; font-size: 13px; letter-spacing: .04em; user-select: all; }
+    .contact-note { margin: 0 0 14px; padding: 11px 13px; color: #26321e; background: linear-gradient(110deg, #dffb91, #bfe878); border-radius: 10px; font-size: 13px; font-weight: 700; line-height: 1.65; box-shadow: 0 8px 22px rgba(200,238,98,.12); }
+    html[data-theme="light"] .announcement-update strong { color: #30382d; }
+    html[data-theme="light"] .announcement-copy,
+    html[data-theme="light"] .announcement-update span,
+    html[data-theme="light"] .announcement-contact { color: #697267; }
+    html[data-theme="light"] .announcement-contact strong { color: #30382d; }
+    html[data-theme="light"] .announcement-updates,
+    html[data-theme="light"] .announcement-update + .announcement-update { border-color: rgba(30,42,30,.11); }
+    @media (max-width:760px) {
+      .announcement-modal { width: min(100%,430px); padding: 20px 18px 18px; }
+      .announcement-title { font-size: 19px; }
+      .announcement-copy { font-size: 13px; line-height: 1.75; }
+      .announcement-update { grid-template-columns: 1fr; gap: 5px; padding: 12px 0; }
+      .app-download-callout { padding: 14px 15px; }
+      .announcement-actions .btn { width: 100%; min-height: 42px; }
+    }
   </style>
 </head>
 <body>
@@ -2176,6 +2597,10 @@
           <span id="auth-avatar" class="auth-avatar">G</span>
           <span class="auth-copy"><strong id="auth-label">登录</strong><small id="auth-detail">登录后可播放</small></span>
         </button>
+        <div class="nav-links">
+          <button id="contact-btn" class="nav-link-btn ripple-target" type="button" aria-haspopup="dialog" aria-controls="contact-modal">联系</button>
+          <button id="donate-btn" class="nav-link-btn donate ripple-target" type="button" aria-haspopup="dialog" aria-controls="donate-modal">赞赏</button>
+        </div>
         <button id="theme-toggle" class="shortcut-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon">☀</span></button>
         <div class="lang-toggle ripple-target">
           <button class="lang-btn active" data-lang="zh">中</button>
@@ -2283,7 +2708,6 @@
                 <div class="player-btn-row">
                   <button id="fav-btn" class="btn btn-secondary btn-icon ripple-target" title="收藏 (F)">❤</button>
                   <button id="save-to-playlist-btn" class="btn btn-secondary btn-icon ripple-target" title="保存到歌单" aria-label="保存到歌单">＋</button>
-                  <button id="download-btn" class="btn btn-secondary btn-icon ripple-target" title="下载">⬇</button>
                 </div>
                 <div id="player-status" class="status-pill" data-i18n="playerStatusIdle">空闲</div>
               </div>
@@ -2518,6 +2942,76 @@
     </div>
   </div>
 
+  <div id="announcement-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-title" aria-describedby="announcement-description">
+      <div class="modal-header">
+        <div>
+          <p class="announcement-kicker">重要提示 · HALO Music</p>
+          <div id="announcement-title" class="announcement-title">加群下载 APP</div>
+        </div>
+        <button id="announcement-close" class="modal-close-btn" type="button" aria-label="关闭公告">×</button>
+      </div>
+      <p id="announcement-description" class="announcement-copy">安卓 APP 和 Windows 客户端已上线，加入 Halo 音乐交流群即可下载，并获取版本更新和使用帮助。群二维码见“联系”，扫码即可进群。</p>
+      <div class="app-download-callout" role="note" aria-label="加群下载 APP">
+        <span class="app-download-eyebrow">HALO MUSIC APP</span>
+        <strong class="app-download-title">加入交流群，下载 APP</strong>
+        <span class="app-download-detail"><strong>安卓APP和Windows客户端已上线，加群即可下载。</strong></span>
+      </div>
+      <p class="announcement-section-label">本次更新内容</p>
+      <div class="announcement-updates" aria-label="本次更新内容">
+        <div class="announcement-update">
+          <strong>歌词修复</strong>
+          <span>VIP 歌曲（如周杰伦）此前经常没有歌词。现已接入官方歌词接口独立获取，无论走哪条音源线路，歌词都能正常显示。</span>
+        </div>
+        <div class="announcement-update">
+          <strong>播放稳定性</strong>
+          <span>音源解析加入 15 秒超时保护，不再无限等待；服务器解析失败时自动在浏览器直连重试，仍失败则自动切换同曲 JOOX 版本继续播放。</span>
+        </div>
+        <div class="announcement-update">
+          <strong>加载提速</strong>
+          <span>解析成功的音源会持续缓存（可支撑上万首歌曲的并发访问），缓存命中约 0.1 秒返回；播放失败时自动重新解析并更新缓存。人多时不再出现"一直加载音源失败"。</span>
+        </div>
+      </div>
+      <p class="announcement-contact"><span>交流群 QQ 群</span><strong>1035418918</strong></p>
+      <div class="announcement-actions">
+        <button id="announcement-contact" class="btn ripple-target" type="button">打开联系查看二维码</button>
+        <button id="announcement-confirm" class="btn btn-ghost ripple-target" type="button">稍后再看</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="contact-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+      <div class="modal-header">
+        <div>
+          <p class="announcement-kicker">联系我们</p>
+          <div id="contact-title" class="announcement-title">联系</div>
+        </div>
+        <button id="contact-close" class="modal-close-btn" type="button" aria-label="关闭联系">×</button>
+      </div>
+      <div class="announcement-copy" id="contact-body">
+        <p class="contact-note">群二维码在这里：扫码加入 Halo 音乐交流群。安卓APP和Windows客户端已上线，加群即可下载。</p>
+        <img src="contact.JPG" alt="联系方式" class="modal-contact-img" loading="lazy">
+      </div>
+    </div>
+  </div>
+
+  <div id="donate-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="donate-title">
+      <div class="modal-header">
+        <div>
+          <p class="announcement-kicker">支持我们</p>
+          <div id="donate-title" class="announcement-title">赞赏</div>
+        </div>
+        <button id="donate-close" class="modal-close-btn" type="button" aria-label="关闭赞赏">×</button>
+      </div>
+      <div class="announcement-copy" id="donate-body">
+        <img src="donate.JPG" alt="赞赏二维码" class="modal-qr" loading="lazy">
+        <p class="modal-caption">感谢您的支持！</p>
+      </div>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script>
@@ -2600,8 +3094,8 @@
         toastNeedKeyword:"请先输入搜索关键词。",
         toastSearchError:"搜索时发生了一点小错误，请稍后再试。",
         toastPlayError:"播放失败，请稍后再试。",
+        toastFallbackJoox:"当前音源不可用，已自动切换 JOOX 版本。",
         toastLyricStyleSwitched:"已切换歌词炫酷效果。",
-        toastDownloadNotReady:"当前歌曲还未加载完成，稍后再试。",
         toastPlaylistCreated:"歌单创建成功。",
         toastPlaylistDeleted:"歌单已删除。",
         toastTrackRemovedFromPlaylist:"已从歌单移除。",
@@ -2705,8 +3199,8 @@
         toastNeedKeyword:"Please enter a search keyword first.",
         toastSearchError:"An error occurred while searching.",
         toastPlayError:"Playback failed. Please try again.",
+        toastFallbackJoox:"Source unavailable, auto-switched to the JOOX version.",
         toastLyricStyleSwitched:"Lyrics FX toggled.",
-        toastDownloadNotReady:"Song not fully loaded yet. Try again later.",
         toastPlaylistCreated:"Playlist created.",
         toastPlaylistDeleted:"Playlist deleted.",
         toastTrackRemovedFromPlaylist:"Removed from playlist.",
@@ -2764,6 +3258,7 @@
 
     const LIBRARY_STORAGE_KEY = 'halo-music-library-v1';
     const THEME_STORAGE_KEY = 'halo-music-theme';
+    const ANNOUNCEMENT_STORAGE_KEY = 'halo-music-announcement-2026-08-v3';
 
     const dom = {};
     let audioLevel = 0;
@@ -3358,25 +3853,15 @@
       dom.importPlaylistModal.setAttribute('aria-hidden','false');
       dom.importPlaylistUrl.value='';
       dom.importPlaylistNote.textContent=t('importPlaylistNote');
-      if(!window.matchMedia('(max-width: 760px)').matches){
+      if(window.matchMedia('(min-width:761px) and (hover:hover)').matches){
         setTimeout(()=>dom.importPlaylistUrl.focus(),40);
       }
     }
 
-    function releaseImportPlaylistFocus(){
-      const active=document.activeElement;
-      if(active&&dom.importPlaylistModal.contains(active)&&typeof active.blur==='function')active.blur();
-    }
-
-    function hideImportPlaylistModal(){
-      releaseImportPlaylistFocus();
-      dom.importPlaylistModal.classList.remove('show');
-      dom.importPlaylistModal.setAttribute('aria-hidden','true');
-    }
-
     function closeImportPlaylistModal(){
       if(dom.importPlaylistConfirm.disabled)return;
-      hideImportPlaylistModal();
+      dom.importPlaylistModal.classList.remove('show');
+      dom.importPlaylistModal.setAttribute('aria-hidden','true');
     }
 
     function setImportPlaylistLoading(loading){
@@ -3386,6 +3871,10 @@
       dom.importPlaylistModal.classList.toggle('is-loading',loading);
       dom.importPlaylistConfirm.textContent=loading?t('importPlaylistLoading'):t('importPlaylistConfirm');
       dom.importPlaylistNote.textContent=loading?t('importPlaylistLoading'):t('importPlaylistNote');
+    }
+
+    function releaseImportPlaylistFocus(){
+      if(document.activeElement===dom.importPlaylistUrl)dom.importPlaylistUrl.blur();
     }
 
     async function importPlaylistFromLink(){
@@ -3408,7 +3897,8 @@
         const imported=data.playlists?.[0]?.tracks?.length||stat.addedPlaylistTracks;
         showToast(playlistImportSuccessMessage(stat,{truncated:data.truncated,total:data.total,imported}));
         dom.importPlaylistUrl.value='';
-        hideImportPlaylistModal();
+        dom.importPlaylistModal.classList.remove('show');
+        dom.importPlaylistModal.setAttribute('aria-hidden','true');
       }catch(error){
         console.error('import playlist link failed',error);
         showToast(error.message||t('toastPlaylistImportError'));
@@ -3432,7 +3922,8 @@
             showToast(t('toastPlaylistImportEmpty'));
           }else{
             showToast(playlistImportSuccessMessage(stat));
-            hideImportPlaylistModal();
+            dom.importPlaylistModal.classList.remove('show');
+            dom.importPlaylistModal.setAttribute('aria-hidden','true');
           }
         }catch(err){
           console.error('import playlist failed', err);
@@ -3531,99 +4022,68 @@
       return added;
     }
 
-    // QQ 搜索：使用 tang 的 QQ 音乐搜索 API（只拿列表，不拿 url）
+    // QQ 搜索：由同源 Function 在官方接口和多个备用源之间自动切换。
     async function searchQQ(kw, limit) {
-    // 新接口：返回直接是数组（或有些情况下可能包一层 data，下面做了兼容）
-    const url =
-        `https://tang.api.s01s.cn/music_open_api.php` +
-        `?msg=${encodeURIComponent(kw)}` +
-        `&type=json`;
-
-    let added = 0;
-
-    try {
-        const res = await fetch(url);
-        const json = await res.json();
-
-        // 兼容：既支持直接数组，也支持 { data: [...] } 这种包装
-        const data = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
-        if (!Array.isArray(data) || data.length === 0) return 0;
-
-        // 按 limit 截断
-        const list = data.slice(0, limit || data.length);
-
-        list.forEach((it, idx) => {
-        // 新接口里唯一标识是 song_mid
-        const mid = it.song_mid;
-        if (!mid) return;
-
-        const uid = `qq-${mid}`;
-        if (state.trackMap.has(uid)) return;
-
-        const indexInList = idx + 1; // 1-based：作为 qqIndex / displayIndex
-
-        const track = {
-            uid,
-            source: 'qq',
-
-            // 用于交错显示的排序
-            displayIndex: indexInList,
-
-            // 记录检索关键词（详情再请求要用同一个 msg）
-            keyword: kw,
-            qqSearchKey: kw,
-
-            // 这首在 QQ 搜索结果里的序号，用作 n（如果你后续详情接口仍需要 n）
-            qqIndex: indexInList,
-
-            // 元信息
-            qqId: mid,
-            songid: mid, // 保留旧字段名以防别处用到
-            songMid: mid, // 可选：更语义化的字段
-
-            title: it.song_title || '',
-            artist: it.singer_name || '',
-            album: '',
-
-            cover: null, // 新接口没给封面
-
-            // 搜索阶段没有 url 和 lrc
-            audioUrl: null,
-            lrc: null,
-            lrcUrl: null,
-
-            detailsLoaded: false,
-
-            quality: null,
-            qualityLabel: null,
-
-            // 新接口返回 pay（如“付费”）
-            qqQualityText: it.pay || null,
-            pay: it.pay || null
-        };
-
-        state.trackMap.set(uid, track);
-        state.searchResults.push(track);
-        added++;
-        });
-    } catch (e) {
-        console.error('qq search (tang)', e);
-    }
-
-    return added;
-    }
-
-    // 酷我搜索
-    async function searchKuwo(kw, limit){
-      const url=`/api/kuwo?action=search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
+      const url=`/api/music?action=qq_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
       let added=0;
       try{
         const res=await fetch(url);
         const json=await res.json();
-        if(json.code!==200 || !Array.isArray(json.data)) return 0;
+        if(!res.ok||json.code!==200||!Array.isArray(json.data))throw new Error(json.error||'QQ 搜索失败');
+        json.data.forEach((it,idx)=>{
+          const mid=String(it.mid||'').trim();
+          if(!mid)return;
+          const uid=`qq-${mid}`;
+          if(state.trackMap.has(uid))return;
+          const track={
+            uid,
+            source:'qq',
+            displayIndex:idx+1,
+            keyword:kw,
+            qqSearchKey:kw,
+            qqIndex:idx+1,
+            qqId:mid,
+            songid:mid,
+            songMid:mid,
+            mediaMid:it.mediaMid||mid,
+            title:it.name||'',
+            artist:it.artist||'',
+            album:it.album||'',
+            cover:it.cover||null,
+            duration:Number(it.duration)||0,
+            audioUrl:null,
+            lrc:null,
+            lrcUrl:null,
+            detailsLoaded:false,
+            quality:null,
+            qualityLabel:null,
+            qqQualityText:it.pay||null,
+            pay:it.pay||null,
+            resolverSource:json.source||null
+          };
+          state.trackMap.set(uid,track);
+          state.searchResults.push(track);
+          added++;
+        });
+      }catch(e){
+        console.error('qq search pool',e);
+      }
+      return added;
+    }
+
+    // 酷我搜索：官方双入口优先，Meting 兼容源备用。
+    async function searchKuwo(kw, limit){
+      const url=`/api/music?action=kuwo_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
+      let added=0;
+      try{
+        const res=await fetch(url);
+        const json=await res.json();
+        if(!res.ok||json.code!==200||!Array.isArray(json.data))throw new Error(json.error||'酷我搜索失败');
 
         json.data.forEach((it, idx)=>{
-          const uid=`kuwo-${it.rid}`;
+          const rid=String(it.rid||'').replace(/^MUSIC_/i,'');
+          if(!rid)return;
+          const uid=`kuwo-${rid}`;
           if(state.trackMap.has(uid))return;
 
           const track={
@@ -3631,7 +4091,7 @@
             source:'kuwo',
             displayIndex:idx+1,
             keyword:kw,
-            songid:it.rid,
+            songid:rid,
 
             title:it.name||'',
             artist:it.artist||'',
@@ -3641,9 +4101,11 @@
             audioUrl:null,
             lrc:null,
             lrcUrl:null,
+            duration:Number(it.duration)||0,
             detailsLoaded:false,
             quality:null,
-            qualityLabel:null
+            qualityLabel:null,
+            resolverSource:json.source||null
           };
 
           state.trackMap.set(uid,track);
@@ -3651,7 +4113,7 @@
           added++;
         });
       }catch(e){
-        console.error('kuwo search',e);
+        console.error('kuwo search pool',e);
       }
       return added;
     }
@@ -3801,92 +4263,115 @@
       track.detailsLoaded=true;
     }
 
-    // QQ 详情：根据搜索时的关键词 + song_mid(mid) 拿 url + lrc（tang API）
-    async function fetchQQDetails(track) {
-    // 优先用搜索时用过的关键词，保证和原始排序一致
-    const msg =
-        (track.qqSearchKey || track.keyword || '').trim() ||
-        ((track.title || '') + ' ' + (track.artist || '')).trim();
-
-    // 新接口用 mid：优先 qqId/songMid/songid
-    const mid =
-        (track.qqId || track.songMid || track.songid || '').toString().trim();
-
-    if (!mid) return;
-
-    const url =
-        `https://tang.api.s01s.cn/music_open_api.php` +
-        `?msg=${encodeURIComponent(msg)}` +
-        `&type=json` +
-        `&mid=${encodeURIComponent(mid)}`;
-
-    // 选择一个“最好”的播放链接（你也可以按需改优先级）
-    function pickBestPlayUrl(d) {
-        // lossless
-        if (d.song_play_url_sq) return { url: d.song_play_url_sq, tag: 'lossless', label: 'LOSSLESS', text: `SQ ${d.kbps_sq || ''}`.trim() };
-        if (d.song_play_url_pq) return { url: d.song_play_url_pq, tag: 'lossless', label: 'LOSSLESS', text: `PQ ${d.kbps_pq || ''}`.trim() };
-
-        // other variants
-        if (d.song_play_url_accom) return { url: d.song_play_url_accom, tag: 'hq', label: 'HQ', text: `ACCOM ${d.kbps_accom || ''}`.trim() };
-        if (d.song_play_url_hq) return { url: d.song_play_url_hq, tag: 'hq', label: 'HQ', text: `HQ ${d.kbps_hq || ''}`.trim() };
-
-        if (d.song_play_url_standard) return { url: d.song_play_url_standard, tag: 'standard', label: 'STD', text: `STD ${d.kbps_standard || ''}`.trim() };
-        if (d.song_play_url_fq) return { url: d.song_play_url_fq, tag: 'low', label: 'LOW', text: `FQ ${d.kbps_fq || ''}`.trim() };
-
-        // fallback
-        if (d.song_play_url) return { url: d.song_play_url, tag: null, label: null, text: null };
-
-        return { url: null, tag: null, label: null, text: null };
+    // 服务器端 tang 解析失败或共享出口 IP 被限流时，浏览器用用户自己的 IP
+    // 直连 tang 拿 VIP 播放链接，再交回服务器校验代理。
+    // tang 慢窗口会拖到 15~20 秒才应答，这里给足 25 秒耐心等；
+    // 服务器侧先成功时由外部 signal 提前取消，避免白白占用请求。
+    async function resolveQqViaBrowserTang(keyword,mid,{signal:externalSignal}={}){
+      try{
+        const controller=new AbortController();
+        const onExternalAbort=()=>controller.abort();
+        if(externalSignal){
+          if(externalSignal.aborted){controller.abort();}
+          else externalSignal.addEventListener('abort',onExternalAbort,{once:true});
+        }
+        const timer=setTimeout(()=>controller.abort(),25000);
+        try{
+          const res=await fetch(`https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json&mid=${encodeURIComponent(mid)}`,{signal:controller.signal});
+          const j=await res.json();
+          const data=(j&&typeof j==='object'&&!Array.isArray(j))?j:null;
+          if(!data||(data.song_mid&&data.song_mid!==mid))return null;
+          const lyric=String(data.song_lyric||data.lyric||'');
+          for(const key of ['song_play_url_hq','song_play_url_standard','song_play_url','song_play_url_sq','song_play_url_pq']){
+            const u=String(data[key]||'');
+            if(/^https?:\/\//i.test(u))return {url:u,lyric};
+          }
+          return null;
+        }finally{
+          clearTimeout(timer);
+          if(externalSignal)externalSignal.removeEventListener('abort',onExternalAbort);
+        }
+      }catch(e){
+        if(e&&e.name!=='AbortError')console.warn('QQ browser tang resolver unavailable',e);
+        return null;
+      }
     }
 
-    try {
-        const res = await fetch(url);
-        const d = await res.json();
-
-        // 基本校验：必须是对象且有 song_mid
-        if (!d || typeof d !== 'object' || !d.song_mid) {
-        throw new Error('qq detail error (invalid response)');
+    // QQ 详情和音频统一走同源代理池，避免浏览器跨域和单点失效。
+    async function fetchQQDetails(track,options={}) {
+      const keyword=(track.qqSearchKey||track.keyword||`${track.title||''} ${track.artist||''}`).trim();
+      const mid=String(track.qqId||track.songMid||track.songid||'').trim();
+      if(!mid)throw new Error('QQ 音乐歌曲 ID 缺失');
+      const params=new URLSearchParams({action:'qq_detail',id:mid,q:keyword});
+      if(track.mediaMid)params.set('media_mid',track.mediaMid);
+      if(track.duration)params.set('duration',String(track.duration));
+      if(track.title)params.set('title',track.title);
+      if(track.artist)params.set('artist',track.artist);
+      // 播放失败后的重试：绕过服务器缓存强制重新解析并更新缓存。
+      if(options.forceRefresh)params.set('refresh','1');
+      // 先请求服务器，让已有 D1 缓存直接命中；只有服务器解析失败时才调用
+      // 浏览器 tang，避免每次播放都重复请求同一首歌。
+      const fetchServer=async(p)=>{
+        const ctrl=new AbortController();
+        const timer=setTimeout(()=>ctrl.abort(),10000);
+        try{
+          const r=await fetch(`/api/music?${p}`,{signal:ctrl.signal});
+          return {r,json:await r.json()};
+        }catch(e){
+          return {r:null,json:{code:0}};
+        }finally{clearTimeout(timer);}
+      };
+      let {r:res,json}=await fetchServer(params);
+      let browserLyric='';
+      let rawBrowserUrl='';
+      if(!res||!res.ok||json.code!==200||!json.data||!json.data.audioUrl){
+        // 服务器侧失败后，用浏览器解析结果重试一次。
+        const browser=await resolveQqViaBrowserTang(keyword,mid);
+        if(browser&&browser.url){
+          // 页面是 https，直接播放必须用 https，否则会被浏览器当混合内容拦截。
+          rawBrowserUrl=browser.url.replace(/^http:/i,'https:');
+          browserLyric=browser.lyric||'';
+          params.set('resolved_url',browser.url);
+          const retry=await fetchServer(params);
+          res=retry.r;
+          json=retry.json;
         }
-
-        // 更新基础信息
-        track.title   = d.song_title || d.song_name || track.title;
-        track.artist  = d.singer_name || track.artist;
-        track.album   = d.album_name || d.album_title || track.album || '';
-        track.cover   = d.album_pic || d.singer_pic || track.cover;
-        track.pageUrl = d.song_h5_url || track.pageUrl;
-
-        // 播放链接（按优先级挑一个）
-        const best = pickBestPlayUrl(d);
-        track.audioUrl = best.url || track.audioUrl;
-
-        // 歌词
-        track.lrc = d.song_lyric || d.lyric || track.lrc;
-
-        // 文本信息（你原来用 qqQualityText，这里塞 vip + kbps/size 等）
-        track.qqQualityText =
-        best.text ||
-        (d.vip ? `VIP:${d.vip}` : null) ||
-        track.qqQualityText;
-
-        // quality / label：先用我们自己的选择，再用你已有 inferQualityFromUrl 兜底
-        if (best.tag && best.label) {
-        track.quality = best.tag;
-        track.qualityLabel = best.label;
+      }
+      if(!res||!res.ok||json.code!==200||!json.data){
+        // 服务器重试仍失败：直接播放浏览器解析到的原始地址（用户 IP 直连，
+        // 不经服务器校验代理），作为转 JOOX 之前的最后一道 QQ 兜底。
+        if(rawBrowserUrl){
+          Object.assign(track,{
+            audioUrl:rawBrowserUrl,
+            audioCandidates:[rawBrowserUrl],
+            lrc:browserLyric||track.lrc||null,
+            lrcUrl:null,
+            quality:null,
+            qualityLabel:null,
+            detailsLoaded:true
+          });
+          return;
         }
-
-        if (track.audioUrl) {
-        const q = inferQualityFromUrl(track.audioUrl);
-        if (q && q.label) {
-            track.quality = q.tag;
-            track.qualityLabel = q.label;
-        }
-        }
-
-        track.detailsLoaded = true;
-    } catch (e) {
-        console.error('qq detail (tang)', e);
-        // 失败的话不要把 detailsLoaded 置 true，下次还有机会重试
-    }
+        throw new Error(json.error||'QQ 音乐详情获取失败');
+      }
+      const d=json.data;
+      const audioCandidates=Array.isArray(d.audioUrls)&&d.audioUrls.length
+        ?d.audioUrls.map(u=>u.url).filter(Boolean)
+        :(d.audioUrl?[d.audioUrl]:[]);
+      Object.assign(track,{
+        title:d.name||track.title,
+        artist:d.artist||track.artist,
+        album:d.album||track.album,
+        cover:d.cover||track.cover,
+        pageUrl:d.pageUrl||track.pageUrl,
+        audioUrl:d.audioUrl||track.audioUrl,
+        audioCandidates,
+        lrc:d.lyric||browserLyric||track.lrc||null,
+        lrcUrl:null,
+        quality:d.quality||track.quality||null,
+        qualityLabel:d.qualityLabel||track.qualityLabel||null,
+        detailsLoaded:true
+      });
     }
 
     function normalizeMusicMatchText(value){
@@ -3925,64 +4410,57 @@
       await fetchQQDetails(track);
     }
 
-    function normalizeKuwoAudioUrl(value){
-      const candidate=String(value||'').trim();
-      if(!candidate||/^(?:none|null|undefined)$/i.test(candidate))return '';
+    async function fetchKuwoDetails(track,options={}){
+      let browserAudio=null;
       try{
-        const url=new URL(candidate);
-        if(url.protocol!=='http:'&&url.protocol!=='https:')return '';
-        url.protocol='https:';
-        return url.toString();
-      }catch(e){return '';}
-    }
-
-    async function resolveKuwoAudio(track){
-      const user=`C_APK_guanwang_${Date.now()}${Math.floor(Math.random()*1000000)}`;
-      for(const br of ['320kmp3','128kmp3']){
-        const params=new URLSearchParams({
+        const user=`C_APK_guanwang_${Date.now()}${Math.floor(Math.random()*1000000)}`;
+        const resolveParams=new URLSearchParams({
           f:'web',
           source:'kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk',
           from:'PC',
           type:'convert_url_with_sign',
-          br,
+          br:'320kmp3',
           rid:String(track.songid),
           user
         });
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),4500);
         try{
-          const res=await fetch(`https://mobi.kuwo.cn/mobi.s?${params}`,{cache:'no-store',referrer:'https://www.kuwo.cn/'});
-          if(!res.ok)continue;
-          const json=await res.json();
-          const data=json?.data||json;
-          const url=normalizeKuwoAudioUrl(data?.url);
-          if(url)return {url,duration:Number(data?.duration)||0,bitrate:Number(data?.bitrate)||0,format:data?.format||''};
-        }catch(e){}
+          const resolved=await fetch(`https://mobi.kuwo.cn/mobi.s?${resolveParams}`,{signal:controller.signal});
+          const payload=await resolved.json();
+          const data=payload?.data||{};
+          if(resolved.ok&&Number(data.rid)===Number(track.songid)&&/^https?:\/\//i.test(data.url||''))browserAudio=data;
+        }finally{clearTimeout(timer);}
+      }catch(e){
+        console.warn('Kuwo browser resolver unavailable',e);
       }
-      throw new Error('kuwo full audio unavailable');
-    }
-
-    async function fetchKuwoDetails(track){
-      const [audio,lyricResult]=await Promise.all([
-        resolveKuwoAudio(track),
-        fetch(`/api/kuwo?action=lyric&id=${encodeURIComponent(track.songid)}`)
-          .then(res=>res.ok?res.json():null)
-          .catch(()=>null)
-      ]);
-      const d=lyricResult?.data||{};
+      const params=new URLSearchParams({
+        action:'kuwo_detail',
+        id:String(track.songid),
+        title:track.title||'',
+        artist:track.artist||''
+      });
+      if(browserAudio){
+        params.set('resolved_url',browserAudio.url);
+        params.set('resolved_duration',String(browserAudio.duration||track.duration||0));
+      }
+      if(track.duration)params.set('duration',String(track.duration));
+      // 播放失败后的重试：绕过服务器缓存强制重新解析并更新缓存。
+      if(options.forceRefresh)params.set('refresh','1');
+      const res=await fetch(`/api/music?${params}`);
+      const j=await res.json();
+      if(!res.ok||j.code!==200||!j.data)throw new Error(j.error||'酷我音乐详情获取失败');
+      const d=j.data;
+      const audioCandidates=Array.isArray(d.audioUrls)&&d.audioUrls.length
+        ?d.audioUrls.map(u=>u.url).filter(Boolean)
+        :(d.audioUrl?[d.audioUrl]:[]);
       Object.assign(track,{
-        title:d.name || track.title,
-        artist:d.artist || track.artist,
-        album:d.album || track.album,
-        cover:d.pic || track.cover,
-        audioUrl:audio.url,
+        audioUrl:d.audioUrl||track.audioUrl,
+        audioCandidates,
         lrc: d.lyric || track.lrc || null,
         lrcUrl: null,
         detailsLoaded:true
       });
-
-      if(audio.duration)track.duration=audio.duration;
-
-      track.quality=audio.bitrate>=320?'320k':null;
-      track.qualityLabel=audio.bitrate>=320?'320K':null;
     }
 
     async function fetchJooxDetails(track){
@@ -4067,30 +4545,111 @@
       }
     }
 
+    // ===================== JOOX 降级 =====================
+    // 当前音源失败时的降级目标固定为 JOOX（腾讯自家港澳服务，曲库与 QQ
+    // 基本一致且当前可用）；按用户要求不降级到酷我。
+    let jooxRecovering=false;
+    let audioCandidateIndex=0;
+
+    function scoreJooxCandidate(track,candidate){
+      const targetTitle=normalizeMusicMatchText(track.title);
+      const targetArtist=normalizeMusicMatchText(track.artist);
+      const title=normalizeMusicMatchText(candidate['歌曲名称']);
+      const artist=normalizeMusicMatchText(candidate['歌手']);
+      let score=0;
+      if(title&&targetTitle){
+        if(title===targetTitle)score+=100;
+        else if(title.includes(targetTitle)||targetTitle.includes(title))score+=45;
+        else return 0;
+      }
+      if(!artist||!targetArtist)score+=20;
+      else if(artist===targetArtist)score+=50;
+      else if(artist.includes(targetArtist)||targetArtist.includes(artist))score+=24;
+      else score-=10;
+      return score;
+    }
+
+    async function recoverTrackViaJoox(track){
+      if(!track||track.source==='joox'||jooxRecovering)return false;
+      jooxRecovering=true;
+      try{
+        const keyword=(track.keyword||`${track.title||''} ${track.artist||''}`).trim();
+        if(!keyword)return false;
+        const url=`https://apicx.asia/api/joox_music?msg=${encodeURIComponent(keyword)}&token=${encodeURIComponent(JOOX_TOKEN)}&br=${encodeURIComponent(JOOX_BR)}`;
+        const res=await fetch(url);
+        const j=await res.json();
+        const songs=(j&&j.code===200&&j.data&&Array.isArray(j.data.songs))?j.data.songs:[];
+        const best=songs
+          .map((song,index)=>({song,index,score:scoreJooxCandidate(track,song)}))
+          .sort((a,b)=>b.score-a.score)[0];
+        if(!best||best.score<45)return false;
+        const fallback={
+          uid:track.uid,
+          source:'joox',
+          keyword,
+          jooxIndex:best.index+1,
+          songid:best.song['歌曲ID']||best.song.songmid||'',
+          songMid:best.song.songmid||'',
+          title:best.song['歌曲名称']||track.title,
+          artist:best.song['歌手']||track.artist,
+          album:best.song['专辑']||track.album,
+          cover:track.cover,
+          audioUrl:null,
+          audioCandidates:[],
+          lrc:best.song['歌词内容']||track.lrc||null,
+          lrcUrl:null,
+          detailsLoaded:false,
+          quality:null,
+          qualityLabel:null
+        };
+        await fetchJooxDetails(fallback);
+        if(!fallback.audioUrl)return false;
+        Object.assign(track,fallback);
+        showToast(t('toastFallbackJoox'));
+        return true;
+      }catch(e){
+        console.warn('JOOX recovery failed',e);
+        return false;
+      }finally{
+        jooxRecovering=false;
+      }
+    }
+
     async function ensureTrackDetails(track, options={}){
-      if(track.detailsLoaded && track.audioUrl && (track.lrc || !track.lrcUrl)) return;
+      if(!options.forceRefresh && track.detailsLoaded && track.audioUrl && (track.lrc || !track.lrcUrl)) return;
       if(!options.silent)dom.playerStatus.textContent=t('playerStatusLoading');
-      if(track.source==='netease') await fetchNeteaseDetails(track);
-      else if(track.source==='qishui') await fetchQishuiDetails(track);
-      else if(track.source==='kuwo') await fetchKuwoDetails(track);
-      else if(track.source==='joox') await fetchJooxDetails(track);
-      else await fetchQQDetails(track);
+      try{
+        if(track.source==='netease') await fetchNeteaseDetails(track);
+        else if(track.source==='qishui') await fetchQishuiDetails(track);
+        else if(track.source==='kuwo') await fetchKuwoDetails(track,options);
+        else if(track.source==='joox') await fetchJooxDetails(track);
+        else await fetchQQDetails(track,options);
+      }catch(e){
+        console.warn(track.source+' 详情解析失败，尝试 JOOX 降级',e);
+        if(!(await recoverTrackViaJoox(track)))throw e;
+      }
     }
 
     // ===================== 歌词处理 =====================
 
     function parseLRC(txt){
       if(!txt)return[];
-      const lines=txt.split(/\r?\n/);
-      const reg=/\[(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?\]/;
+      const normalized=String(txt).replace(/\\n/g,'\n').replace(/\r/g,'');
+      const reg=/\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
       const out=[];
-      for(const line of lines){
-        const m=reg.exec(line); if(!m)continue;
+      const matches=[...normalized.matchAll(reg)];
+      for(let i=0;i<matches.length;i++){
+        const m=matches[i];
         const min=parseInt(m[1],10)||0;
         const sec=parseInt(m[2],10)||0;
         const ms=m[3]?parseInt(m[3].padEnd(3,'0'),10):0;
         const time=min*60+sec+ms/1000;
-        const text=line.replace(reg,'').trim();
+        const next=matches[i+1];
+        const text=normalized.slice(m.index+m[0].length,next?.index??normalized.length)
+          .replace(/<\d+,\d+>|\(\d+,\d+\)/g,'')
+          .replace(/\[[a-z]+:[^\]]*\]/gi,'')
+          .replace(/\s+/g,' ')
+          .trim();
         if(text)out.push({time,text});
       }
       out.sort((a,b)=>a.time-b.time);
@@ -4214,6 +4773,7 @@
         state.lyricLines = track.lrc ? parseLRC(track.lrc) : [];
         renderLyrics();
         if(!track.audioUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
+        audioCandidateIndex=Math.max(0,(track.audioCandidates||[]).indexOf(track.audioUrl));
         dom.audio.src=track.audioUrl;
         const playback=dom.audio.play();
         await playback;
@@ -4401,13 +4961,6 @@
       renderPlaylistList();
     }
 
-    function handleDownloadCurrent(){
-      if(!requirePlayback())return;
-      const tr=state.currentTrack;
-      if(!tr||!tr.audioUrl){showToast(t('toastDownloadNotReady'));return;}
-      window.open(tr.audioUrl,'_blank');
-    }
-
     function addTrackToPlaylist(track, pl){
       if(!track||!pl)return false;
       if(pl.tracks.some(tk=>tk.uid===track.uid)){
@@ -4475,6 +5028,23 @@
     function closeSavePlaylistModal(){
       dom.savePlaylistModal.classList.remove('show');
       dom.savePlaylistModal.setAttribute('aria-hidden','true');
+    }
+
+    function openAnnouncementModal(){
+      dom.announcementModal.classList.add('show');
+      dom.announcementModal.setAttribute('aria-hidden','false');
+    }
+
+    function closeAnnouncementModal(){
+      dom.announcementModal.classList.remove('show');
+      dom.announcementModal.setAttribute('aria-hidden','true');
+      try{localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY,'dismissed');}catch(e){}
+    }
+
+    function showAnnouncementIfNeeded(){
+      let dismissed=false;
+      try{dismissed=localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)==='dismissed';}catch(e){}
+      if(!dismissed)setTimeout(openAnnouncementModal,120);
     }
 
     function createPlaylistForTrack(){
@@ -4996,7 +5566,6 @@
       dom.nextBtn=$('next-btn');
       dom.favBtn=$('fav-btn');
       dom.saveToPlaylistBtn=$('save-to-playlist-btn');
-      dom.downloadBtn=$('download-btn');
       dom.audio=$('audio');
       dom.currentTime=$('current-time');
       dom.totalTime=$('total-time');
@@ -5063,6 +5632,16 @@
       dom.loginCancelBtn=$('login-cancel');
       dom.authSwitchCopy=$('auth-switch-copy');
       dom.authSwitchBtn=$('auth-switch-btn');
+      dom.announcementModal=$('announcement-modal');
+      dom.announcementClose=$('announcement-close');
+      dom.announcementContact=$('announcement-contact');
+      dom.announcementConfirm=$('announcement-confirm');
+      dom.contactBtn=$('contact-btn');
+      dom.contactModal=$('contact-modal');
+      dom.contactClose=$('contact-close');
+      dom.donateBtn=$('donate-btn');
+      dom.donateModal=$('donate-modal');
+      dom.donateClose=$('donate-close');
       dom.mobileNav=$('mobile-nav');
       dom.layout=document.querySelector('.layout');
     }
@@ -5194,7 +5773,6 @@
       dom.nextBtn.addEventListener('click',()=>playNext('next'));
       dom.favBtn.addEventListener('click',toggleFavoriteCurrent);
       dom.saveToPlaylistBtn.addEventListener('click',openSavePlaylistModal);
-      dom.downloadBtn.addEventListener('click',handleDownloadCurrent);
 
       dom.volumeSlider.addEventListener('input',()=>{
         dom.audio.volume=parseFloat(dom.volumeSlider.value);
@@ -5230,6 +5808,46 @@
       dom.audio.addEventListener('ended',()=>{
         audioLevel = 0;
         advanceAfterTrackEnds();
+      });
+      dom.audio.addEventListener('error',()=>{
+        const track=state.currentTrack;
+        if(!track)return;
+        // 1) 先切换同曲的其它已校验候选线路（服务器返回的多条音源）。
+        const candidates=track.audioCandidates||[];
+        const next=candidates[audioCandidateIndex+1];
+        if(next&&next!==track.audioUrl){
+          audioCandidateIndex+=1;
+          track.audioUrl=next;
+          dom.audio.src=next;
+          dom.audio.play().catch(()=>{});
+          return;
+        }
+        // 2) 服务器缓存线路可能已失效：绕过缓存强制重新解析并更新缓存，
+        //    失败时内部会自动降级到 JOOX 同曲。最多重解析两次，避免坏源死循环。
+        const refreshTries=track._refreshTries||0;
+        if(refreshTries>=2){
+          recoverTrackViaJoox(track).then(recovered=>{
+            if(recovered){
+              playTrack(track,state.playContext,{detailsReady:true});
+            }else{
+              showToast(t('toastPlayError'));
+              dom.playerStatus.textContent=t('playerStatusIdle');
+            }
+          });
+          return;
+        }
+        track._refreshTries=refreshTries+1;
+        ensureTrackDetails(track,{forceRefresh:true}).then(()=>{
+          if(track.audioUrl){
+            playTrack(track,state.playContext,{detailsReady:true});
+          }else{
+            showToast(t('toastPlayError'));
+            dom.playerStatus.textContent=t('playerStatusIdle');
+          }
+        }).catch(()=>{
+          showToast(t('toastPlayError'));
+          dom.playerStatus.textContent=t('playerStatusIdle');
+        });
       });
 
       dom.progressWrapper.addEventListener('click',e=>{
@@ -5267,6 +5885,11 @@
       dom.importPlaylistUrl.addEventListener('keydown',e=>{
         if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();importPlaylistFromLink();}
       });
+      dom.importPlaylistUrl.addEventListener('paste',()=>{
+        if(window.matchMedia('(max-width:760px) and (hover:none)').matches){
+          setTimeout(()=>dom.importPlaylistUrl.blur(),0);
+        }
+      });
       dom.importPlaylistInput.addEventListener('change',handleImportPlaylistFile);
       dom.exportPlaylistBtn.addEventListener('click',exportPlaylistData);
       dom.playlistConfirmBtn.addEventListener('click',createPlaylist);
@@ -5287,6 +5910,22 @@
       dom.shortcutToggleBtn.addEventListener('click',()=>{dom.shortcutModal.classList.add('show');});
       dom.shortcutCloseBtn.addEventListener('click',()=>{dom.shortcutModal.classList.remove('show');});
       dom.shortcutModal.addEventListener('click',e=>{if(e.target===dom.shortcutModal)dom.shortcutModal.classList.remove('show');});
+
+      dom.announcementClose.addEventListener('click',closeAnnouncementModal);
+      dom.announcementConfirm.addEventListener('click',closeAnnouncementModal);
+      dom.announcementModal.addEventListener('click',e=>{if(e.target===dom.announcementModal)closeAnnouncementModal();});
+
+      const openContactModal=()=>{dom.contactModal.classList.add('show');dom.contactModal.setAttribute('aria-hidden','false');};
+      const closeContactModal=()=>{dom.contactModal.classList.remove('show');dom.contactModal.setAttribute('aria-hidden','true');};
+      const openDonateModal=()=>{dom.donateModal.classList.add('show');dom.donateModal.setAttribute('aria-hidden','false');};
+      const closeDonateModal=()=>{dom.donateModal.classList.remove('show');dom.donateModal.setAttribute('aria-hidden','true');};
+      dom.contactBtn.addEventListener('click',openContactModal);
+      dom.announcementContact.addEventListener('click',()=>{closeAnnouncementModal();openContactModal();});
+      dom.contactClose.addEventListener('click',closeContactModal);
+      dom.contactModal.addEventListener('click',e=>{if(e.target===dom.contactModal)closeContactModal();});
+      dom.donateBtn.addEventListener('click',openDonateModal);
+      dom.donateClose.addEventListener('click',closeDonateModal);
+      dom.donateModal.addEventListener('click',e=>{if(e.target===dom.donateModal)closeDonateModal();});
 
       dom.authButton.addEventListener('click',toggleAuth);
       dom.themeToggle.addEventListener('click',toggleTheme);
@@ -5314,8 +5953,14 @@
         const savePlaylistOpen=dom.savePlaylistModal.classList.contains('show');
         const shortcutOpen=dom.shortcutModal.classList.contains('show');
         const loginOpen=dom.loginModal.classList.contains('show');
+        const announcementOpen=dom.announcementModal.classList.contains('show');
+        const contactOpen=dom.contactModal.classList.contains('show');
+        const donateOpen=dom.donateModal.classList.contains('show');
 
         if(e.key==='Escape'){
+          if(announcementOpen)closeAnnouncementModal();
+          if(contactOpen)closeContactModal();
+          if(donateOpen)closeDonateModal();
           if(playlistOpen)closePlaylistModal();
           if(importPlaylistOpen)closeImportPlaylistModal();
           if(savePlaylistOpen)closeSavePlaylistModal();
@@ -5324,7 +5969,7 @@
           return;
         }
 
-        if(playlistOpen || importPlaylistOpen || savePlaylistOpen || shortcutOpen || loginOpen){
+        if(playlistOpen || importPlaylistOpen || savePlaylistOpen || shortcutOpen || loginOpen || announcementOpen || contactOpen || donateOpen){
           return;
         }
 
@@ -5366,6 +6011,7 @@
       dom.audio.volume=parseFloat(dom.volumeSlider.value);
       updateAuthUI();
       loadAuthSession();
+      showAnnouncementIfNeeded();
     }
 
     document.addEventListener('DOMContentLoaded',init);

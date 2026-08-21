@@ -1,9 +1,13 @@
 node_modules/
+release/
+android/.gradle/
+android/build/
+android/app/build/
 .wrangler/
 .wrangler-config/
 tools/
 *.test.js
 *.ps1
 .DS_Store
-*.log
-.tmp-*.mjs
+.user-favorites.json
+.claude/

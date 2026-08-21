@@ -3,12 +3,64 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "HALO Music desktop client",
+  "author": "HALO Music",
   "scripts": {
     "dev": "wrangler pages dev .",
     "deploy": "wrangler pages deploy .",
-    "test": "node --test auth.test.js import.test.js playlist-import.test.js playback.test.js kuwo.test.js"
+    "test": "node --test auth.test.js import.test.js playlist-import.test.js playback.test.js music.test.js",
+    "desktop:dev": "electron .",
+    "desktop:dist": "npm run desktop:electron",
+    "desktop:electron": "electron-builder --win nsis",
+    "desktop:portable": "electron-builder --win portable",
+    "desktop:all": "npm run desktop:electron"
   },
   "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "wrangler": "^4.0.0"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.halomusic.desktop",
+    "productName": "HALO Music",
+    "icon": "icon.svg",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "app.js",
+      "styles.css",
+      "contact.JPG",
+      "donate.JPG",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "legalTrademarks": "HALO Music"
+    },
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "nsis": {
+      "artifactName": "HALO-Music-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HALO Music",
+      "runAfterFinish": true,
+      "include": "build/installer.nsh",
+      "script": "build/custom-installer.nsi"
+    },
+    "portable": {
+      "artifactName": "HALO-Music-Portable-${version}-${arch}.${ext}"
+    }
   }
 }

@@ -40,3 +40,26 @@ NetEase song details are fetched in batches. QQ Music uses the request signing
 and pagination strategy from `GoMusic`; to stay within Pages Function request
 limits, imports are capped at the first 1,200 QQ tracks. Qishui pages are read
 from embedded page data with an HTML-structure fallback.
+
+## Desktop package
+
+The Electron desktop client loads the deployed Pages application in its own
+native window, so it does not launch Edge or another browser. Set
+`HALO_MUSIC_URL` when deploying to a different Pages hostname.
+
+Install the Node dependencies first:
+
+```powershell
+npm install
+```
+
+Build the Windows installer:
+
+```powershell
+npm run desktop:all
+```
+
+Artifacts are written to `release/`. The installer offers checkboxes for a
+desktop shortcut and Windows startup, both enabled by default, and creates a
+Start Menu entry. The optional `desktop:portable` script creates a portable
+executable when needed.

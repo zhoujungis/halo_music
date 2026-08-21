@@ -4,3 +4,15 @@
 tools/
 *.ps1
 *.test.js
+.package-probes/
+.npm-cache/
+.tmp-*
+debug.log
+.user-favorites.json
+electron/
+build/
+scripts/
+android/
+release/
+capacitor.config.json
+windows/

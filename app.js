@@ -25,7 +25,6 @@ let lyricsOpen = false;
 let renderedLyricTrackId = null;
 let activeLyricIndex = -1;
 let loadedAudioTrackId = null;
-let audioCandidateIndex = 0;
 let searchRequestId = 0;
 let toastTimer;
 let liked = new Set(JSON.parse(localStorage.getItem("halo-liked-tracks") || "[]"));
@@ -92,7 +91,6 @@ function normalizeLocalTrack(item, index) {
     tag: item.tag || "本地音乐",
     art: item.art || item.cover || item.pic || FALLBACK_ART,
     audioUrl,
-    audioCandidates: audioUrl ? [audioUrl] : [],
     lyrics: Array.isArray(item.lyrics) ? item.lyrics : parseLrc(item.lrc || item.lyric),
     lrcUrl: item.lrcUrl || null,
     detailsLoaded: Boolean(audioUrl),
@@ -137,7 +135,6 @@ async function searchNetease(keyword, limit = 8) {
       tag: "网易云 在线",
       art: item.pic || FALLBACK_ART,
       audioUrl: item.url || null,
-      audioCandidates: item.url ? [item.url] : [],
       lrcUrl: item.lrc || null,
       lyrics: [],
       detailsLoaded: Boolean(item.url)
@@ -146,32 +143,32 @@ async function searchNetease(keyword, limit = 8) {
 }
 
 async function searchQQ(keyword, limit = 8) {
-  const url = `https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json`;
+  const url = `/api/music?action=qq_search&q=${encodeURIComponent(keyword)}&limit=${limit}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`QQ音乐索引请求失败：${response.status}`);
   const json = await response.json();
-  const data = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+  const data = Array.isArray(json?.data) ? json.data : [];
 
-  return data.slice(0, limit).filter((item) => item.song_mid).map((item) => ({
-    id: `qq-${item.song_mid}`,
+  return data.slice(0, limit).filter((item) => item.mid).map((item) => ({
+    id: `qq-${item.mid}`,
     source: "qq",
-    songId: item.song_mid,
+    songId: item.mid,
+    mediaMid: item.mediaMid || item.mid,
     keyword,
-    title: item.song_title || "未知歌曲",
-    artist: item.singer_name || "未知音乐人",
-    album: "QQ音乐",
-    length: 0,
+    title: item.name || "未知歌曲",
+    artist: item.artist || "未知音乐人",
+    album: item.album || "QQ音乐",
+    length: parseDuration(item.duration),
     tag: `QQ音乐 ${item.pay || "在线"}`,
-    art: FALLBACK_ART,
+    art: item.cover || FALLBACK_ART,
     audioUrl: null,
-    audioCandidates: [],
     lyrics: [],
     detailsLoaded: false
   }));
 }
 
 async function searchKuwo(keyword, limit = 8) {
-  const url = `/api/kuwo?action=search&q=${encodeURIComponent(keyword)}&limit=${limit}`;
+  const url = `/api/music?action=kuwo_search&q=${encodeURIComponent(keyword)}&limit=${limit}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`酷我索引请求失败：${response.status}`);
   const json = await response.json();
@@ -184,11 +181,10 @@ async function searchKuwo(keyword, limit = 8) {
     title: item.name || "未知歌曲",
     artist: item.artist || "未知音乐人",
     album: item.album || "酷我音乐",
-    length: 0,
+    length: parseDuration(item.duration),
     tag: "酷我 在线",
-    art: item.pic || FALLBACK_ART,
+    art: item.cover || FALLBACK_ART,
     audioUrl: null,
-    audioCandidates: [],
     lyrics: [],
     detailsLoaded: false
   }));
@@ -238,7 +234,6 @@ async function fetchText(url) {
 async function fetchNeteaseDetails(track) {
   if (!track.audioUrl && track.songId) {
     track.audioUrl = `https://api.qijieya.cn/meting/?server=netease&type=url&id=${encodeURIComponent(track.songId)}`;
-    track.audioCandidates = [track.audioUrl];
   }
   if (!track.lrcUrl && track.songId) {
     track.lrcUrl = `https://api.qijieya.cn/meting/?server=netease&type=lrc&id=${encodeURIComponent(track.songId)}`;
@@ -249,81 +244,74 @@ async function fetchNeteaseDetails(track) {
 
 async function fetchQQDetails(track) {
   const keyword = track.keyword || `${track.title} ${track.artist}`;
-  const url = `https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json&mid=${encodeURIComponent(track.songId)}`;
+  const params = new URLSearchParams({
+    action: "qq_detail",
+    id: track.songId,
+    q: keyword,
+    duration: String(track.length || 0),
+  });
+  if (track.mediaMid) params.set("media_mid", track.mediaMid);
+  const url = `/api/music?${params}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`QQ音乐详情请求失败：${response.status}`);
-  const data = await response.json();
-  if (!data || typeof data !== "object" || !data.song_mid) throw new Error("QQ音乐详情无有效数据");
+  const json = await response.json();
+  const data = json?.data;
+  if (json?.code !== 200 || !data?.audioUrl) throw new Error("QQ音乐详情无有效数据");
 
-  track.title = data.song_title || data.song_name || track.title;
-  track.artist = data.singer_name || track.artist;
-  track.album = data.album_name || data.album_title || track.album;
-  track.art = data.album_pic || data.singer_pic || track.art;
-  track.pageUrl = data.song_h5_url || null;
-  track.lyrics = parseLrc(data.song_lyric || data.lyric || "");
-  track.audioCandidates = [
-    data.song_play_url_hq,
-    data.song_play_url_standard,
-    data.song_play_url_sq,
-    data.song_play_url_pq,
-    data.song_play_url_fq,
-    data.song_play_url
-  ].filter(Boolean);
-  track.audioUrl = track.audioCandidates[0] || null;
+  track.title = data.name || track.title;
+  track.artist = data.artist || track.artist;
+  track.album = data.album || track.album;
+  track.art = data.cover || track.art;
+  track.pageUrl = data.pageUrl || null;
+  track.lyrics = parseLrc(data.lyric || "");
+  track.audioUrl = data.audioUrl;
+  track.quality = data.qualityLabel || data.quality || null;
   track.detailsLoaded = Boolean(track.audioUrl);
 }
 
-function normalizeKuwoAudioUrl(value) {
-  const candidate = String(value || "").trim();
-  if (!candidate || /^(?:none|null|undefined)$/i.test(candidate)) return "";
+async function fetchKuwoDetails(track) {
+  let browserAudio = null;
   try {
-    const url = new URL(candidate);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
-    url.protocol = "https:";
-    return url.toString();
-  } catch { return ""; }
-}
-
-async function resolveKuwoAudio(track) {
-  const user = `C_APK_guanwang_${Date.now()}${Math.floor(Math.random() * 1_000_000)}`;
-  for (const br of ["320kmp3", "128kmp3"]) {
-    const params = new URLSearchParams({
+    const user = `C_APK_guanwang_${Date.now()}${Math.floor(Math.random() * 1_000_000)}`;
+    const resolveParams = new URLSearchParams({
       f: "web",
       source: "kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk",
       from: "PC",
       type: "convert_url_with_sign",
-      br,
+      br: "320kmp3",
       rid: String(track.songId),
-      user
+      user,
     });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
     try {
-      const response = await fetch(`https://mobi.kuwo.cn/mobi.s?${params}`, { cache: "no-store", referrer: "https://www.kuwo.cn/" });
-      if (!response.ok) continue;
-      const json = await response.json();
-      const data = json?.data || json;
-      const url = normalizeKuwoAudioUrl(data?.url);
-      if (url) return { url, duration: Number(data?.duration) || 0 };
-    } catch {}
+      const resolved = await fetch(`https://mobi.kuwo.cn/mobi.s?${resolveParams}`, { signal: controller.signal });
+      const payload = await resolved.json();
+      const data = payload?.data || {};
+      if (resolved.ok && Number(data.rid) === Number(track.songId) && /^https?:\/\//i.test(data.url || "")) browserAudio = data;
+    } finally { clearTimeout(timer); }
+  } catch (error) {
+    console.warn("Kuwo browser resolver unavailable", error);
   }
-  throw new Error("酷我完整音源不可用");
-}
-
-async function fetchKuwoDetails(track) {
-  const [audio, lyricResult] = await Promise.all([
-    resolveKuwoAudio(track),
-    fetch(`/api/kuwo?action=lyric&id=${encodeURIComponent(track.songId)}`)
-      .then((response) => response.ok ? response.json() : null)
-      .catch(() => null)
-  ]);
-  const data = lyricResult?.data || {};
-  track.title = data.name || track.title;
-  track.artist = data.artist || track.artist;
-  track.album = data.album || track.album;
-  track.art = data.pic || track.art;
-  track.audioUrl = audio.url;
-  track.audioCandidates = [audio.url];
+  const params = new URLSearchParams({
+    action: "kuwo_detail",
+    id: track.songId,
+    duration: String(track.length || 0),
+    title: track.title || "",
+    artist: track.artist || "",
+  });
+  if (browserAudio) {
+    params.set("resolved_url", browserAudio.url);
+    params.set("resolved_duration", String(browserAudio.duration || track.length || 0));
+  }
+  const url = `/api/music?${params}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`酷我详情请求失败：${response.status}`);
+  const json = await response.json();
+  if (json.code !== 200 || !json.data?.audioUrl) throw new Error("酷我详情无有效数据");
+  const data = json.data;
+  track.audioUrl = data.audioUrl;
   track.lyrics = parseLrc(data.lyric || "");
-  track.length = parseDuration(audio.duration || track.length);
   track.detailsLoaded = Boolean(track.audioUrl);
 }
 
@@ -503,7 +491,6 @@ async function prepareAudio(track) {
   const ready = await ensureTrackDetails(track);
   if (!ready || !track.audioUrl) return false;
   if (loadedAudioTrackId !== track.id || audio.src !== new URL(track.audioUrl, window.location.href).href) {
-    audioCandidateIndex = Math.max(0, track.audioCandidates.indexOf(track.audioUrl));
     audio.src = track.audioUrl;
     loadedAudioTrackId = track.id;
     audio.load();
@@ -576,21 +563,6 @@ audio.addEventListener("pause", () => { isPlaying = false; renderPlayer(); rende
 audio.addEventListener("timeupdate", renderPlayer);
 audio.addEventListener("durationchange", renderPlayer);
 audio.addEventListener("ended", nextTrack);
-audio.addEventListener("error", () => {
-  const track = currentTrack();
-  if (!track || loadedAudioTrackId !== track.id) return;
-  const nextCandidate = track.audioCandidates[audioCandidateIndex + 1];
-  if (nextCandidate) {
-    audioCandidateIndex += 1;
-    track.audioUrl = nextCandidate;
-    audio.src = nextCandidate;
-    audio.play().catch(() => {});
-    return;
-  }
-  isPlaying = false;
-  showToast("当前音源已失效，请尝试其他歌曲", 3500);
-  renderPlayer();
-});
 
 $("#albumGrid").addEventListener("click", (event) => {
   const card = event.target.closest("[data-track]");
