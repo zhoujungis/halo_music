@@ -779,11 +779,14 @@
       font-size:17px;
       color:rgba(196,199,235,0.78);
       margin:4px 0;
+      cursor:pointer;
       opacity:0.52;
       transition:transform .25s ease, color .25s ease, text-shadow .25s ease, opacity .25s ease;
       white-space:normal;
       letter-spacing:0.04em;
     }
+    .lyrics-line:hover { opacity:.86; }
+    .lyrics-line:focus-visible { outline:1px solid var(--accent); outline-offset:3px; border-radius:4px; }
     .lyrics-line.active {
       opacity:1;
       transform:scale(1.14);
@@ -2518,6 +2521,66 @@
       html[data-theme="light"] .lang-toggle { background: #f5f5ef; border-color: rgba(37,45,34,.13); }
     }
 
+    /* Batch actions for search results. The same controls are used by the
+       desktop search panel and the mobile search view. */
+    .search-stats { align-items: center; gap: 8px; }
+    .search-batch-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 0;
+      border: 0;
+    }
+    .search-batch-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .search-batch-select-all {
+      width: 17px;
+      height: 17px;
+      margin: 0 5px 0 1px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .search-batch-actions .btn-icon { width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 0; border-radius: 7px; font-size: 14px; }
+    .mini-select-control {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .mini-select-control { margin-right: 7px; }
+    .search-mini-item { justify-content: flex-start; gap: 0; }
+    .search-mini-item .mini-meta-main { min-width: 0; flex: 1 1 auto; }
+    .search-mini-item .mini-right { margin-left: auto; flex: 0 0 auto; }
+    .search-mini-item.batch-selected,
+    .track-item.batch-selected {
+      background: rgba(200,238,98,.1);
+      border-color: rgba(200,238,98,.36);
+    }
+    .search-mini-item.playing { border-color: var(--accent); box-shadow: 0 0 12px rgba(200,238,98,.22); }
+    @media (max-width: 760px) {
+      .search-batch-toolbar {
+        align-items: center;
+        flex-direction: row;
+        gap: 6px;
+        padding: 0;
+      }
+      .search-batch-actions {
+        width: auto;
+        display: flex;
+      }
+      .search-batch-actions .btn-icon { width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+      .mini-select-control { width: 18px; height: 18px; margin-right: 8px; }
+      .search-batch-select-all { width: 18px; height: 18px; }
+    }
+
     .announcement-modal { max-width: 520px; padding: 22px 24px 20px; }
     .announcement-modal .modal-header { margin-bottom: 14px; }
     .announcement-kicker { margin: 0 0 8px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
@@ -2576,6 +2639,345 @@
       .app-download-callout { padding: 14px 15px; }
       .announcement-actions .btn { width: 100%; min-height: 42px; }
     }
+
+    /* Playlist workspace: compact controls on desktop, focused library view on mobile. */
+    @media (min-width: 761px) {
+      .playlist-panel {
+        padding: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(226,232,215,.12);
+        border-radius: 14px;
+        background: #151914;
+      }
+      .playlist-panel .panel-header {
+        display: grid;
+        grid-template-columns: minmax(0,1fr) auto;
+        align-items: center;
+        gap: 14px;
+        min-height: 0;
+        margin: 0;
+        padding: 0 0 14px;
+        border-bottom: 1px solid rgba(226,232,215,.1);
+      }
+      .playlist-panel .panel-title {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #e8ebe2;
+        font-size: 16px;
+      }
+      .playlist-panel .panel-title .icon {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        color: #c6da89;
+        border: 1px solid rgba(183,206,114,.2);
+        border-radius: 9px;
+        background: #20261d;
+        font-size: 15px;
+      }
+      .playlist-panel .playlist-tabs {
+        width: auto;
+        max-width: 100%;
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid rgba(226,232,215,.1);
+        border-radius: 10px;
+        background: #0f130f;
+      }
+      .playlist-panel .playlist-tab {
+        min-height: 30px;
+        padding: 7px 11px;
+        border-radius: 7px;
+        color: #879184;
+        font-size: 11px;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .playlist-panel .playlist-tab:hover { color: #dce2d4; background: rgba(226,232,215,.05); }
+      .playlist-panel .playlist-tab.active {
+        color: #18200e;
+        background: #b7ce72;
+        box-shadow: none;
+      }
+      .playlist-panel .playlist-main { padding: 12px 2px 0 0; overflow-y: auto; }
+      .playlist-panel .playlist-bar {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        gap: 8px;
+        padding: 10px 0 12px;
+        margin: 0;
+        background: #151914;
+        border-bottom: 1px solid rgba(226,232,215,.1);
+      }
+      .playlist-panel .playlist-top-row { min-height: 34px; gap: 10px; }
+      .playlist-panel .playlist-info { color: #8b9588; font-size: 11px; font-weight: 650; }
+      .playlist-panel .playmode-row {
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid rgba(226,232,215,.1);
+        border-radius: 9px;
+        background: #0f130f;
+      }
+      .playlist-panel .playmode-btn {
+        width: 28px;
+        min-width: 28px;
+        height: 28px;
+        min-height: 28px;
+        border-radius: 7px;
+        background: transparent;
+        box-shadow: none;
+      }
+      .playlist-panel .playmode-btn:hover { color: #dce2d4; background: rgba(226,232,215,.05); }
+      .playlist-panel .playmode-btn.active { color: #18200e; background: #b7ce72; box-shadow: none; }
+      .playlist-panel .playlist-select-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+        gap: 10px;
+        padding-top: 10px;
+      }
+      .playlist-panel .playlist-select-tools,
+      .playlist-panel .playlist-file-actions { flex-wrap: nowrap; gap: 5px; }
+      .playlist-panel .playlist-select-tools select {
+        min-height: 32px;
+        padding: 5px 28px 5px 9px;
+        border: 1px solid rgba(226,232,215,.13);
+        border-radius: 8px;
+        background: #0f130f;
+      }
+      .playlist-panel .playlist-select-tools .btn-icon,
+      .playlist-panel .playlist-file-actions .btn {
+        min-height: 32px;
+        border-radius: 8px;
+      }
+      .playlist-panel .playlist-file-actions .btn {
+        min-width: 44px;
+        padding: 7px 10px;
+        white-space: nowrap;
+      }
+      .playlist-panel .playlist-file-actions { justify-content: flex-end; }
+      .playlist-panel .playlist-list {
+        display: grid;
+        gap: 5px;
+        padding: 6px 0 12px;
+      }
+      .playlist-panel .track-item {
+        min-height: 58px;
+        grid-template-columns: 30px minmax(0,1fr) auto;
+        gap: 10px;
+        margin: 0;
+        padding: 9px 10px;
+        border: 1px solid rgba(226,232,215,.08);
+        border-radius: 10px;
+        background: #1a201c;
+        box-shadow: none;
+      }
+      .playlist-panel .track-item:hover {
+        transform: none;
+        border-color: rgba(183,206,114,.3);
+        background: #202820;
+        box-shadow: none;
+      }
+      .playlist-panel .track-item.playing {
+        border-color: rgba(183,206,114,.42);
+        background: rgba(183,206,114,.09);
+        box-shadow: inset 3px 0 #b7ce72;
+      }
+      .playlist-panel .track-index { width: 30px; color: #758073; text-align: center; font-size: 11px; }
+      .playlist-panel .track-meta-title { color: #e5e9e0; font-size: 13px; font-weight: 650; }
+      .playlist-panel .track-meta-sub { margin-top: 4px; color: #859083; }
+      .playlist-panel .track-actions { gap: 5px; }
+      .playlist-panel .track-actions .btn-icon {
+        width: 30px;
+        min-width: 30px;
+        height: 30px;
+        min-height: 30px;
+        border: 1px solid rgba(226,232,215,.09);
+        border-radius: 8px;
+        background: #242c26;
+        box-shadow: none;
+      }
+      .playlist-panel .track-actions .btn-icon:hover { background: #303b31; }
+      .playlist-panel .track-actions .btn-fav-active { color: #ef8fa0; background: rgba(239,143,160,.12); }
+
+      html[data-theme="light"] .playlist-panel { border-color: rgba(37,45,34,.13); background: #f7f8f3; }
+      html[data-theme="light"] .playlist-panel .panel-header,
+      html[data-theme="light"] .playlist-panel .playlist-bar { border-color: rgba(37,45,34,.11); background: #f7f8f3; }
+      html[data-theme="light"] .playlist-panel .panel-title { color: #252b22; }
+      html[data-theme="light"] .playlist-panel .panel-title .icon,
+      html[data-theme="light"] .playlist-panel .playlist-tabs,
+      html[data-theme="light"] .playlist-panel .playmode-row,
+      html[data-theme="light"] .playlist-panel .playlist-select-tools select { border-color: rgba(37,45,34,.12); background: #e9eee3; }
+      html[data-theme="light"] .playlist-panel .playlist-tab { color: #687267; }
+      html[data-theme="light"] .playlist-panel .playlist-tab.active,
+      html[data-theme="light"] .playlist-panel .playmode-btn.active { color: #26341d; background: #b7d27a; }
+      html[data-theme="light"] .playlist-panel .track-item { border-color: rgba(37,45,34,.1); background: #fff; }
+      html[data-theme="light"] .playlist-panel .track-item:hover { border-color: rgba(95,127,34,.28); background: #f0f4eb; }
+      html[data-theme="light"] .playlist-panel .track-item.playing { border-color: rgba(95,127,34,.34); background: #f4f8e9; box-shadow: inset 3px 0 #6f9133; }
+      html[data-theme="light"] .playlist-panel .track-index { color: #7a8677; }
+      html[data-theme="light"] .playlist-panel .track-meta-title { color: #263024; }
+      html[data-theme="light"] .playlist-panel .track-meta-sub { color: #697468; }
+      html[data-theme="light"] .playlist-panel .track-actions .btn-icon { border-color: rgba(37,45,34,.1); background: #edf2e9; }
+      html[data-theme="light"] .playlist-panel .track-actions .btn-icon:hover { background: #e1eadb; }
+    }
+
+    @media (max-width: 760px) {
+      body[data-mobile-view="me"] .playlist-panel {
+        padding: 10px 14px 0;
+        background: #0f1415;
+      }
+      body[data-mobile-view="me"] .playlist-panel .panel-header {
+        grid-template-columns: minmax(0,1fr);
+        gap: 10px;
+        padding-bottom: 12px;
+        margin-bottom: 10px;
+        border-bottom-color: rgba(238,243,231,.1);
+      }
+      body[data-mobile-view="me"] .playlist-panel .panel-title {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #e8eee5;
+        font-size: 20px;
+      }
+      body[data-mobile-view="me"] .playlist-panel .panel-title .icon {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(200,238,98,.2);
+        border-radius: 9px;
+        background: #1b2420;
+        font-size: 15px;
+      }
+      body[data-mobile-view="me"] .playlist-panel .playlist-tabs {
+        width: 100%;
+        padding: 3px;
+        border: 1px solid rgba(238,243,231,.1);
+        border-radius: 10px;
+        background: #151c1d;
+      }
+      body[data-mobile-view="me"] .playlist-panel .playlist-tab { min-height: 38px; padding: 8px; border-radius: 7px; }
+      body[data-mobile-view="me"] .playlist-panel .playlist-tab.active { color: #17200e; background: #b7ce72; box-shadow: none; }
+      body[data-mobile-view="me"] .playlist-panel .playlist-main { padding-top: 0; }
+      body[data-mobile-view="me"] .playlist-panel .playlist-bar { background: transparent; }
+      body[data-mobile-view="me"] .playlist-panel .playlist-top-row { min-height: 38px; }
+      body[data-mobile-view="me"] .playlist-panel .playlist-info { color: #aeb9ac; font-size: 12px; }
+      body[data-mobile-view="me"] .playlist-panel .playmode-row { background: #151c1d; }
+      body[data-mobile-view="me"] .mobile-playlist-toolbar {
+        grid-template-columns: 96px 38px 38px;
+        justify-content: start;
+        gap: 6px;
+        padding: 2px 0 12px;
+      }
+      body[data-mobile-view="me"] .mobile-playlist-toolbar .btn { min-height: 38px; border-radius: 9px; }
+      body[data-mobile-view="me"] .mobile-playlist-create {
+        width: 96px;
+        min-width: 96px;
+        padding: 0 8px;
+        text-align: center;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      body[data-mobile-view="me"] .mobile-playlist-tool { width: 38px; min-width: 38px; height: 38px; min-height: 38px; border-radius: 9px; }
+      body[data-mobile-view="me"] .mobile-playlist-card {
+        min-height: 70px;
+        grid-template-columns: 48px minmax(0,1fr) 18px;
+        gap: 11px;
+        padding: 10px;
+        border-color: rgba(238,243,231,.1);
+        border-radius: 11px;
+        background: #151d1f;
+      }
+      body[data-mobile-view="me"] .mobile-playlist-card:active { background: #1e2928; }
+      body[data-mobile-view="me"] .mobile-playlist-card-art { width: 48px; height: 48px; border-radius: 9px; background: #b7ce72; }
+      body[data-mobile-view="me"] .mobile-playlist-card strong { font-size: 13px; }
+      body[data-mobile-view="me"] .mobile-playlist-card small { color: #879489; }
+      body[data-mobile-view="me"] .playlist-panel.mobile-playlist-detail .playlist-list { padding-bottom: 26px; }
+      body[data-mobile-view="me"] .playlist-panel.mobile-playlist-detail .track-item { min-height: 64px; }
+      body[data-mobile-view="me"] .playlist-panel.mobile-playlist-detail .mobile-playlist-back,
+      body[data-mobile-view="me"] .playlist-panel.mobile-playlist-detail .mobile-playlist-delete { width: 34px; min-width: 34px; height: 34px; min-height: 34px; border-radius: 8px; }
+
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel { background: #f7f8f3; }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .panel-header { border-bottom-color: rgba(37,45,34,.11); }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .panel-title { color: #252b22; }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .playlist-tabs,
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .playmode-row { border-color: rgba(37,45,34,.12); background: #e9eee3; }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .playlist-tab { color: #687267; }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .playlist-tab.active { color: #26341d; background: #b7d27a; }
+      html[data-theme="light"] body[data-mobile-view="me"] .playlist-panel .playlist-info { color: #5f6a5d; }
+      html[data-theme="light"] body[data-mobile-view="me"] .mobile-playlist-card { border-color: rgba(37,45,34,.1); background: #fff; }
+      html[data-theme="light"] body[data-mobile-view="me"] .mobile-playlist-card:active { background: #eef3e9; }
+      html[data-theme="light"] body[data-mobile-view="me"] .mobile-playlist-card small { color: #697468; }
+    }
+
+    @media (min-width: 761px) {
+      .playlist-panel .panel-header { grid-template-columns: 1fr; }
+      .playlist-panel .panel-title { display: none; }
+      .playlist-panel .playlist-tabs { width: 100%; justify-self: stretch; }
+      .playlist-panel .playlist-tabs {
+        justify-content: stretch;
+        align-items: stretch;
+      }
+      .playlist-panel .playlist-tab {
+        min-width: 0;
+        height: 34px;
+        min-height: 34px;
+        padding: 0 11px;
+        flex: 1 1 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .playlist-panel .playlist-main { padding-top: 10px; }
+      .playlist-panel .playlist-bar { padding: 0 0 10px; background: transparent; border-bottom: 0; }
+      .playlist-panel .playlist-top-row {
+        width: 100%;
+        max-width: none;
+        justify-content: space-between;
+        gap: 8px;
+        min-height: 42px;
+        padding: 5px 7px;
+        border: 1px solid rgba(226,232,215,.1);
+        border-radius: 10px;
+        background: #101510;
+      }
+      .playlist-panel .playlist-select-tools { margin-right: 0; }
+      .playlist-panel .playlist-select-tools select { width: 150px; }
+      .playlist-panel .playmode-row { width: max-content; margin-left: auto; margin-right: 0; }
+      .playlist-panel .playlist-select-row { padding-top: 8px; }
+      .playlist-panel .playlist-file-actions {
+        display: grid;
+        grid-template-columns: repeat(4,minmax(0,1fr));
+        gap: 5px;
+        width: 100%;
+      }
+      .playlist-panel .playlist-file-actions .btn {
+        min-width: 0;
+        width: 100%;
+        padding-inline: 4px;
+        font-size: 11px;
+        font-weight: 650;
+      }
+      html[data-theme="light"] .playlist-panel .playlist-top-row { border-color: rgba(37,45,34,.12); background: #edf1e9; }
+    }
+    @media (max-width: 760px) {
+      body[data-mobile-view="me"] .playlist-panel:not(.mobile-playlist-detail) .panel-title { display: none; }
+      body[data-mobile-view="me"] .playlist-panel.mobile-playlist-detail .panel-title { display: flex; }
+      body[data-mobile-view="me"] .mobile-playlist-toolbar { grid-template-columns: repeat(3,minmax(0,1fr)); justify-content: stretch; }
+      body[data-mobile-view="me"] .mobile-playlist-create,
+      body[data-mobile-view="me"] .mobile-playlist-tool { width: auto; min-width: 0; }
+      body[data-mobile-view="me"] .mobile-playlist-create { padding-inline: 8px; }
+      body[data-mobile-view="me"] .mobile-playlist-tool { padding-inline: 4px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -2589,7 +2991,6 @@
         </div>
         <div class="title-text">
           <h1 data-i18n="appTitle">HALO 音乐广场</h1>
-          <p data-i18n="authorLabel">基于 MusicSquare · 多源在线索引</p>
         </div>
       </div>
       <div class="header-controls">
@@ -2670,7 +3071,13 @@
 
           <div class="search-stats">
             <span id="search-status" data-i18n="searchStatusIdle">尚未搜索，试试输入“林俊杰”？</span>
-            <span id="search-count">0</span>
+            <div id="search-batch-toolbar" class="search-batch-toolbar">
+              <div class="search-batch-actions">
+                <input id="search-batch-select-all" class="search-batch-select-all" type="checkbox" data-i18n-title="searchBatchSelectAll" title="全选" aria-label="全选" />
+                <button id="search-batch-favorite" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchFavorite" title="加入收藏" aria-label="加入收藏">♥</button>
+                <button id="search-batch-playlist" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchPlaylist" title="加入歌单" aria-label="加入歌单">＋</button>
+              </div>
+            </div>
           </div>
 
           <div id="search-mini-list" class="search-results-mini"></div>
@@ -2684,7 +3091,6 @@
             <span class="icon">🎧</span>
             <span data-i18n="playerTitle">正在播放</span>
           </div>
-          <span class="chip" data-i18n="playerSubtitle">歌词动态高亮 · 炫酷霓虹</span>
         </div>
 
         <div class="player-top">
@@ -2753,8 +3159,6 @@
         <div class="panel-header">
           <div class="panel-title">
             <button id="mobile-playlist-back" class="mobile-playlist-back" type="button" title="返回歌单" aria-label="返回歌单">←</button>
-            <span class="icon">📜</span>
-            <span id="playlist-heading" data-i18n="playlistTitle">播放列表</span>
           </div>
           <button id="mobile-playlist-delete" class="mobile-playlist-delete" type="button" title="删除歌单" aria-label="删除歌单">×</button>
           <div class="playlist-tabs ripple-target">
@@ -2768,6 +3172,9 @@
           <div class="playlist-bar">
             <div class="playlist-top-row">
               <span id="playlist-info" class="playlist-info"></span>
+              <div id="playlist-select-tools" class="playlist-select-tools">
+                <select id="playlist-select"></select>
+              </div>
               <div class="playmode-row">
                 <button class="playmode-btn active ripple-target" data-mode="list" title="列表循环">🔁</button>
                 <button class="playmode-btn ripple-target" data-mode="single" title="单曲循环">🔂</button>
@@ -2775,12 +3182,8 @@
               </div>
             </div>
             <div id="playlist-select-row" class="playlist-select-row" style="display:none;">
-              <div class="playlist-select-tools">
-                <select id="playlist-select"></select>
-                <button id="add-current-btn" class="btn btn-secondary btn-icon ripple-target" title="把当前歌曲加入歌单">＋</button>
-                <button id="delete-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="deletePlaylist">删除歌单</button>
-              </div>
               <div class="playlist-file-actions">
+                <button id="delete-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="deletePlaylist">删除歌单</button>
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
@@ -2914,13 +3317,13 @@
       <div class="modal-header">
         <div class="modal-title-wrap">
           <div class="modal-title-icon">＋</div>
-          <span data-i18n="saveToPlaylistTitle">保存到歌单</span>
+          <span id="save-playlist-title" data-i18n="saveToPlaylistTitle">保存到歌单</span>
         </div>
         <button id="save-playlist-close" class="modal-close-btn" type="button" aria-label="关闭">×</button>
       </div>
-      <p class="modal-desc" data-i18n="saveToPlaylistDescription">选择一张歌单保存当前歌曲</p>
+      <p id="save-playlist-description" class="modal-desc" data-i18n="saveToPlaylistDescription">选择一张歌单保存当前歌曲</p>
       <div id="save-playlist-options" class="save-playlist-options"></div>
-      <button id="save-playlist-create" class="btn btn-ghost save-playlist-create ripple-target" type="button" data-i18n="libraryCreateAction">新建歌单</button>
+      <button id="save-playlist-create" class="btn btn-ghost save-playlist-create ripple-target" type="button" data-i18n="libraryCreateAction">新建</button>
     </div>
   </div>
 
@@ -3019,7 +3422,6 @@
     const translations = {
       zh: {
         appTitle:"HALO 音乐广场",
-        authorLabel:"基于 MusicSquare · 多源在线索引",
         shortcutHint:"快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果",
         shortcutPanelTitle:"快捷键说明",
         shortcutPanelDesc:"使用键盘可以更加方便地控制 HALO 音乐广场：",
@@ -3042,8 +3444,17 @@
         searchStatusSearching:"正在搜索中…",
         searchStatusDone:"搜索完成。",
         searchStatusNoSource:"请至少选择一个音乐源。",
+        searchBatchNoResults:"暂无搜索结果",
+        searchBatchSelectAll:"全选",
+        searchBatchUnselectAll:"取消全选",
+        searchBatchFavorite:"加入收藏",
+        searchBatchPlaylist:"加入歌单",
+        searchBatchNeedSelection:"请先选择歌曲。",
+        searchBatchFavoriteResult:"已收藏 {added} 首歌曲",
+        searchBatchPlaylistTitle:"批量保存到歌单",
+        searchBatchPlaylistDescription:"选择歌单保存已选歌曲（已存在的歌曲会自动跳过）",
+        searchBatchPlaylistSaved:"已保存 {added} 首",
         playerTitle:"正在播放",
-        playerSubtitle:"歌词动态高亮 · 炫酷霓虹",
         playerStatusIdle:"空闲",
         playerStatusLoading:"加载音源中…",
         playerStatusPlaying:"播放中",
@@ -3064,7 +3475,9 @@
         libraryEmptyPlaylistsDescription:"创建一张歌单，把喜欢的歌收在一起",
         libraryLoginAction:"登录",
         libraryBrowseAction:"去搜索",
-        libraryCreateAction:"新建歌单",
+        libraryCreateAction:"新建",
+        mobileImportAction:"导入",
+        mobileExportAction:"导出",
         saveToPlaylistTitle:"保存到歌单",
         saveToPlaylistDescription:"选择一张歌单保存当前歌曲",
         saveToPlaylistEmpty:"还没有歌单，先创建一张吧",
@@ -3124,7 +3537,6 @@
       },
       en: {
         appTitle:"HALO Music Square",
-        authorLabel:"Based on MusicSquare · Multi-source index",
         shortcutHint:"Shortcuts: Space Play/Pause · ←/→ Seek · ↑/↓ Volume · N/P Track · F Fav · L Lyrics FX",
         shortcutPanelTitle:"Keyboard Shortcuts",
         shortcutPanelDesc:"Control HALO Music Square more easily with your keyboard:",
@@ -3147,8 +3559,17 @@
         searchStatusSearching:"Searching…",
         searchStatusDone:"Search completed.",
         searchStatusNoSource:"Please select at least one music source.",
+        searchBatchNoResults:"No search results.",
+        searchBatchSelectAll:"Select all",
+        searchBatchUnselectAll:"Deselect all",
+        searchBatchFavorite:"Add favorites",
+        searchBatchPlaylist:"Add to playlist",
+        searchBatchNeedSelection:"Select at least one song first.",
+        searchBatchFavoriteResult:"Added {added} songs to favorites",
+        searchBatchPlaylistTitle:"Save selected songs",
+        searchBatchPlaylistDescription:"Choose a playlist. Songs already in it will be skipped.",
+        searchBatchPlaylistSaved:"Saved {added}",
         playerTitle:"Now Playing",
-        playerSubtitle:"Dynamic neon lyrics visualizer",
         playerStatusIdle:"Idle",
         playerStatusLoading:"Loading audio…",
         playerStatusPlaying:"Playing",
@@ -3169,14 +3590,16 @@
         libraryEmptyPlaylistsDescription:"Create a playlist to keep your favorite songs together.",
         libraryLoginAction:"Sign in",
         libraryBrowseAction:"Browse music",
-        libraryCreateAction:"Create playlist",
+        libraryCreateAction:"New",
+        mobileImportAction:"Import",
+        mobileExportAction:"Export",
         saveToPlaylistTitle:"Save to playlist",
         saveToPlaylistDescription:"Choose a playlist for the current track.",
         saveToPlaylistEmpty:"No playlists yet. Create one first.",
         playlistAlreadyContains:"Saved",
         playlistOpenLabel:"Open playlist",
-        newPlaylist:"Create",
-        importPlaylist:"Import",
+        newPlaylist:"New playlist",
+        importPlaylist:"Import playlist",
         modalImportPlaylistTitle:"Import playlist",
         modalImportPlaylistDesc:"Paste a shared playlist message or URL. The platform will be detected automatically.",
         importPlaylistPlaceholder:"Paste a shared message or playlist URL…",
@@ -3187,8 +3610,8 @@
         providerNeteaseFull:"Netease Cloud Music",
         providerQishuiFull:"Qishui Music",
         providerQQFull:"QQ Music",
-        exportPlaylist:"Export",
-        deletePlaylist:"Delete",
+        exportPlaylist:"Export playlist",
+        deletePlaylist:"Delete playlist",
         removeFromPlaylist:"Remove from playlist",
         footerText:"For demo only. All music copyrights belong to original owners.",
         toastAddedFavorite:"Added to favorites",
@@ -3253,7 +3676,9 @@
       muted:false,
       isAuthenticated:false,
       profileName:'',
-      mobilePlaylistDetailId:null
+      mobilePlaylistDetailId:null,
+      selectedSearchUids:new Set(),
+      batchTracks:[]
     };
 
     const LIBRARY_STORAGE_KEY = 'halo-music-library-v1';
@@ -3264,6 +3689,7 @@
     let audioLevel = 0;
     let librarySaveChain = Promise.resolve();
     let createPlaylistForCurrentTrack = false;
+    let pendingPlaylistTracks = [];
     let nextAudioPreload = null;
     let nextTrackPrepareToken = 0;
     let preparedNextTrack = null;
@@ -3426,6 +3852,10 @@
       document.querySelectorAll('[data-i18n]').forEach(el=>{
         const key=el.dataset.i18n;
         if(key) el.textContent = t(key);
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+        const key=el.dataset.i18nTitle;
+        if(key){el.title=t(key);el.setAttribute('aria-label',t(key));}
       });
       dom.searchInput.placeholder = lang==='zh'
         ? '输入歌名 / 歌手，回车搜索…'
@@ -4184,6 +4614,8 @@
         state.searchResults=[];
         state.trackMap.clear();
         state.noMoreResults=false;
+        state.selectedSearchUids.clear();
+        updateBatchToolbar();
       }
 
       const kw=state.searchKeyword;
@@ -4206,9 +4638,9 @@
 
       state.searchInProgress=false;
       dom.searchStatus.textContent=t('searchStatusDone');
-      dom.searchCount.textContent=state.searchResults.length.toString();
       renderMiniSearchList();
       renderPlaylistList();
+      updateBatchToolbar();
       if(state.isAuthenticated&&!state.currentTrack && state.searchResults.length){
         playFromList('results',0);
       }
@@ -4681,9 +5113,25 @@
         const div=document.createElement('div');
         div.className='lyrics-line';
         div.dataset.index=i;
+        div.setAttribute('role','button');
+        div.tabIndex=0;
         div.textContent=ln.text;
+        div.addEventListener('click',()=>seekToLyric(i));
+        div.addEventListener('keydown',event=>{
+          if(event.key==='Enter'||event.key===' '){event.preventDefault();seekToLyric(i);}
+        });
         wrap.appendChild(div);
       });
+    }
+
+    function seekToLyric(index){
+      const line=state.lyricLines[index];
+      if(!line||!dom.audio)return;
+      const duration=Number.isFinite(dom.audio.duration)&&dom.audio.duration>0?dom.audio.duration:null;
+      const target=duration===null?Math.max(0,line.time):Math.min(Math.max(0,line.time),duration);
+      try{dom.audio.currentTime=target;}catch(error){return;}
+      state.currentLyricIndex=-1;
+      updateLyricsHighlight(target);
     }
 
     function updateLyricsHighlight(time){
@@ -4720,11 +5168,34 @@
       dom.favBtn.classList.toggle('btn-fav-active',active);
     }
 
+    function scrollCurrentTrackIntoView(){
+      const uid=state.currentTrack?.uid;
+      if(!uid)return;
+      const targets=[
+        {container:dom.playlistMain,list:dom.playlistList,selector:'.track-item'},
+        {container:dom.searchMiniList,list:dom.searchMiniList,selector:'.search-mini-item'}
+      ];
+      targets.forEach(({container,list,selector})=>{
+        if(!container||!list||container.clientHeight<=0)return;
+        const item=[...list.querySelectorAll(selector)].find(row=>row.dataset.trackUid===uid);
+        if(!item)return;
+        const itemRect=item.getBoundingClientRect();
+        const containerRect=container.getBoundingClientRect();
+        const delta=itemRect.top-containerRect.top-(containerRect.height-itemRect.height)/2;
+        container.scrollTo({
+          top:Math.max(0,container.scrollTop+delta),
+          behavior:'smooth'
+        });
+      });
+    }
+
     async function playTrack(track,context,options={}){
       if(!track)return;
       if(!requirePlayback())return;
       state.currentTrack=track;
       state.playContext=context||state.playContext;
+      renderPlaylistList();
+      scrollCurrentTrackIntoView();
 
       const applyUI=()=>{
         dom.trackTitle.textContent=track.title||'';
@@ -4790,6 +5261,7 @@
 
       renderMiniSearchList();
       renderPlaylistList();
+      scrollCurrentTrackIntoView();
     }
 
     function getActiveList(){
@@ -4950,6 +5422,69 @@
       else dom.audio.play().catch(e=>console.error(e));
     }
 
+    function updateBatchToolbar(){
+      if(!dom.searchBatchToolbar)return;
+      const allTracks=getInterleavedSearchList();
+      const allSelected=allTracks.length>0&&allTracks.every(track=>state.selectedSearchUids.has(track.uid));
+      dom.searchBatchSelectAll.checked=allSelected;
+      dom.searchBatchSelectAll.title=t(allSelected?'searchBatchUnselectAll':'searchBatchSelectAll');
+      dom.searchBatchSelectAll.setAttribute('aria-label',dom.searchBatchSelectAll.title);
+    }
+
+    function toggleSearchTrackSelection(uid){
+      if(state.selectedSearchUids.has(uid))state.selectedSearchUids.delete(uid);
+      else state.selectedSearchUids.add(uid);
+      updateBatchToolbar();
+    }
+
+    function addTracksToPlaylist(tracks,pl){
+      if(!pl||!Array.isArray(tracks))return 0;
+      const existing=new Set(pl.tracks.map(track=>track.uid));
+      let added=0;
+      tracks.forEach(track=>{
+        if(!track||existing.has(track.uid))return;
+        pl.tracks.push(track);
+        existing.add(track.uid);
+        added++;
+      });
+      if(added){saveLibraryToStorage();renderPlaylistList();}
+      return added;
+    }
+
+    function addSelectedToFavorites(){
+      const allTracks=getInterleavedSearchList();
+      if(!allTracks.length){showToast(t('searchBatchNoResults'));return;}
+      if(!requireLibraryAccess())return;
+      const tracks=allTracks.filter(track=>state.selectedSearchUids.has(track.uid));
+      if(!tracks.length){showToast(t('searchBatchNeedSelection'));return;}
+      const existing=new Set(state.favorites.map(track=>track.uid));
+      let added=0;
+      tracks.forEach(track=>{
+        if(existing.has(track.uid))return;
+        state.favorites.push(track);
+        existing.add(track.uid);
+        added++;
+      });
+      saveLibraryToStorage();
+      state.selectedSearchUids.clear();
+      updateBatchToolbar();
+      renderMiniSearchList();
+      renderPlaylistList();
+      showToast(t('searchBatchFavoriteResult').replace('{added}',String(added)));
+    }
+
+    function openBatchSavePlaylistModal(){
+      const allTracks=getInterleavedSearchList();
+      if(!allTracks.length){showToast(t('searchBatchNoResults'));return;}
+      if(!requireLibraryAccess())return;
+      const tracks=allTracks.filter(track=>state.selectedSearchUids.has(track.uid));
+      if(!tracks.length){showToast(t('searchBatchNeedSelection'));return;}
+      state.batchTracks=tracks;
+      renderSavePlaylistOptions();
+      dom.savePlaylistModal.classList.add('show');
+      dom.savePlaylistModal.setAttribute('aria-hidden','false');
+    }
+
     function toggleFavoriteCurrent(){
       if(!requireLibraryAccess())return;
       const tr=state.currentTrack; if(!tr)return;
@@ -4974,20 +5509,12 @@
       return true;
     }
 
-    function addCurrentToPlaylist(){
-      if(!requireLibraryAccess())return;
-      const plId=dom.playlistSelect.value;
-      if(!plId){showToast(t('toastNeedPlaylistSelected'));return;}
-      const track=state.currentTrack;
-      if(!track){showToast(t('toastNoCurrentTrack'));return;}
-      const pl=state.playlists.find(p=>p.id===plId);
-      if(!pl){showToast(t('toastNeedPlaylistSelected'));return;}
-      addTrackToPlaylist(track,pl);
-    }
-
     function renderSavePlaylistOptions(){
       dom.savePlaylistOptions.innerHTML='';
-      const track=state.currentTrack;
+      const tracks=state.batchTracks.length?[...state.batchTracks]:(state.currentTrack?[state.currentTrack]:[]);
+      const isBatch=state.batchTracks.length>0;
+      if(dom.savePlaylistTitle)dom.savePlaylistTitle.textContent=t(isBatch?'searchBatchPlaylistTitle':'saveToPlaylistTitle');
+      if(dom.savePlaylistDescription)dom.savePlaylistDescription.textContent=t(isBatch?'searchBatchPlaylistDescription':'saveToPlaylistDescription');
       if(!state.playlists.length){
         const empty=document.createElement('div');
         empty.className='save-playlist-empty';
@@ -4996,7 +5523,8 @@
         return;
       }
       state.playlists.forEach(pl=>{
-        const saved=Boolean(track&&pl.tracks.some(item=>item.uid===track.uid));
+        const savedCount=tracks.filter(track=>pl.tracks.some(item=>item.uid===track.uid)).length;
+        const saved=savedCount===tracks.length;
         const option=document.createElement('button');
         option.type='button';
         option.className='save-playlist-option ripple-target';
@@ -5011,7 +5539,16 @@
         copy.appendChild(name);copy.appendChild(count);
         option.appendChild(copy);option.appendChild(marker);
         option.addEventListener('click',()=>{
-          if(addTrackToPlaylist(track,pl))closeSavePlaylistModal();
+          const added=addTracksToPlaylist(tracks,pl);
+          if(added){
+            showToast(isBatch?t('searchBatchPlaylistSaved').replace('{added}',String(added)):t('toastAddedToPlaylist'));
+            closeSavePlaylistModal();
+            if(isBatch){
+              state.selectedSearchUids.clear();
+              updateBatchToolbar();
+              renderMiniSearchList();
+            }
+          }else showToast(t('toastAlreadyInList'));
         });
         dom.savePlaylistOptions.appendChild(option);
       });
@@ -5028,6 +5565,7 @@
     function closeSavePlaylistModal(){
       dom.savePlaylistModal.classList.remove('show');
       dom.savePlaylistModal.setAttribute('aria-hidden','true');
+      state.batchTracks=[];
     }
 
     function openAnnouncementModal(){
@@ -5048,6 +5586,13 @@
     }
 
     function createPlaylistForTrack(){
+      if(state.batchTracks.length){
+        pendingPlaylistTracks=[...state.batchTracks];
+        closeSavePlaylistModal();
+        createPlaylistForCurrentTrack=false;
+        openPlaylistModal();
+        return;
+      }
       closeSavePlaylistModal();
       createPlaylistForCurrentTrack=true;
       openPlaylistModal();
@@ -5108,6 +5653,21 @@
       out.forEach((track,i)=>{
         const item=document.createElement('div');
         item.className='search-mini-item ripple-target';
+        item.dataset.trackUid=track.uid;
+        if(state.currentTrack?.uid===track.uid)item.classList.add('playing');
+        if(state.selectedSearchUids.has(track.uid))item.classList.add('batch-selected');
+        let selectControl=null;
+        selectControl=document.createElement('input');
+        selectControl.type='checkbox';
+        selectControl.className='mini-select-control';
+        selectControl.checked=state.selectedSearchUids.has(track.uid);
+        selectControl.setAttribute('aria-label',track.title||'');
+        selectControl.addEventListener('click',event=>event.stopPropagation());
+        selectControl.addEventListener('change',()=>{
+          toggleSearchTrackSelection(track.uid);
+          item.classList.toggle('batch-selected',selectControl.checked);
+        });
+        item.appendChild(selectControl);
         const meta=document.createElement('div');
         meta.className='mini-meta-main';
         const tt=document.createElement('div');
@@ -5141,17 +5701,22 @@
 
     function updatePlaylistInfoLabel(){
       const tab=document.querySelector('.playlist-tab.active')?.dataset.tab||'results';
-      if(tab==='results') dom.playlistInfo.textContent = t('playlistInfoResults');
-      else if(tab==='favorites') dom.playlistInfo.textContent = t('playlistInfoFavorites');
+      if(tab==='results'){
+        dom.playlistInfo.style.display='';
+        dom.playlistInfo.textContent = t('playlistInfoResults');
+      }
+      else if(tab==='favorites'){
+        dom.playlistInfo.style.display='';
+        dom.playlistInfo.textContent = t('playlistInfoFavorites');
+      }
       else {
         const selectedId=state.mobilePlaylistDetailId||dom.playlistSelect.value;
         const pl=state.playlists.find(p=>p.id===selectedId);
-        const base=t('playlistInfoPlaylist');
-        dom.playlistInfo.textContent = pl
-          ? (window.matchMedia('(max-width: 760px)').matches&&state.mobilePlaylistDetailId
-              ? (state.language==='zh'?`${pl.tracks.length} 首歌曲`:`${pl.tracks.length} tracks`)
-              : (base+' · '+pl.name))
-          : base;
+        const showMobileCount=Boolean(pl&&window.matchMedia('(max-width: 760px)').matches&&state.mobilePlaylistDetailId);
+        dom.playlistInfo.style.display=showMobileCount?'':'none';
+        dom.playlistInfo.textContent = showMobileCount
+          ? (state.language==='zh'?`${pl.tracks.length} 首歌曲`:`${pl.tracks.length} tracks`)
+          : '';
       }
     }
 
@@ -5167,7 +5732,6 @@
       const overview=activeTab==='playlists'&&isMobileLibraryView()&&!detail;
       dom.playlistPanel.classList.toggle('mobile-playlist-detail',Boolean(detail));
       dom.playlistPanel.classList.toggle('mobile-playlist-overview',overview);
-      if(dom.playlistHeading)dom.playlistHeading.textContent=detail?detail.name:t('playlistTitle');
       if(dom.mobilePlaylistDelete)dom.mobilePlaylistDelete.disabled=!detail;
     }
 
@@ -5195,11 +5759,11 @@
       create.addEventListener('click',()=>openPlaylistModal());
       const importBtn=document.createElement('button');
       importBtn.type='button';importBtn.className='btn btn-ghost mobile-playlist-tool ripple-target';
-      importBtn.title=t('importPlaylist');importBtn.setAttribute('aria-label',t('importPlaylist'));importBtn.textContent='\u21E9';
+      importBtn.title=t('importPlaylist');importBtn.setAttribute('aria-label',t('importPlaylist'));importBtn.textContent=t('mobileImportAction');
       importBtn.addEventListener('click',()=>dom.importPlaylistBtn.click());
       const exportBtn=document.createElement('button');
       exportBtn.type='button';exportBtn.className='btn btn-ghost mobile-playlist-tool ripple-target';
-      exportBtn.title=t('exportPlaylist');exportBtn.setAttribute('aria-label',t('exportPlaylist'));exportBtn.textContent='\u21E7';
+      exportBtn.title=t('exportPlaylist');exportBtn.setAttribute('aria-label',t('exportPlaylist'));exportBtn.textContent=t('mobileExportAction');
       exportBtn.addEventListener('click',()=>dom.exportPlaylistBtn.click());
       toolbar.appendChild(create);toolbar.appendChild(importBtn);toolbar.appendChild(exportBtn);
       dom.playlistList.appendChild(toolbar);
@@ -5287,13 +5851,16 @@
           list=[...state.searchResults];
         }
         dom.playlistSelectRow.style.display='none';
+        dom.playlistSelectTools.style.display='none';
       }else if(activeTab==='favorites'){
         list=state.favorites;
         dom.playlistSelectRow.style.display='none';
+        dom.playlistSelectTools.style.display='none';
       }else{
         renderPlaylistOptions();
         if(mobileLibrary){
           dom.playlistSelectRow.style.display='none';
+          dom.playlistSelectTools.style.display='none';
           syncMobilePlaylistPage();
           if(!state.mobilePlaylistDetailId){
             updatePlaylistInfoLabel();
@@ -5301,7 +5868,8 @@
             return;
           }
         }else{
-          dom.playlistSelectRow.style.display='flex';
+          dom.playlistSelectRow.style.display='grid';
+          dom.playlistSelectTools.style.display='flex';
         }
         if(!state.playlists.length){
           updatePlaylistInfoLabel();
@@ -5326,7 +5894,9 @@
       list.forEach((track,idx)=>{
         const item=document.createElement('div');
         item.className='track-item ripple-target';
+        item.dataset.trackUid=track.uid;
         if(state.currentTrack && state.currentTrack.uid===track.uid) item.classList.add('playing');
+        if(activeTab==='results'&&state.selectedSearchUids.has(track.uid)) item.classList.add('batch-selected');
 
         const index=document.createElement('div');
         index.className='track-index'; index.textContent=idx+1;
@@ -5412,6 +5982,7 @@
     function closePlaylistModal(){
       dom.playlistModal.classList.remove('show');
       createPlaylistForCurrentTrack=false;
+      pendingPlaylistTracks=[];
     }
     function createPlaylist(){
       if(!requireLibraryAccess())return;
@@ -5420,16 +5991,30 @@
       const id='pl-'+Date.now()+'-'+Math.random().toString(16).slice(2);
       const pl={id,name,tracks:[]};
       const shouldSaveCurrent=createPlaylistForCurrentTrack;
+      const batchTracks=[...pendingPlaylistTracks];
+      const shouldSaveBatch=batchTracks.length>0;
       createPlaylistForCurrentTrack=false;
+      pendingPlaylistTracks=[];
       state.playlists.push(pl);
       state.playContext.playlistId=pl.id;
       if(shouldSaveCurrent&&state.currentTrack)pl.tracks.push(state.currentTrack);
+      if(shouldSaveBatch){
+        const seen=new Set();
+        batchTracks.forEach(track=>{
+          if(track&&!seen.has(track.uid)){pl.tracks.push(track);seen.add(track.uid);}
+        });
+      }
       renderPlaylistOptions();
       dom.playlistSelect.value=pl.id;
       saveLibraryToStorage();
       closePlaylistModal();
       renderPlaylistList();
-      showToast(shouldSaveCurrent&&state.currentTrack?t('toastAddedToPlaylist'):t('toastPlaylistCreated'));
+      if(shouldSaveBatch){
+        state.selectedSearchUids.clear();
+        updateBatchToolbar();
+        renderMiniSearchList();
+        showToast(t('searchBatchPlaylistSaved').replace('{added}',String(pl.tracks.length)));
+      }else showToast(shouldSaveCurrent&&state.currentTrack?t('toastAddedToPlaylist'):t('toastPlaylistCreated'));
     }
 
     // ===================== 搜索加载更多 =====================
@@ -5551,7 +6136,10 @@
       dom.limitSelect=$('limit-select');
       dom.loadMoreBtn=$('load-more-btn');
       dom.searchStatus=$('search-status');
-      dom.searchCount=$('search-count');
+      dom.searchBatchToolbar=$('search-batch-toolbar');
+      dom.searchBatchSelectAll=$('search-batch-select-all');
+      dom.searchBatchFavorite=$('search-batch-favorite');
+      dom.searchBatchPlaylist=$('search-batch-playlist');
       dom.searchMiniList=$('search-mini-list');
 
       dom.coverImg=$('cover-img');
@@ -5579,11 +6167,11 @@
       dom.playlistMain=document.querySelector('.playlist-main');
       dom.playlistList=$('playlist-list');
       dom.playlistInfo=$('playlist-info');
-      dom.playlistHeading=$('playlist-heading');
       dom.playlistPanel=document.querySelector('.playlist-panel');
       dom.mobilePlaylistBack=$('mobile-playlist-back');
       dom.mobilePlaylistDelete=$('mobile-playlist-delete');
       dom.playlistSelectRow=$('playlist-select-row');
+      dom.playlistSelectTools=$('playlist-select-tools');
       dom.playlistSelect=$('playlist-select');
       dom.deletePlaylistBtn=$('delete-playlist-btn');
       dom.newPlaylistBtn=$('new-playlist-btn');
@@ -5597,7 +6185,6 @@
       dom.importPlaylistCancel=$('import-playlist-cancel');
       dom.importPlaylistClose=$('import-playlist-close');
       dom.exportPlaylistBtn=$('export-playlist-btn');
-      dom.addCurrentBtn=$('add-current-btn');
 
       dom.playlistModal=$('playlist-modal');
       dom.playlistNameInput=$('playlist-name-input');
@@ -5607,6 +6194,8 @@
 
       dom.savePlaylistModal=$('save-playlist-modal');
       dom.savePlaylistOptions=$('save-playlist-options');
+      dom.savePlaylistTitle=$('save-playlist-title');
+      dom.savePlaylistDescription=$('save-playlist-description');
       dom.savePlaylistCloseBtn=$('save-playlist-close');
       dom.savePlaylistCreateBtn=$('save-playlist-create');
 
@@ -5720,6 +6309,21 @@
         state.searchKeyword=dom.searchInput.value.trim(); state.noMoreResults=false;
         searchAllSources(true);
       });
+      dom.searchBatchSelectAll.addEventListener('change',()=>{
+        const tracks=getInterleavedSearchList();
+        if(!tracks.length){
+          dom.searchBatchSelectAll.checked=false;
+          showToast(t('searchBatchNoResults'));
+          return;
+        }
+        if(dom.searchBatchSelectAll.checked)tracks.forEach(track=>state.selectedSearchUids.add(track.uid));
+        else state.selectedSearchUids.clear();
+        updateBatchToolbar();
+        renderMiniSearchList();
+        renderPlaylistList();
+      });
+      dom.searchBatchFavorite.addEventListener('click',addSelectedToFavorites);
+      dom.searchBatchPlaylist.addEventListener('click',openBatchSavePlaylistModal);
       dom.searchInput.addEventListener('keydown',e=>{
         if(e.key==='Enter'){
           state.searchKeyword=dom.searchInput.value.trim();
@@ -5905,7 +6509,6 @@
         state.playContext.playlistId=dom.playlistSelect.value;
         renderPlaylistList();
       });
-      dom.addCurrentBtn.addEventListener('click',addCurrentToPlaylist);
 
       dom.shortcutToggleBtn.addEventListener('click',()=>{dom.shortcutModal.classList.add('show');});
       dom.shortcutCloseBtn.addEventListener('click',()=>{dom.shortcutModal.classList.remove('show');});
