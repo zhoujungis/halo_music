@@ -1,8 +1,8 @@
 const { app, BrowserWindow, shell } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
 
-const DEFAULT_APP_URL = "https://de6dd854.halo-music.pages.dev";
-const APP_URL = process.env.HALO_MUSIC_URL || DEFAULT_APP_URL;
+const APP_URL = process.env.HALO_MUSIC_URL || "";
 let mainWindow;
 
 function resolveAppUrl() {
@@ -32,12 +32,27 @@ function createWindow() {
     shell.openExternal(url);
     return { action: "deny" };
   });
-  mainWindow.loadURL(resolveAppUrl());
+  const appUrl = resolveAppUrl();
+  if (appUrl) {
+    mainWindow.loadURL(appUrl);
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "..", "index.html"));
+  }
+}
+
+function checkForUpdates() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.checkForUpdates().catch((error) => {
+    console.error("HALO Music update check failed:", error);
+  });
 }
 
 app.setAppUserModelId("com.halomusic.desktop");
 app.whenReady().then(() => {
   createWindow();
+  checkForUpdates();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

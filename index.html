@@ -2621,6 +2621,13 @@
     .announcement-update span { color: #8f978c; font-size: 12px; line-height: 1.7; }
     .announcement-actions { display: flex; justify-content: flex-end; }
     .announcement-actions .btn { min-width: 92px; }
+    .android-update-summary { margin-bottom: 18px; }
+    .android-update-notes { display: grid; gap: 8px; margin: 16px 0 20px; padding: 0; color: #a3aaa0; list-style: none; }
+    .android-update-notes li { position: relative; padding-left: 17px; font-size: 12px; line-height: 1.7; }
+    .android-update-notes li::before { content: ""; position: absolute; left: 2px; top: .7em; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px rgba(200,238,98,.45); }
+    .android-update-actions { gap: 8px; }
+    .android-update-actions .btn { min-width: 92px; }
+    html[data-theme="light"] .android-update-notes { color: #697267; }
     .announcement-contact { display: flex; align-items: center; gap: 8px; margin: -2px 0 18px; color: #8f978c; font-size: 12px; }
     .announcement-contact strong { color: #dce2d7; font-size: 13px; letter-spacing: .04em; user-select: all; }
     .contact-note { margin: 0 0 14px; padding: 11px 13px; color: #26321e; background: linear-gradient(110deg, #dffb91, #bfe878); border-radius: 10px; font-size: 13px; font-weight: 700; line-height: 1.65; box-shadow: 0 8px 22px rgba(200,238,98,.12); }
@@ -3383,6 +3390,30 @@
     </div>
   </div>
 
+  <div id="android-update-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal announcement-modal android-update-modal" role="dialog" aria-modal="true" aria-labelledby="android-update-title" aria-describedby="android-update-description">
+      <div class="modal-header">
+        <div>
+          <p class="announcement-kicker">HALO MUSIC · ANDROID</p>
+          <div id="android-update-title" class="announcement-title">发现新版本</div>
+        </div>
+        <button id="android-update-close" class="modal-close-btn" type="button" aria-label="关闭更新提示">×</button>
+      </div>
+      <p id="android-update-description" class="announcement-copy">新的 Android 版本已经准备好了。</p>
+      <div class="app-download-callout android-update-summary" role="note">
+        <span class="app-download-eyebrow">AVAILABLE NOW</span>
+        <strong id="android-update-version" class="app-download-title">HALO Music</strong>
+        <span id="android-update-current" class="app-download-detail">当前版本</span>
+      </div>
+      <p class="announcement-section-label">本次更新</p>
+      <ul id="android-update-notes" class="android-update-notes"></ul>
+      <div class="announcement-actions android-update-actions">
+        <button id="android-update-later" class="btn btn-ghost ripple-target" type="button">稍后</button>
+        <button id="android-update-install" class="btn ripple-target" type="button">立即更新</button>
+      </div>
+    </div>
+  </div>
+
   <div id="contact-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="contact-title">
       <div class="modal-header">
@@ -3419,6 +3450,9 @@
 
   <script>
   (function(){
+    const APP_VERSION = '1.0.2';
+    const ANDROID_UPDATE_STORAGE_KEY = 'halo-music-android-update-dismissed';
+
     const translations = {
       zh: {
         appTitle:"HALO 音乐广场",
@@ -3693,6 +3727,8 @@
     let nextAudioPreload = null;
     let nextTrackPrepareToken = 0;
     let preparedNextTrack = null;
+    let pendingAndroidUpdateUrl = '';
+    let pendingAndroidUpdateVersion = '';
 
     function $(id){return document.getElementById(id);}
     function t(k){const lang=state.language;return (translations[lang]&&translations[lang][k])||translations.zh[k]||k;}
@@ -5579,6 +5615,88 @@
       try{localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY,'dismissed');}catch(e){}
     }
 
+    function parseVersion(value){
+      const match=String(value==null?'':value).trim().replace(/^v/i,'').match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[-+].*)?$/);
+      if(!match)return null;
+      return [Number(match[1]),Number(match[2]||0),Number(match[3]||0)];
+    }
+
+    function compareVersions(a,b){
+      const av=parseVersion(a);
+      const bv=parseVersion(b);
+      if(!av||!bv)return 0;
+      for(let i=0;i<3;i++){
+        if(av[i]>bv[i])return 1;
+        if(av[i]<bv[i])return -1;
+      }
+      return 0;
+    }
+
+    function isAndroidWebView(){
+      const userAgent=navigator.userAgent||'';
+      if(window.haloDesktop||!/Android/i.test(userAgent))return false;
+      if(/\bwv\b/i.test(userAgent)||/; wv\)/i.test(userAgent))return true;
+      if(!/(Chrome|CriOS|Firefox|FxiOS|EdgA|OPR|SamsungBrowser)\//i.test(userAgent))return true;
+      return /Version\/\d+\.\d+/i.test(userAgent);
+    }
+
+    function closeAndroidUpdateModal(){
+      dom.androidUpdateModal.classList.remove('show');
+      dom.androidUpdateModal.setAttribute('aria-hidden','true');
+      pendingAndroidUpdateUrl='';
+    }
+
+    function dismissAndroidUpdate(version){
+      try{sessionStorage.setItem(ANDROID_UPDATE_STORAGE_KEY,String(version));}catch(e){}
+      closeAndroidUpdateModal();
+    }
+
+    function showAndroidUpdateModal(data,latestVersion){
+      const android=data&&typeof data.android==='object'?data.android:{};
+      const rawUrl=android.url||data.url||'';
+      let updateUrl='';
+      try{
+        const parsed=new URL(rawUrl,window.location.href);
+        if(parsed.protocol==='https:')updateUrl=parsed.href;
+      }catch(e){}
+      pendingAndroidUpdateUrl=updateUrl;
+      pendingAndroidUpdateVersion=String(latestVersion);
+      dom.androidUpdateVersion.textContent=`HALO Music ${latestVersion}`;
+      dom.androidUpdateCurrent.textContent=`当前版本 ${APP_VERSION} · 最新版本 ${latestVersion}`;
+      dom.androidUpdateNotes.replaceChildren();
+      const notes=Array.isArray(data.releaseNotes)?data.releaseNotes:[];
+      (notes.length?notes:['优化播放体验']).forEach(note=>{
+        const item=document.createElement('li');
+        item.textContent=String(note);
+        dom.androidUpdateNotes.appendChild(item);
+      });
+      dom.androidUpdateInstall.disabled=!updateUrl;
+      dom.androidUpdateInstall.title=updateUrl?'下载并安装 Android 更新':'暂时没有可用的下载地址';
+      dom.androidUpdateModal.classList.add('show');
+      dom.androidUpdateModal.setAttribute('aria-hidden','false');
+    }
+
+    async function checkForAndroidUpdate(){
+      if(!isAndroidWebView())return;
+      try{
+        const response=await fetch('/api/version',{cache:'no-store',credentials:'same-origin'});
+        if(!response.ok)return;
+        const data=await response.json();
+        const latestVersion=(data&&data.android&&data.android.version)||data&&data.version;
+        if(compareVersions(latestVersion,APP_VERSION)<=0)return;
+        let dismissedVersion='';
+        try{dismissedVersion=sessionStorage.getItem(ANDROID_UPDATE_STORAGE_KEY)||'';}catch(e){}
+        if(dismissedVersion===String(latestVersion))return;
+        if(dom.announcementModal.classList.contains('show')){
+          window.setTimeout(()=>checkForAndroidUpdate(),500);
+          return;
+        }
+        showAndroidUpdateModal(data,latestVersion);
+      }catch(error){
+        console.warn('Android update check failed:',error);
+      }
+    }
+
     function showAnnouncementIfNeeded(){
       let dismissed=false;
       try{dismissed=localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)==='dismissed';}catch(e){}
@@ -6225,6 +6343,13 @@
       dom.announcementClose=$('announcement-close');
       dom.announcementContact=$('announcement-contact');
       dom.announcementConfirm=$('announcement-confirm');
+      dom.androidUpdateModal=$('android-update-modal');
+      dom.androidUpdateClose=$('android-update-close');
+      dom.androidUpdateLater=$('android-update-later');
+      dom.androidUpdateInstall=$('android-update-install');
+      dom.androidUpdateVersion=$('android-update-version');
+      dom.androidUpdateCurrent=$('android-update-current');
+      dom.androidUpdateNotes=$('android-update-notes');
       dom.contactBtn=$('contact-btn');
       dom.contactModal=$('contact-modal');
       dom.contactClose=$('contact-close');
@@ -6517,6 +6642,13 @@
       dom.announcementClose.addEventListener('click',closeAnnouncementModal);
       dom.announcementConfirm.addEventListener('click',closeAnnouncementModal);
       dom.announcementModal.addEventListener('click',e=>{if(e.target===dom.announcementModal)closeAnnouncementModal();});
+      dom.androidUpdateClose.addEventListener('click',()=>dismissAndroidUpdate(pendingAndroidUpdateVersion));
+      dom.androidUpdateLater.addEventListener('click',()=>dismissAndroidUpdate(pendingAndroidUpdateVersion));
+      dom.androidUpdateInstall.addEventListener('click',()=>{
+        if(!pendingAndroidUpdateUrl)return;
+        window.location.assign(pendingAndroidUpdateUrl);
+      });
+      dom.androidUpdateModal.addEventListener('click',e=>{if(e.target===dom.androidUpdateModal)dismissAndroidUpdate(pendingAndroidUpdateVersion);});
 
       const openContactModal=()=>{dom.contactModal.classList.add('show');dom.contactModal.setAttribute('aria-hidden','false');};
       const closeContactModal=()=>{dom.contactModal.classList.remove('show');dom.contactModal.setAttribute('aria-hidden','true');};
@@ -6557,6 +6689,7 @@
         const shortcutOpen=dom.shortcutModal.classList.contains('show');
         const loginOpen=dom.loginModal.classList.contains('show');
         const announcementOpen=dom.announcementModal.classList.contains('show');
+        const androidUpdateOpen=dom.androidUpdateModal.classList.contains('show');
         const contactOpen=dom.contactModal.classList.contains('show');
         const donateOpen=dom.donateModal.classList.contains('show');
 
@@ -6569,10 +6702,11 @@
           if(savePlaylistOpen)closeSavePlaylistModal();
           if(shortcutOpen)dom.shortcutModal.classList.remove('show');
           if(loginOpen)closeLoginModal();
+          if(androidUpdateOpen)dismissAndroidUpdate(pendingAndroidUpdateVersion);
           return;
         }
 
-        if(playlistOpen || importPlaylistOpen || savePlaylistOpen || shortcutOpen || loginOpen || announcementOpen || contactOpen || donateOpen){
+        if(playlistOpen || importPlaylistOpen || savePlaylistOpen || shortcutOpen || loginOpen || announcementOpen || androidUpdateOpen || contactOpen || donateOpen){
           return;
         }
 
@@ -6615,6 +6749,7 @@
       updateAuthUI();
       loadAuthSession();
       showAnnouncementIfNeeded();
+      window.setTimeout(checkForAndroidUpdate,750);
     }
 
     document.addEventListener('DOMContentLoaded',init);

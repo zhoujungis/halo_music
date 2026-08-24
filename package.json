@@ -1,6 +1,6 @@
 {
   "name": "halo-music",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "HALO Music desktop client",
@@ -20,10 +20,20 @@
     "electron-builder": "^26.0.12",
     "wrangler": "^4.0.0"
   },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
   "main": "electron/main.cjs",
   "build": {
     "appId": "com.halomusic.desktop",
     "productName": "HALO Music",
+    "forceCodeSigning": false,
+    "publish": {
+      "provider": "github",
+      "owner": "zhoujungis",
+      "repo": "halo_music",
+      "releaseType": "release"
+    },
     "icon": "icon.svg",
     "directories": {
       "output": "release"
@@ -42,6 +52,8 @@
         "nsis",
         "portable"
       ],
+      "signExecutable": false,
+      "signAndEditExecutable": false,
       "legalTrademarks": "HALO Music"
     },
     "electronDownload": {
