@@ -2,12 +2,14 @@ const { app, BrowserWindow, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
 
-const APP_URL = process.env.HALO_MUSIC_URL || "";
+const DEFAULT_APP_URL = "https://halo-music.pages.dev";
+const APP_URL = process.env.HALO_MUSIC_URL || DEFAULT_APP_URL;
 let mainWindow;
 
 function resolveAppUrl() {
   const supplied = process.argv.find((argument) => argument.startsWith("--url="));
-  return supplied ? supplied.slice("--url=".length) : APP_URL;
+  const suppliedUrl = supplied ? supplied.slice("--url=".length).trim() : "";
+  return suppliedUrl || APP_URL;
 }
 
 function createWindow() {

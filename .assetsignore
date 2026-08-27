@@ -13,7 +13,7 @@ electron/
 build/
 scripts/
 android/
-release
-release/**
+/release/
+/release/**
 capacitor.config.json
 windows/
