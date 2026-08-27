@@ -3158,7 +3158,7 @@
           </div>
         </div>
 
-        <audio id="audio" preload="metadata"></audio>
+        <audio id="audio" preload="auto"></audio>
       </section>
 
       <!-- 右：播放列表 -->
@@ -3450,7 +3450,7 @@
 
   <script>
   (function(){
-    const APP_VERSION = '1.0.2';
+    const APP_VERSION = '1.0.3';
     const ANDROID_UPDATE_STORAGE_KEY = 'halo-music-android-update-dismissed';
 
     const translations = {
@@ -3725,6 +3725,7 @@
     let createPlaylistForCurrentTrack = false;
     let pendingPlaylistTracks = [];
     let nextAudioPreload = null;
+    let activePlaybackBlobUrl = '';
     let nextTrackPrepareToken = 0;
     let preparedNextTrack = null;
     let pendingAndroidUpdateUrl = '';
@@ -5281,7 +5282,12 @@
         renderLyrics();
         if(!track.audioUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
         audioCandidateIndex=Math.max(0,(track.audioCandidates||[]).indexOf(track.audioUrl));
-        dom.audio.src=track.audioUrl;
+        const preloadedUrl=await takePreloadedAudio(track);
+        releaseActivePlaybackBlob();
+        activePlaybackBlobUrl=preloadedUrl;
+        dom.audio.autoplay=true;
+        dom.audio.src=preloadedUrl||track.audioUrl;
+        dom.audio.load();
         const playback=dom.audio.play();
         await playback;
         state.isPlaying=true;
@@ -5343,13 +5349,56 @@
 
     function preloadAudio(track){
       if(!track?.audioUrl)return;
-      if(!nextAudioPreload){
-        nextAudioPreload=new Audio();
-        nextAudioPreload.preload='auto';
+      const url=new URL(track.audioUrl,window.location.href).href;
+      if(nextAudioPreload?.url===url)return;
+      stopPreloadedAudio();
+      const controller=new AbortController();
+      const entry={url,blobUrl:'',controller,promise:null};
+      nextAudioPreload=entry;
+      entry.promise=fetch(url,{cache:'force-cache',credentials:'same-origin',signal:controller.signal})
+        .then(response=>{
+          if(!response.ok)throw new Error(`prefetch failed: ${response.status}`);
+          return response.blob();
+        })
+        .then(blob=>{
+          if(nextAudioPreload!==entry)return;
+          entry.blobUrl=URL.createObjectURL(blob);
+        })
+        .catch(error=>{
+          if(error?.name!=='AbortError')console.warn('next audio prefetch failed',error);
+          if(nextAudioPreload===entry)nextAudioPreload=null;
+        });
+    }
+
+    function stopPreloadedAudio(){
+      const entry=nextAudioPreload;
+      if(!entry)return;
+      nextAudioPreload=null;
+      try{entry.controller?.abort();}catch(error){}
+      if(entry.blobUrl)URL.revokeObjectURL(entry.blobUrl);
+    }
+
+    async function takePreloadedAudio(track){
+      const entry=nextAudioPreload;
+      const url=track?.audioUrl?new URL(track.audioUrl,window.location.href).href:'';
+      if(!entry)return '';
+      if(entry.url!==url){
+        stopPreloadedAudio();
+        return '';
       }
-      if(nextAudioPreload.src===track.audioUrl)return;
-      nextAudioPreload.src=track.audioUrl;
-      nextAudioPreload.load();
+      if(!entry.blobUrl&&entry.promise){
+        try{await entry.promise;}catch(error){}
+      }
+      nextAudioPreload=null;
+      if(entry.blobUrl)return entry.blobUrl;
+      try{entry.controller?.abort();}catch(error){}
+      return '';
+    }
+
+    function releaseActivePlaybackBlob(){
+      if(!activePlaybackBlobUrl)return;
+      URL.revokeObjectURL(activePlaybackBlobUrl);
+      activePlaybackBlobUrl='';
     }
 
     function prepareUpcomingTrack(){
@@ -5357,6 +5406,7 @@
       const currentUid=state.currentTrack?.uid||'';
       if(!target||target.repeat||!target.track||target.track.uid===currentUid){
         preparedNextTrack=null;
+        stopPreloadedAudio();
         return;
       }
       const token=++nextTrackPrepareToken;
@@ -6547,7 +6597,10 @@
         if(next&&next!==track.audioUrl){
           audioCandidateIndex+=1;
           track.audioUrl=next;
+          releaseActivePlaybackBlob();
+          dom.audio.autoplay=true;
           dom.audio.src=next;
+          dom.audio.load();
           dom.audio.play().catch(()=>{});
           return;
         }

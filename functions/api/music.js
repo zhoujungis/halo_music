@@ -952,8 +952,8 @@ async function streamLockedCandidate(cacheKey, getCandidates, lockedSource, requ
     candidate = candidates.find((item) => item.source === lockedSource);
   }
   if (!candidate) throw Object.assign(new Error("已锁定的播放线路已失效，请重新点击播放"), { status: 409 });
-  const range = requestObject.headers.get("range") || "bytes=0-";
   const referer = cacheKey.startsWith("qq:") ? "https://y.qq.com/" : "https://www.kuwo.cn/";
+  const range = requestObject.headers.get("range") || "bytes=0-";
   const response = await request(candidate.url, { headers: { range, referer } }, AUDIO_TIMEOUT_MS);
   if (!isAudioResponse(response) || !isPlausiblyComplete(response, durationSeconds)) {
     response.body?.cancel();
