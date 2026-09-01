@@ -1,5 +1,4 @@
 /*
- * Online search adapters are adapted from CharlesPikachu/musicsquare
  * (Apache-2.0). The UI and player integration in this file are project-specific.
  */
 
