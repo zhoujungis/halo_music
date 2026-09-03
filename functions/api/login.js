@@ -11,19 +11,32 @@ export async function onRequestPost({ request, env }) {
   const password = body.password || "";
   if (!username || !password) return json({ error: "用户名和密码不能为空" }, 400);
 
-  const account = await env.DB.prepare(
-    "SELECT username, password_hash, password_salt FROM music_users WHERE username = ?",
-  ).bind(username).first();
-  if (!account) return json({ error: "用户名不存在，请先注册" }, 404);
+  let account;
+  try {
+    account = await env.DB.prepare(
+      'SELECT username, password_hash, password_salt FROM "user" WHERE username = ?',
+    ).bind(username).first();
+  } catch (error) {
+    console.error("Login account query failed", error);
+    return json({ error: "账号服务未初始化，请先执行 schema.sql" }, 503);
+  }
+  if (!account) return json({ error: "用户名不存在，请联系管理员开通账号" }, 404);
 
   const passwordHash = await hashPassword(password, account.password_salt);
   if (passwordHash !== account.password_hash) return json({ error: "密码错误" }, 401);
 
   const token = crypto.randomUUID();
   const now = Date.now();
-  await env.DB.prepare(
-    "INSERT INTO music_sessions (token, username, expires_at) VALUES (?, ?, ?)",
-  ).bind(token, account.username, now + SESSION_TTL_MS).run();
+  try {
+    await env.DB.prepare('UPDATE "user" SET last_login_at = ? WHERE username = ?')
+      .bind(now, account.username).run();
+    await env.DB.prepare(
+      "INSERT INTO music_sessions (token, username, expires_at) VALUES (?, ?, ?)",
+    ).bind(token, account.username, now + SESSION_TTL_MS).run();
+  } catch (error) {
+    console.error("Login session creation failed", error);
+    return json({ error: "登录服务暂时不可用，请检查数据库表是否已初始化" }, 503);
+  }
 
   return json({ ok: true, username: account.username }, 200, { "Set-Cookie": sessionCookie(token) });
 }

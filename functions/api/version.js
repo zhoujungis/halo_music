@@ -1,4 +1,4 @@
-const CURRENT_VERSION = "1.0.3";
+const CURRENT_VERSION = "2.0.0";
 const DEFAULT_RELEASE_NOTES = [
   "优化播放体验",
   "修复部分歌曲无法播放的问题",

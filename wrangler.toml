@@ -2,6 +2,11 @@ name = "halo-music"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "."
 
+[vars]
+# Username allowlist for the read-only /admin dashboard. Provision this user
+# directly in D1 because public registration is disabled.
+ADMIN_USERNAME = "admin"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "halo-music-db"

@@ -32,13 +32,14 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 
 | 模块 | 能力 | 主要实现 |
 | --- | --- | --- |
-| 多源搜索 | 网易云、QQ 音乐、酷我、JOOX；按音源勾选、分页加载、交错展示 | `index.html`、`/api/music` |
+| 多源搜索 | 网易云、QQ 音乐；默认聚合搜索、结果去重；QQ 播放失效时按歌手、歌名和时长从哔哩哔哩补位 | `index.html`、`/api/music` |
 | 播放器 | 播放/暂停、切歌、进度拖动、音量、静音、列表/单曲/随机播放 | `index.html` |
 | 歌词 | LRC 时间轴解析、动态高亮、点击歌词跳转到时间点 | `index.html`、`/api/music` |
 | 收藏 | 单曲收藏、搜索结果批量收藏、收藏列表 | `index.html`、`/api/library` |
 | 自建歌单 | 新建、删除、导入、导出、添加/移除歌曲 | `index.html`、`/api/library` |
 | 歌单导入 | 网易云、汽水音乐、QQ 音乐公开歌单链接，以及 HALO JSON | `functions/api/import-playlist.js` |
-| 账号 | 注册、登录、退出、30 天会话、D1 库同步 | `functions/api/*.js` |
+| 账号 | 登录、退出、30 天会话、D1 库同步；公开注册已关闭 | `functions/api/*.js` |
+| 管理 | `/admin` 管理面板，查看账号、会话、收藏和缓存概况 | `admin/`、`functions/api/admin.js` |
 | 缓存 | 搜索缓存、音源解析缓存、内存 LRU、D1 二级缓存 | `functions/api/music.js`、`schema.sql` |
 | 桌面端 | Electron 原生窗口、外链交给系统浏览器、Windows 安装包/便携版 | `electron/`、`package.json` |
 
@@ -46,7 +47,7 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 
 ### 桌面端布局
 
-桌面端是三栏工作区：左侧搜索，中间播放器与歌词，右侧播放列表。右侧歌单面板包含“搜索结果”“我的收藏”“自建歌单”三个标签；不同标签会切换歌曲列表、歌单选择器和管理操作。
+桌面端默认进入极简歌词视图，仅显示唱片动画和歌词。右上角“设置”可切换到搜索、我的歌单或播放列表工作区。
 
 ```mermaid
 flowchart LR
@@ -76,7 +77,7 @@ flowchart TB
     subgraph Client[客户端]
         Browser[浏览器]
         Electron[Electron BrowserWindow]
-        UI[index.html\nHTML + CSS + runtime JS]
+        UI[index.html + styles.css + major.js]
         Audio[HTMLAudioElement]
         Local[localStorage\n主题 / 收藏 / 歌单]
     end
@@ -88,8 +89,6 @@ flowchart TB
     subgraph Providers[上游平台]
         Netease[网易云]
         QQ[QQ 音乐]
-        Kuwo[酷我]
-        Joox[JOOX / 备用解析]
         Qishui[汽水音乐歌单页]
     end
     Browser --> Static
@@ -100,16 +99,13 @@ flowchart TB
     UI --> Audio
     Functions --> D1
     Functions --> QQ
-    Functions --> Kuwo
     Functions --> Qishui
     UI --> Netease
-    UI --> Joox
-    Functions --> Joox
 ```
 
 ### 分层职责
 
-- **展示层**：`index.html` 包含页面结构、响应式 CSS、主题和国际化文案。
+- **展示层**：`index.html` 提供页面结构，`styles.css` 提供响应式 CSS，`major.js` 负责主题和国际化交互。
 - **交互状态层**：运行时 `state` 保存搜索、播放、歌词、登录、收藏、歌单和批量选择状态。
 - **音源适配层**：客户端和 `functions/api/music.js` 把不同平台字段归一化成歌曲对象。
 - **鉴权层**：`_auth.js` 提供密码哈希、Cookie 会话、用户识别和统一 JSON 响应。
@@ -120,13 +116,15 @@ flowchart TB
 
 ```text
 .
-├─ index.html                 # Pages 入口：页面、样式和浏览器端运行时
-├─ app.js                     # 前端辅助脚本/兼容代码
-├─ styles.css                 # 可复用样式资源
+├─ index.html                 # Pages 入口：页面结构
+├─ major.js                  # 浏览器端运行时
+├─ styles.css                 # 页面样式
+├─ admin/                     # /admin 管理页面
 ├─ functions/api/
 │  ├─ _auth.js                # PBKDF2、Cookie、会话校验、JSON 响应
 │  ├─ login.js                # POST /api/login
-│  ├─ register.js             # POST /api/register
+│  ├─ register.js             # POST /api/register（已关闭）
+│  ├─ admin.js                # GET /api/admin
 │  ├─ logout.js               # POST /api/logout
 │  ├─ me.js                   # GET /api/me
 │  ├─ library.js              # GET/PUT /api/library
@@ -140,7 +138,6 @@ flowchart TB
 ├─ _routes.json               # 仅将 /api/* 路由交给 Functions
 ├─ *test.js                   # Node 原生测试：鉴权、导入、播放和音源
 ├─ icon.svg                   # 应用图标
-├─ contact.JPG / donate.JPG   # 联系与赞助弹窗资源
 └─ package.json               # npm、Wrangler、Electron 和打包脚本
 ```
 
@@ -155,20 +152,13 @@ sequenceDiagram
     participant F as /api/music
     participant C as 缓存层
     participant P as 音乐平台
-    U->>V: 输入关键词并选择音源
-    V->>V: 为启用音源创建搜索任务
-    alt 网易云 / JOOX
-        V->>P: 请求搜索接口或兼容解析服务
-    else QQ / 酷我
-        V->>F: GET /api/music?action=*_search
-        F->>C: 查询内存 LRU / D1 search_cache
-        alt 缓存未命中
-            F->>P: 主接口与备用接口尝试
-            P-->>F: 原始结果
-            F->>C: 写入短期搜索缓存
-        end
-        F-->>V: 统一歌曲列表
-    end
+    U->>V: 输入关键词
+    V->>V: 同时创建网易云和 QQ 搜索任务
+    V->>P: 请求网易云搜索接口
+    V->>F: GET /api/music?action=qq_search
+    F->>C: 查询内存 LRU / D1 search_cache
+    F-->>V: 统一 QQ 歌曲列表
+    P-->>V: 网易云歌曲列表
     V->>V: 去重、交错排序、渲染复选框
 ```
 
@@ -176,7 +166,7 @@ sequenceDiagram
 
 1. 点击歌曲行后，页面更新 `state.currentTrack` 和 `state.playContext`。
 2. 客户端检查已有详情、音频地址和预加载的下一首歌曲。
-3. 需要服务端解析时请求 `/api/music?action=qq_audio|kuwo_audio`。
+3. 需要服务端解析时请求 `/api/music?action=qq_audio`。
 4. 服务端优先复用缓存并验证候选音频；失败时客户端可刷新解析或切换备用音源。
 5. 最终 URL 设置到 `<audio>`，`timeupdate` 同步驱动进度条、歌词高亮和当前歌曲样式。
 
@@ -200,7 +190,7 @@ flowchart LR
 
 | 方法 | 路径 | 是否登录 | 作用 |
 | --- | --- | --- | --- |
-| `POST` | `/api/register` | 否 | 创建账号并立即写入会话 Cookie |
+| `POST` | `/api/register` | 否 | 已关闭，返回 410 |
 | `POST` | `/api/login` | 否 | 校验账号密码并创建会话 |
 | `POST` | `/api/logout` | 否 | 删除当前会话并清理 Cookie |
 | `GET` | `/api/me` | 否 | 返回当前用户名，未登录返回 401 |
@@ -214,11 +204,14 @@ flowchart LR
 | `action` | 主要参数 | 说明 |
 | --- | --- | --- |
 | `qq_search` | `q`, `limit` | QQ 音乐搜索，含官方接口和备用源 |
-| `kuwo_search` | `q`, `limit` | 酷我搜索，含官方接口和备用源 |
-| `qq_detail` / `kuwo_detail` | `id` 及音源字段 | 获取详情、封面、歌词或可播放信息 |
-| `qq_audio` / `kuwo_audio` | `id`, `duration`, `refresh` | 解析并验证可播放音频 |
+| `qq_detail` | `id` 及音源字段 | 获取详情、封面、歌词或可播放信息 |
+| `qq_audio` | `id`, `duration`, `refresh` | 解析并验证可播放音频 |
+| `bili_search` | `q`, `title`, `artist`, `duration` | QQ 音频失效时搜索匹配的哔哩哔哩视频 |
+| `bili_audio` | `bvid`/`aid`, `page`, `duration` | 代理匹配视频的可播放音频流 |
 
 服务端会限制关键词长度、返回数量和上游请求时间，避免单个平台异常拖垮整次请求。
+
+管理面板使用 `ADMIN_USERNAME`（或逗号分隔的 `ADMIN_USERNAMES`）作为管理员白名单。默认配置为 `admin`；请先在 D1 中为该用户名建立账号，再访问 `/admin`。
 
 ## 数据模型与持久化
 
@@ -227,7 +220,7 @@ flowchart LR
 ```js
 {
   uid: "qq-歌曲标识",
-  source: "qq",                 // netease / qq / kuwo / joox
+  source: "qq",                 // netease / qq（QQ 失效时运行时切换 bilibili）
   title: "歌曲名",
   artist: "歌手",
   album: "专辑",
@@ -247,7 +240,7 @@ flowchart LR
 
 | 表 | 关键字段 | 用途 |
 | --- | --- | --- |
-| `music_users` | `username`, `password_hash`, `password_salt` | 账号与密码材料 |
+| `user` | `username`, `password_hash`, `password_salt`, `last_login_at` | 账号、密码材料与最后登录时间（UTC+8 展示） |
 | `music_sessions` | `token`, `username`, `expires_at` | 30 天登录会话 |
 | `music_libraries` | `username`, `library_json`, `updated_at` | 用户收藏和自建歌单 JSON |
 | `music_cache` | `key`, `value_json`, `expires_at` | 音频/详情共享缓存 |
@@ -305,7 +298,7 @@ npx wrangler d1 execute halo-music-db --local --file schema.sql
 npm run dev
 ```
 
-打开 Wrangler 输出的本地地址即可访问。首次使用请在页面注册本地账号；项目不内置通用测试账号和密码。
+打开 Wrangler 输出的本地地址即可访问。公开注册已关闭，账号需由管理员直接写入 D1；项目不内置通用测试账号和密码。
 
 ## 数据库初始化
 
@@ -344,9 +337,9 @@ npm test
 
 测试覆盖：
 
-- 注册、登录、会话和登出数据库流程
+- 登录、会话和登出数据库流程（公开注册已关闭）
 - 收藏和自建歌单按用户持久化
-- 网易云、QQ、酷我、JOOX、汽水音乐字段归一化
+- 网易云、QQ、汽水音乐字段归一化
 - 歌单分享链接识别与导入
 - QQ 签名算法和分页请求体
 - LRC 时间标签清洗与歌词切分
@@ -421,7 +414,7 @@ npx electron . --url=https://your-project.pages.dev
 
 ### 为什么搜索能用但播放提示登录？
 
-搜索和浏览是公开能力；音频详情解析和播放需要认证。请先注册或登录，本地环境没有预置账号。
+搜索和浏览是公开能力；音频详情解析和播放需要认证。公开注册已关闭，请使用管理员预置的账号登录；本地环境没有预置账号。
 
 ### 为什么收藏刷新后还在，但另一台设备没有？
 
@@ -453,4 +446,4 @@ npx electron . --url=https://your-project.pages.dev
 
 ## 许可证与第三方声明
 
-项目许可证见 [LICENSE](LICENSE)，第三方服务和代码说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+项目许可证见 [LICENSE](LICENSE)。

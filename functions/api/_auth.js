@@ -81,3 +81,16 @@ export async function authenticatedUsername(request, env) {
   }
   return session.username;
 }
+
+export function isAdminUsername(username, env) {
+  const configured = String(env?.ADMIN_USERNAMES || env?.ADMIN_USERNAME || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return Boolean(username && configured.includes(username));
+}
+
+export async function authenticatedAdmin(request, env) {
+  const username = await authenticatedUsername(request, env);
+  return username && isAdminUsername(username, env) ? username : null;
+}

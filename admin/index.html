@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HALO Music Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <p class="eyebrow">HALO MUSIC</p>
+        <h1>管理面板</h1>
+      </div>
+      <div class="header-actions">
+        <span id="admin-identity" class="identity"></span>
+        <button id="logout-button" class="button secondary" type="button" hidden>退出</button>
+      </div>
+    </header>
+
+    <section id="login-view" class="surface login-surface">
+      <h2>管理员登录</h2>
+      <p id="login-message" class="muted">使用已配置的管理员账号登录。</p>
+      <form id="login-form" class="login-form">
+        <label>用户名<input id="username" name="username" autocomplete="username" required></label>
+        <label>密码<input id="password" name="password" type="password" autocomplete="current-password" required></label>
+        <button class="button" type="submit">登录</button>
+      </form>
+    </section>
+
+    <section id="dashboard-view" hidden>
+      <div id="dashboard-message" class="notice" hidden></div>
+      <div id="stats" class="stats-grid"></div>
+      <section class="surface">
+        <div class="section-heading"><h2>最近账号</h2><button id="refresh-button" class="button secondary" type="button">刷新</button></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>用户名</th><th>创建时间</th><th>最后登录时间（UTC+8）</th></tr></thead>
+            <tbody id="users"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="admin.js"></script>
+</body>
+</html>

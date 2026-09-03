@@ -1,6 +1,6 @@
 {
   "name": "halo-music",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "HALO Music desktop client",
@@ -41,10 +41,9 @@
     "files": [
       "electron/**/*",
       "index.html",
-      "app.js",
+      "major.js",
       "styles.css",
-      "contact.JPG",
-      "donate.JPG",
+      "admin/**/*",
       "package.json"
     ],
     "win": {

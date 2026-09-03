@@ -1,12 +1,13 @@
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36";
 const API_TIMEOUT_MS = 5_500;
 const AUDIO_TIMEOUT_MS = 12_000;
+const BILI_SEARCH_TIMEOUT_MS = 9_000;
+const BILI_AUDIO_TIMEOUT_MS = 15_000;
 // tang 慢窗口实测 15~20 秒才应答：给它 22 秒，慢窗口下服务器也能解析成功
 // 并写入永久缓存，之后所有用户直接命中缓存秒回。
 const TANG_TIMEOUT_MS = 22_000;
 // Hard deadline for one detail request: bounds the worst case when upstream
-// lines hang (e.g. tang timing out), so the client can fail over to JOOX
-// promptly instead of watching a spinner for 30+ seconds.
+// lines hang instead of watching a spinner for 30+ seconds.
 const DETAIL_TIMEOUT_MS = 15_000;
 // QQ 详情需要覆盖 tang 慢窗口（22s 解析 + 校验时间），单独放宽到 35s。
 const QQ_DETAIL_TIMEOUT_MS = 35_000;
@@ -159,7 +160,11 @@ async function withDetailDeadline(run, timeoutMs = DETAIL_TIMEOUT_MS) {
 }
 
 async function readJson(response) {
-  if (!response.ok && response.status !== 206) throw new Error(`上游返回 ${response.status}`);
+  if (!response.ok && response.status !== 206) {
+    const error = new Error(`上游返回 ${response.status}`);
+    error.upstreamStatus = response.status;
+    throw error;
+  }
   const text = await response.text();
   if (!text.trim()) throw new Error("上游返回空内容");
   const normalized = text
@@ -175,6 +180,11 @@ function clean(value) {
     .replace(/<[^>]*>/g, "")
     .replace(/&amp;/gi, "&")
     .replace(/&nbsp;/gi, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/<[^>]*>/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -257,13 +267,6 @@ async function compatibleQQCacheGet(cacheKey, mediaMid, env) {
   return null;
 }
 
-function kuwoCover(value) {
-  const raw = clean(value);
-  if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw.replace(/^http:/i, "https:");
-  return `https://img4.kuwo.cn/${raw.replace(/^\/+/, "")}`;
-}
-
 export function normalizeQQOfficial(data) {
   const songs = data?.req?.data?.body?.song?.list || data?.req?.data?.song?.list || [];
   if (!Array.isArray(songs)) return [];
@@ -321,22 +324,6 @@ export function normalizeQQProxy(data) {
       pay: firstText(song?.pay, song?.vip),
     };
   }).filter((song) => song.mid && song.name);
-}
-
-export function normalizeKuwoSearch(data) {
-  const songs = data?.abslist || data?.ABSLIST || data?.data?.list || data?.data || [];
-  if (!Array.isArray(songs)) return [];
-  return songs.map((song) => {
-    const rid = firstText(song?.MUSICRID, song?.musicrid, song?.rid, song?.id).replace(/^MUSIC_/i, "");
-    return {
-      rid,
-      name: firstText(song?.SONGNAME, song?.NAME, song?.name, song?.title),
-      artist: firstText(song?.ARTIST, song?.artist),
-      album: firstText(song?.ALBUM, song?.album),
-      cover: kuwoCover(firstText(song?.hts_MVPIC, song?.MVPIC, song?.web_albumpic_short, song?.pic, song?.cover)),
-      duration: Number(song?.DURATION || song?.duration) || 0,
-    };
-  }).filter((song) => song.rid && song.name);
 }
 
 function qqSearchBody(keyword, limit) {
@@ -437,48 +424,198 @@ async function searchQQ(keyword, limit, env, waitUntil) {
   return cachedSearch(`search:qq:${keyword}:${limit}`, () => fastestSearch(sources), env, waitUntil);
 }
 
-function kuwoSearchParams(keyword, limit) {
-  return new URLSearchParams({
-    vipver: "1", client: "kt", ft: "music", cluster: "0", strategy: "2012", encoding: "utf8",
-    rformat: "json", mobi: "1", issubtitle: "1", show_copyright_off: "1", pn: "0", rn: String(limit), all: keyword,
+export function biliDurationSeconds(value) {
+  const text = clean(value);
+  if (!text) return 0;
+  const parts = text.split(":").map((part) => Number(part));
+  if (parts.some((part) => !Number.isFinite(part))) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return Number(parts[0]) || 0;
+}
+
+function biliVideoId(value) {
+  const text = clean(value);
+  const match = text.match(/\/(BV[0-9A-Za-z]+)(?:[/?#]|$)/i) || text.match(/\b(BV[0-9A-Za-z]+)\b/i);
+  return match ? match[1] : "";
+}
+
+function biliAid(value) {
+  const text = clean(value);
+  const match = text.match(/(?:^|[/?#])av?(\d+)(?:[/?#]|$)/i) || text.match(/^\d+$/);
+  return match ? (match[1] || match[0]) : "";
+}
+
+export function normalizeBiliSearchResults(data, targetTitle = "", targetArtist = "", targetDuration = 0) {
+  const rawResults = Array.isArray(data?.data?.result) ? data.data.result : [];
+  // /search/all/v2 returns modules ({ result_type: "video", data: [...] }),
+  // while the legacy /search/type endpoint returned a flat video array.
+  const rows = rawResults.flatMap((entry) => {
+    if (entry?.result_type === "video" && Array.isArray(entry.data)) return entry.data;
+    if (entry?.type === "video" || entry?.bvid || entry?.aid) return [entry];
+    return [];
   });
+  const titleKey = normalizedMatchText(targetTitle);
+  const artistKey = normalizedMatchText(targetArtist);
+  return rows.map((item, index) => {
+    const bvid = firstText(item?.bvid, biliVideoId(item?.arcurl), biliVideoId(item?.url));
+    const aid = firstText(item?.aid, biliAid(item?.arcurl), biliAid(item?.url));
+    const title = firstText(item?.title, item?.description);
+    const artist = firstText(item?.author, item?.up_name);
+    const duration = biliDurationSeconds(item?.duration);
+    const cleanPic = firstText(item?.pic, item?.thumbnail).replace(/^\/\//, "https:");
+    const titleKeyCandidate = normalizedMatchText(title);
+    const artistKeyCandidate = normalizedMatchText(artist);
+    const titleMatch = titleKey && titleKeyCandidate && (titleKeyCandidate.includes(titleKey) || titleKey.includes(titleKeyCandidate));
+    const artistMatch = artistKey && artistKeyCandidate && (artistKeyCandidate.includes(artistKey) || artistKey.includes(artistKeyCandidate));
+    const durationDiff = targetDuration > 0 && duration > 0 ? Math.abs(duration - targetDuration) : 0;
+    const durationTolerance = targetDuration > 0 ? Math.max(6, targetDuration * 0.1) : 0;
+    let score = Math.max(0, 20 - index * 0.2);
+    if (titleKeyCandidate === titleKey) score += 70;
+    else if (titleMatch) score += 42;
+    if (artistKeyCandidate === artistKey) score += 40;
+    else if (artistMatch) score += 24;
+    if (targetDuration > 0 && duration > 0) {
+      score += Math.max(0, 35 - durationDiff * 1.5);
+      if (durationDiff <= durationTolerance) score += 22;
+    }
+    return {
+      source: "bilibili",
+      bvid,
+      aid,
+      page: 1,
+      title,
+      artist,
+      duration,
+      cover: cleanPic,
+      pageUrl: bvid ? `https://www.bilibili.com/video/${bvid}` : "",
+      score,
+    };
+  })
+    .filter((item) => (item.bvid || item.aid) && item.title)
+    .sort((a, b) => b.score - a.score)
+    .map(({ score, ...item }) => item);
 }
 
-async function searchKuwoEndpoint(base, keyword, limit) {
-  const response = await request(`${base}?${kuwoSearchParams(keyword, limit)}`, {
-    headers: { referer: "https://www.kuwo.cn/" },
-  });
-  return normalizeKuwoSearch(await readJson(response)).slice(0, limit);
+async function searchBilibili(keyword, targetTitle, targetArtist, targetDuration, limit, env, waitUntil) {
+  const query = clean(keyword || `${targetArtist} ${targetTitle}`);
+  const cacheKey = `search:bilibili:${query}:${targetTitle}:${targetArtist}:${targetDuration}:${limit}`;
+  return cachedSearch(cacheKey, async () => {
+    const params = new URLSearchParams({
+      search_type: "video",
+      keyword: query,
+      page: "1",
+      pagesize: String(Math.min(20, Math.max(5, limit * 2))),
+      order: "totalrank",
+    });
+    const response = await request(`https://api.bilibili.com/x/web-interface/search/all/v2?${params}`, {
+      headers: { referer: "https://search.bilibili.com/", origin: "https://search.bilibili.com" },
+    }, BILI_SEARCH_TIMEOUT_MS);
+    const data = await readJson(response);
+    if (data?.code !== 0) throw new Error(`Bilibili search failed (${data?.code ?? "unknown"})`);
+    const list = normalizeBiliSearchResults(data, targetTitle, targetArtist, targetDuration).slice(0, limit);
+    return { list, source: "bilibili", errors: [] };
+  }, env, waitUntil);
 }
 
-async function searchKuwoMeting(host, keyword, limit) {
-  const response = await request(`${host}?server=kuwo&type=search&id=${encodeURIComponent(keyword)}`);
-  const songs = await readJson(response);
-  return normalizeKuwoSearch({ data: songs }).slice(0, limit);
+function validBiliVideoId(value) {
+  return /^BV[0-9A-Za-z]{6,}$/i.test(clean(value));
 }
 
-async function searchKuwo(keyword, limit, env, waitUntil) {
-  return cachedSearch(
-    `search:kuwo:${keyword}:${limit}`,
-    () => firstSearch(
-      { name: "kuwo-official-www", run: () => searchKuwoEndpoint("https://www.kuwo.cn/search/searchMusicBykeyWord", keyword, limit) },
-      [
-        { name: "kuwo-official-search", run: () => searchKuwoEndpoint("https://search.kuwo.cn/r.s", keyword, limit) },
-        { name: "kuwo-meting-injahow", run: () => searchKuwoMeting("https://api.injahow.cn/meting/", keyword, limit) },
-        { name: "kuwo-meting-qijieya", run: () => searchKuwoMeting("https://api.qijieya.cn/meting/", keyword, limit) },
-      ],
-    ),
-    env,
-    waitUntil,
-  );
+function validBiliAid(value) {
+  return /^\d{1,20}$/.test(clean(value));
+}
+
+async function fetchBiliView(videoId, aid, signal = null) {
+  const params = new URLSearchParams();
+  if (videoId) params.set("bvid", videoId);
+  else params.set("aid", aid);
+  const response = await request(`https://api.bilibili.com/x/web-interface/view?${params}`, {
+    headers: { referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+  }, BILI_SEARCH_TIMEOUT_MS, signal);
+  const data = await readJson(response);
+  if (data?.code !== 0 || !data?.data) throw new Error(`Bilibili video detail failed (${data?.code ?? "unknown"})`);
+  return data.data;
+}
+
+async function fetchBiliPlayUrl(videoId, aid, cid, signal = null) {
+  // DASH exposes an audio-only stream and avoids downloading the video track.
+  // Keep a low-quality progressive MP4 fallback for older/limited videos.
+  const requests = [
+    { fnval: 16, qn: 64, platform: "pc" },
+    { fnval: 16, qn: 32, platform: "pc" },
+    { fnval: 1, qn: 32, platform: "html5" },
+    { fnval: 1, qn: 16, platform: "html5" },
+  ];
+  let lastError = null;
+  const streamCandidateUrl = (item) => {
+    const backup = item?.backup_url ?? item?.backupUrl;
+    const value = clean(item?.url || item?.baseUrl || item?.base_url || (Array.isArray(backup) ? backup[0] : backup));
+    return value.startsWith("//") ? `https:${value}` : value;
+  };
+  for (const format of requests) {
+    const params = new URLSearchParams({
+      cid: String(cid),
+      qn: String(format.qn),
+      fnval: String(format.fnval),
+      fnver: "0",
+      fourk: "0",
+      platform: format.platform,
+      otype: "json",
+    });
+    if (videoId) params.set("bvid", videoId);
+    else params.set("avid", aid);
+    try {
+      const response = await request(`https://api.bilibili.com/x/player/playurl?${params}`, {
+        headers: { referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+      }, BILI_AUDIO_TIMEOUT_MS, signal);
+      const data = await readJson(response);
+      if (data?.code !== 0) {
+        lastError = new Error(`Bilibili playurl failed (${data?.code ?? "unknown"})`);
+        continue;
+      }
+      const durl = Array.isArray(data?.data?.durl) ? data.data.durl : [];
+      const dashAudio = Array.isArray(data?.data?.dash?.audio) ? data.data.dash.audio : [];
+      const first = (format.fnval === 16 ? dashAudio : durl).map((item) => ({ item, url: streamCandidateUrl(item) })).find(({ url }) => /^https?:\/\//i.test(url))
+        || durl.map((item) => ({ item, url: streamCandidateUrl(item) })).find(({ url }) => /^https?:\/\//i.test(url))
+        || dashAudio.map((item) => ({ item, url: streamCandidateUrl(item) })).find(({ url }) => /^https?:\/\//i.test(url));
+      const streamUrl = first?.url || "";
+      if (streamUrl) return { url: streamUrl, container: "mp4" };
+      lastError = new Error("Bilibili returned no playable stream");
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Bilibili returned no playable stream");
+}
+
+async function proxyBilibiliAudio(videoId, aid, duration, page, requestObject) {
+  const detail = await fetchBiliView(videoId, aid);
+  const pages = Array.isArray(detail?.pages) ? detail.pages : [];
+  if (!pages.length) throw new Error("Bilibili video has no playable page");
+  const targetDuration = Number(duration) || 0;
+  const requestedPage = Math.max(1, Number(page) || 1);
+  const pageEntry = pages.find((item) => Number(item?.page) === requestedPage) || pages[0];
+  const selectedPage = targetDuration > 0
+    ? pages.reduce((best, item) => Math.abs(Number(item?.duration || 0) - targetDuration) < Math.abs(Number(best?.duration || 0) - targetDuration) ? item : best, pageEntry)
+    : pageEntry;
+  const cid = clean(selectedPage?.cid);
+  if (!/^\d+$/.test(cid)) throw new Error("Bilibili page has no cid");
+  const stream = await fetchBiliPlayUrl(videoId, aid, cid);
+  const range = requestObject.headers.get("range") || "bytes=0-";
+  const upstream = await request(stream.url, {
+    headers: { range, referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+  }, BILI_AUDIO_TIMEOUT_MS);
+  if (!isAudioResponse(upstream)) {
+    upstream.body?.cancel();
+    throw new Error(`Bilibili stream unavailable (${upstream.status})`);
+  }
+  return audioResponse(upstream, "bilibili", stream.container);
 }
 
 function validQQMid(value) {
   return /^[A-Za-z0-9]{8,32}$/.test(value);
-}
-
-function validKuwoRid(value) {
-  return /^\d{1,16}$/.test(value);
 }
 
 async function tangQQDetail(mid, keyword, signal = null) {
@@ -596,111 +733,6 @@ async function qqAudioCandidates(mid, keyword, mediaMid, signal = null, { skipTa
   candidates.push(
     { url: `https://api.injahow.cn/meting/?server=tencent&type=url&id=${encodeURIComponent(mid)}`, quality: null, qualityLabel: null, source: "qq-meting-injahow" },
     { url: `https://api.qijieya.cn/meting/?server=tencent&type=url&id=${encodeURIComponent(mid)}`, quality: null, qualityLabel: null, source: "qq-meting-qijieya" },
-  );
-  return candidates;
-}
-
-async function kuwoOfficialAudio(rid) {
-  const params = new URLSearchParams({ type: "convert_url3", rid: `MUSIC_${rid}`, format: "mp3", response: "url" });
-  const response = await request(`https://antiserver.kuwo.cn/anti.s?${params}`, { headers: { referer: "https://www.kuwo.cn/" } });
-  const text = await response.text();
-  let url = "";
-  try { url = clean(JSON.parse(text)?.url); } catch { url = clean(text); }
-  if (!/^https?:\/\//i.test(url)) throw new Error("酷我官方接口没有返回音频");
-  return url;
-}
-
-function kuwoQuality(data) {
-  const format = clean(data?.format).toLowerCase();
-  const bitrate = Number(data?.bitrate) || 0;
-  if (format === "flac" || bitrate >= 800) return { quality: "lossless", qualityLabel: "LOSSLESS" };
-  if (bitrate > 0) return { quality: `${bitrate}k`, qualityLabel: `${bitrate}K` };
-  return { quality: null, qualityLabel: null };
-}
-
-async function kuwoMobiAudio(rid, requestedBitrate, host = "mobi.kuwo.cn", signal = null) {
-  const user = `C_APK_guanwang_${Date.now()}${Math.floor(Math.random() * 1_000_000)}`;
-  const params = new URLSearchParams({
-    f: "web",
-    source: "kwplayercar_ar_6.0.0.9_B_jiakong_vh.apk",
-    from: "PC",
-    type: "convert_url_with_sign",
-    br: requestedBitrate,
-    rid,
-    user,
-  });
-  const response = await request(`https://${host}/mobi.s?${params}`, {
-    headers: { referer: "https://www.kuwo.cn/" },
-  }, API_TIMEOUT_MS, signal);
-  const payload = await readJson(response);
-  const data = payload?.data || {};
-  const url = clean(data?.url);
-  if (Number(data?.rid) !== Number(rid) || !/^https?:\/\//i.test(url)) {
-    throw new Error(`酷我移动端 ${requestedBitrate} 线路没有返回目标歌曲`);
-  }
-  if (/^m(?:flac|gg)$/i.test(clean(data?.format))) {
-    throw new Error(`酷我移动端 ${requestedBitrate} 返回浏览器无法解码的加密音频`);
-  }
-  return {
-    url,
-    source: `kuwo-${host.split(".")[0]}-${requestedBitrate}`,
-    resolvedDuration: Number(data?.duration) || 0,
-    // Keyed by the exact rid, so no ID3 cross-check needed.
-    skipIdentityCheck: true,
-    ...kuwoQuality(data),
-  };
-}
-
-function kuwoBrowserCandidate(rawUrl, rid, resolvedDuration = 0) {
-  const value = clean(rawUrl);
-  if (!value) return null;
-  try {
-    const parsed = new URL(value);
-    if (!/^https?:$/.test(parsed.protocol) || parsed.username || parsed.password || parsed.port
-      || !/(^|\.)kuwo\.cn$/i.test(parsed.hostname)) return null;
-    return {
-      url: parsed.href,
-      source: "kuwo-browser-320kmp3",
-      quality: "320k",
-      qualityLabel: "320K",
-      resolvedDuration: Number(resolvedDuration) || 0,
-      // Resolved client-side for this exact rid, so no ID3 cross-check needed.
-      skipIdentityCheck: true,
-      rid,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function kuwoAudioCandidates(rid, preferredCandidate = null, signal = null) {
-  if (preferredCandidate) {
-    return [
-      preferredCandidate,
-      { url: `https://api.injahow.cn/meting/?server=kuwo&type=url&id=${encodeURIComponent(rid)}`, source: "kuwo-meting-injahow" },
-      { url: `https://api.qijieya.cn/meting/?server=kuwo&type=url&id=${encodeURIComponent(rid)}`, source: "kuwo-meting-qijieya" },
-    ];
-  }
-  const candidates = [];
-  const mobi = await Promise.allSettled([
-    kuwoMobiAudio(rid, "320kmp3", "mobi.kuwo.cn", signal),
-    kuwoMobiAudio(rid, "320kmp3", "nmobi.kuwo.cn", signal),
-    kuwoMobiAudio(rid, "128kmp3", "mobi.kuwo.cn", signal),
-    kuwoMobiAudio(rid, "128kmp3", "nmobi.kuwo.cn", signal),
-  ]);
-  candidates.push(...mobi
-    .filter((result) => result.status === "fulfilled")
-    .map((result) => result.value)
-    .sort((left, right) => {
-      const bitrate = (candidate) => candidate.quality === "lossless" ? 10_000 : (Number.parseInt(candidate.quality, 10) || 0);
-      return bitrate(right) - bitrate(left);
-    }));
-  if (!candidates.length) {
-    try { candidates.push({ url: await kuwoOfficialAudio(rid), source: "kuwo-official-antiserver", skipIdentityCheck: true }); } catch {}
-  }
-  candidates.push(
-    { url: `https://api.injahow.cn/meting/?server=kuwo&type=url&id=${encodeURIComponent(rid)}`, source: "kuwo-meting-injahow" },
-    { url: `https://api.qijieya.cn/meting/?server=kuwo&type=url&id=${encodeURIComponent(rid)}`, source: "kuwo-meting-qijieya" },
   );
   return candidates;
 }
@@ -867,7 +899,7 @@ async function probeAudioRange(candidate, range, referer, durationSeconds, signa
 }
 
 async function verifyAudioCandidate(candidate, cacheKey, durationSeconds, identity = {}, signal = null) {
-  const referer = cacheKey.startsWith("qq:") ? "https://y.qq.com/" : "https://www.kuwo.cn/";
+  const referer = "https://y.qq.com/";
   const expectedDuration = Number(durationSeconds) || 0;
   const resolvedDuration = Number(candidate.resolvedDuration) || 0;
   if (expectedDuration > 30 && resolvedDuration > 30) {
@@ -952,7 +984,7 @@ async function streamLockedCandidate(cacheKey, getCandidates, lockedSource, requ
     candidate = candidates.find((item) => item.source === lockedSource);
   }
   if (!candidate) throw Object.assign(new Error("已锁定的播放线路已失效，请重新点击播放"), { status: 409 });
-  const referer = cacheKey.startsWith("qq:") ? "https://y.qq.com/" : "https://www.kuwo.cn/";
+  const referer = "https://y.qq.com/";
   const range = requestObject.headers.get("range") || "bytes=0-";
   const response = await request(candidate.url, { headers: { range, referer } }, AUDIO_TIMEOUT_MS);
   if (!isAudioResponse(response) || !isPlausiblyComplete(response, durationSeconds)) {
@@ -987,7 +1019,7 @@ async function proxyLockedAudio(cacheKey, getCandidates, lockedSource, requestOb
     const freshCandidate = fresh?.verified?.[0] || null;
     if (!freshCandidate) throw Object.assign(new Error("播放线路失效且自动重新解析失败，请重新点击播放"), { status: 409 });
     const range = requestObject.headers.get("range") || "bytes=0-";
-    const referer = cacheKey.startsWith("qq:") ? "https://y.qq.com/" : "https://www.kuwo.cn/";
+    const referer = "https://y.qq.com/";
     const response = await request(freshCandidate.url, { headers: { range, referer } }, AUDIO_TIMEOUT_MS);
     if (!isAudioResponse(response) || !isPlausiblyComplete(response, durationSeconds)) {
       response.body?.cancel();
@@ -995,30 +1027,6 @@ async function proxyLockedAudio(cacheKey, getCandidates, lockedSource, requestOb
     }
     return audioResponse(response, freshCandidate.source, freshCandidate.container);
   }
-}
-
-async function fetchKuwoLyric(rid, signal = null) {
-  try {
-    const response = await request(`https://www.kuwo.cn/openapi/v1/www/lyric/getlyric?musicId=${encodeURIComponent(rid)}`, {
-      headers: { accept: "application/json, text/plain, */*", referer: "https://www.kuwo.cn/" },
-    }, API_TIMEOUT_MS, signal);
-    const data = await readJson(response);
-    return (data?.data?.lrclist || []).map((line) => {
-      const seconds = Number(line?.time) || 0;
-      return `[${String(Math.floor(seconds / 60)).padStart(2, "0")}:${(seconds % 60).toFixed(2).padStart(5, "0")}]${clean(line?.lineLyric)}`;
-    }).join("\n");
-  } catch {
-    return "";
-  }
-}
-
-async function resolveKuwoPlayback(rid, duration, identity, preferredCandidate = null, env, signal = null, forceRefresh = false) {
-  // 缓存命中时不构建候选列表（mobi 解析等上游调用全部跳过）。
-  // refresh=1 时绕过缓存重新解析、校验，通过后覆盖更新。
-  const cached = forceRefresh ? null : await cacheGet(`kuwo:${rid}`, env);
-  const candidates = cached ? [] : await kuwoAudioCandidates(rid, preferredCandidate, signal);
-  const resolved = await selectVerifiedAudio(`kuwo:${rid}`, candidates, duration, identity, env, { signal, skipCache: forceRefresh });
-  return { resolved, provider: "kuwo", id: rid };
 }
 
 export async function onRequestGet({ request: requestObject, env, waitUntil }) {
@@ -1037,11 +1045,6 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       title: clean(url.searchParams.get("title")),
       artist: clean(url.searchParams.get("artist")),
     };
-    const browserKuwoCandidate = kuwoBrowserCandidate(
-      url.searchParams.get("resolved_url"),
-      clean(url.searchParams.get("id")).replace(/^MUSIC_/i, ""),
-      url.searchParams.get("resolved_duration"),
-    );
     // Client-side tang resolution (the user's own IP, not our shared egress):
     // tang throttles the shared server IP under load, while per-user IPs pass.
     const browserTangCandidate = (() => {
@@ -1063,12 +1066,51 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       }
     })();
 
-    if (action === "qq_search" || action === "kuwo_search") {
+    if (action === "qq_search") {
       if (!keyword) return json({ error: "缺少关键词" }, 400);
-      const result = action === "qq_search"
-        ? await searchQQ(keyword, limit, env, waitUntil)
-        : await searchKuwo(keyword, limit, env, waitUntil);
+      const result = await searchQQ(keyword, limit, env, waitUntil);
       return json({ code: 200, data: result.list, source: result.source, fallbacks: result.errors });
+    }
+
+    if (action === "bili_search") {
+      const title = clean(url.searchParams.get("title"));
+      const artist = clean(url.searchParams.get("artist"));
+      const query = keyword || `${artist} ${title}`.trim();
+      if (!query) return json({ error: "缺少关键词" }, 400);
+      const result = await searchBilibili(query, title, artist, duration, Math.min(8, limit), env, waitUntil);
+      const data = result.list.map((item) => {
+        const params = new URLSearchParams({ action: "bili_audio" });
+        if (item.bvid) params.set("bvid", item.bvid);
+        if (item.aid) params.set("aid", item.aid);
+        if (item.page) params.set("page", String(item.page));
+        if (item.duration) params.set("duration", String(item.duration));
+        return { ...item, audioUrl: `/api/music?${params}` };
+      });
+      return json({ code: 200, data, source: "bilibili" });
+    }
+
+    if (action === "bili_audio") {
+      const bvid = clean(url.searchParams.get("bvid"));
+      const aid = clean(url.searchParams.get("aid"));
+      if ((bvid && !validBiliVideoId(bvid)) || (!bvid && !validBiliAid(aid))) {
+        return json({ error: "Bilibili 视频 ID 无效" }, 400);
+      }
+      return await proxyBilibiliAudio(
+        bvid || "",
+        bvid ? "" : aid,
+        duration,
+        url.searchParams.get("page"),
+        requestObject,
+      );
+    }
+
+    // Keep lyrics independent from the QQ audio resolver. QQ audio may be
+    // unavailable while its public lyric endpoint still works.
+    if (action === "qq_lyric") {
+      const mid = clean(url.searchParams.get("id"));
+      if (!validQQMid(mid)) return json({ error: "QQ lyric id invalid" }, 400);
+      const lyric = await withDetailDeadline((signal) => qqOfficialLyric(mid, signal), 10_000);
+      return json({ code: 200, data: { lyric: normalizeTimedLyric(lyric) } });
     }
 
     if (action === "qq_detail" || action === "qq_audio") {
@@ -1157,53 +1199,19 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       }, QQ_DETAIL_TIMEOUT_MS);
     }
 
-    if (action === "kuwo_detail" || action === "kuwo_audio") {
-      const rid = clean(url.searchParams.get("id")).replace(/^MUSIC_/i, "");
-      if (!validKuwoRid(rid)) return json({ error: "酷我音乐歌曲 ID 无效" }, 400);
-      if (action === "kuwo_audio") {
-        return await proxyLockedAudio(`kuwo:${rid}`, () => kuwoAudioCandidates(rid, browserKuwoCandidate), lockedSource, requestObject, duration, lockedContainer, lockedBytes, env, targetIdentity);
-      }
-      return await withDetailDeadline(async (signal) => {
-        const [playback, lyric] = await Promise.all([
-          resolveKuwoPlayback(rid, duration, targetIdentity, browserKuwoCandidate, env, signal, url.searchParams.get("refresh") === "1"),
-          // Lyrics are best-effort: never let their failure sink the detail.
-          fetchKuwoLyric(rid, signal).catch(() => ""),
-        ]);
-        const audioUrls = playback.resolved.verified.map((entry) => {
-          const params = new URLSearchParams({ action: "kuwo_audio", id: playback.id });
-          if (duration) params.set("duration", String(duration));
-          if (targetIdentity.title) params.set("title", targetIdentity.title);
-          if (targetIdentity.artist) params.set("artist", targetIdentity.artist);
-          params.set("source", entry.source);
-          params.set("container", entry.container);
-          params.set("bytes", String(entry.totalBytes));
-          if (browserKuwoCandidate && entry.source === browserKuwoCandidate.source) {
-            params.set("resolved_url", browserKuwoCandidate.url);
-            params.set("resolved_duration", String(browserKuwoCandidate.resolvedDuration || duration));
-          }
-          return {
-            url: `/api/music?${params}`,
-            source: entry.source,
-            container: entry.container,
-            bytes: entry.totalBytes,
-            qualityLabel: entry.qualityLabel || null,
-          };
-        });
-        const verified = playback.resolved.verified[0];
-        return json({ code: 200, data: {
-          rid,
-          lyric,
-          audioUrl: audioUrls[0]?.url || "",
-          audioUrls,
-          verifiedSource: verified.source,
-          verifiedBytes: verified.totalBytes,
-        } });
-      });
-    }
-
     return json({ error: "操作无效" }, 400);
   } catch (error) {
     const timeout = error?.name === "AbortError";
-    return json({ error: timeout ? "音乐源响应超时" : (error?.message || "音乐源请求失败") }, error?.status || (timeout ? 504 : 502));
+    const message = timeout ? "音乐源响应超时" : (error?.message || "音乐源请求失败");
+    console.error("[music] request failed", {
+      action: new URL(requestObject.url).searchParams.get("action") || "",
+      status: error?.status || (timeout ? 504 : 502),
+      upstreamStatus: error?.upstreamStatus || null,
+      message,
+      stack: error?.stack || String(error),
+    });
+    const response = json({ error: message, upstreamStatus: error?.upstreamStatus || null }, error?.status || (timeout ? 504 : 502));
+    if (error?.upstreamStatus) response.headers.set("x-halo-upstream-status", String(error.upstreamStatus));
+    return response;
   }
 }
