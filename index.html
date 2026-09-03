@@ -2,11 +2,12 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>HALO 音乐广场 - HALO Music Square</title>
+  <title>Halo音乐</title>
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('halo-music-theme')||'dark';}catch(e){}</script>
-  <link rel="stylesheet" href="styles.css?v=20260902-5" />
+  <meta name="app-version" content="2.0.0" />
+  <link rel="stylesheet" href="styles.css" />
   <!-- 圆润可爱字体 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,10 +20,10 @@
     <header class="ripple-target">
       <div class="logo-area">
         <div class="pikachu-box ripple-target">
-          <img src="pikachu.gif" alt="Pikachu" class="pikachu-img">
+          <img src="icon.svg" alt="HALO Music" class="pikachu-img">
         </div>
         <div class="title-text">
-          <h1 data-i18n="appTitle">HALO 音乐广场</h1>
+          <h1 data-i18n="appTitle">Halo音乐</h1>
         </div>
       </div>
       <div class="header-controls">
@@ -31,15 +32,11 @@
         <button id="settings-toggle-btn" class="settings-toggle-btn ripple-target" type="button" aria-haspopup="dialog" aria-controls="settings-modal" aria-label="打开设置" title="设置">⚙</button>
         <div class="nav-links">
         </div>
-        <button id="theme-toggle" class="shortcut-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon">☀</span></button>
+        <button id="theme-toggle" class="theme-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon">☀</span></button>
         <div class="lang-toggle ripple-target">
           <button class="lang-btn active" data-lang="zh">中</button>
           <button class="lang-btn" data-lang="en">EN</button>
         </div>
-        <div class="shortcut-hint" data-i18n="shortcutHint">
-          快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果
-        </div>
-        <button id="shortcut-toggle-btn" class="shortcut-toggle-btn ripple-target" title="快捷键说明">⌨️</button>
       </div>
     </header>
 
@@ -91,6 +88,14 @@
             <div class="cover-placeholder">
               <div class="cover-disc"></div>
             </div>
+            <svg class="cover-ring-label" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+              <defs>
+                <path id="cover-ring-path" d="M 15,50 A 35,35 0 0 1 85,50" />
+              </defs>
+              <text>
+                <textPath href="#cover-ring-path" startOffset="50%" text-anchor="middle">HALO MUSIC</textPath>
+              </text>
+            </svg>
           </div>
           <div class="player-main">
             <div class="track-title-row">
@@ -147,6 +152,7 @@
         <div class="panel-header">
           <div class="panel-title">
             <button id="mobile-playlist-back" class="mobile-playlist-back" type="button" title="返回歌单" aria-label="返回歌单">←</button>
+            <span data-i18n="playlistTitle">播放列表</span>
           </div>
           <button id="mobile-playlist-delete" class="mobile-playlist-delete" type="button" title="删除歌单" aria-label="删除歌单">×</button>
           <div class="playlist-tabs ripple-target">
@@ -163,6 +169,7 @@
                 <button class="playmode-btn active ripple-target" data-mode="list" title="列表循环">🔁</button>
                 <button class="playmode-btn ripple-target" data-mode="single" title="单曲循环">🔂</button>
                 <button class="playmode-btn ripple-target" data-mode="shuffle" title="随机播放">🔀</button>
+                <button id="clear-playlist-btn" class="btn btn-ghost clear-playlist-btn ripple-target" type="button" data-i18n="queueClear" data-i18n-title="queueClear" title="清空播放列表" aria-label="清空播放列表">清空</button>
               </div>
             </div>
             <div id="playlist-select-row" class="playlist-select-row" style="display:none;">
@@ -185,7 +192,7 @@
         <span aria-hidden="true">⌕</span><small>搜索</small>
       </button>
       <button type="button" data-mobile-view="lyrics">
-        <span aria-hidden="true">♫</span><small>歌词</small>
+        <span aria-hidden="true">♫</span><small>播放</small>
       </button>
       <button type="button" data-mobile-view="me">
         <span aria-hidden="true">♡</span><small>我的</small>
@@ -242,58 +249,6 @@
     </div>
   </div>
 
-  <!-- 快捷键说明弹窗 -->
-  <div id="shortcut-modal" class="modal-backdrop">
-    <div class="modal ripple-target">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <div class="modal-title-icon">⌨️</div>
-          <span data-i18n="shortcutPanelTitle">快捷键说明</span>
-        </div>
-        <button id="shortcut-close" class="modal-close-btn">×</button>
-      </div>
-      <p class="modal-desc" data-i18n="shortcutPanelDesc">
-        使用键盘可以更加方便地控制 HALO 音乐广场：
-      </p>
-      <div class="shortcut-grid">
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutPlayPause">播放 / 暂停</div>
-          <div class="shortcut-key"><kbd>Space</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutSeek">快退 / 快进 5 秒</div>
-          <div class="shortcut-key"><kbd>←</kbd><kbd>→</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutVolume">音量加 / 减</div>
-          <div class="shortcut-key"><kbd>↑</kbd><kbd>↓</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutPrevNext">上一首 / 下一首</div>
-          <div class="shortcut-key"><kbd>P</kbd><kbd>N</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutFav">收藏 / 取消收藏</div>
-          <div class="shortcut-key"><kbd>F</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutLyricsFX">切换歌词炫酷效果</div>
-          <div class="shortcut-key"><kbd>L</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutMute">静音 / 取消静音</div>
-          <div class="shortcut-key"><kbd>M</kbd></div>
-        </div>
-        <div class="shortcut-card">
-          <div class="shortcut-label" data-i18n="shortcutFocusSearch">聚焦搜索框</div>
-          <div class="shortcut-key"><kbd>/</kbd></div>
-        </div>
-      </div>
-      <p class="modal-desc" style="margin-top:10px;" data-i18n="shortcutCloseModal">
-        提示：按 Esc 可以关闭弹窗。
-      </p>
-    </div>
-  </div>
 
   <div id="settings-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -319,12 +274,12 @@
       </div>
       <p class="modal-desc">选择对应平台下载 HALO Music 客户端</p>
       <div class="client-download-list">
-        <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/tag/v2.0.0/HALO-Music-Setup-2.0.0-x64.exe" target="_blank" rel="noopener noreferrer">
-          <span class="client-download-copy"><strong>Windows客户端</strong><code>HALO-Music-Setup-2.0.0-x64.exe</code></span>
+        <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest" target="_blank" rel="noopener noreferrer">
+          <span class="client-download-copy"><strong>Windows客户端</strong><code>latest release</code></span>
           <span class="client-download-arrow" aria-hidden="true">↗</span>
         </a>
-        <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/tag/v2.0.0/halo_music.apk" target="_blank" rel="noopener noreferrer">
-          <span class="client-download-copy"><strong>安卓客户端</strong><code>halo_music.apk</code></span>
+        <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest" target="_blank" rel="noopener noreferrer">
+          <span class="client-download-copy"><strong>安卓客户端</strong><code>latest release</code></span>
           <span class="client-download-arrow" aria-hidden="true">↗</span>
         </a>
       </div>
@@ -435,6 +390,6 @@
 
   <div id="toast"></div>
 
-  <script src="major.js?v=20260902-7"></script>
+  <script src="major.js"></script>
 </body>
 </html>

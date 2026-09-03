@@ -6,6 +6,13 @@ pages_build_output_dir = "."
 # Username allowlist for the read-only /admin dashboard. Provision this user
 # directly in D1 because public registration is disabled.
 ADMIN_USERNAME = "admin"
+# Keep this value in sync with package.json for deployments.
+HALO_MUSIC_VERSION = "2.0.0"
+# Provider endpoints are deployment configuration, not client-side URLs.
+# Use comma-separated URLs; each search/proxy operation tries the next one
+# when an upstream times out or returns an invalid response.
+QQ_SOURCE_URLS = "https://tang.api.s01s.cn/music_open_api.php,https://api.qijieya.cn/meting,https://api.injahow.cn/meting"
+NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://musicapi.qijieya.cn/meting"
 
 [[d1_databases]]
 binding = "DB"

@@ -1,5 +1,36 @@
 import { hashPassword, json, sessionCookie, SESSION_TTL_MS } from "./_auth.js";
 
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCK_MS = 15 * 60 * 1000;
+const loginAttempts = new Map();
+const DUMMY_SALT = "00000000000000000000000000000000";
+
+function loginKey(request) {
+  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("x-forwarded-for") || "unknown";
+  // Limit by client address so changing usernames cannot bypass the lockout.
+  return ip.split(",")[0].trim() || "unknown";
+}
+
+function retryAfterSeconds(key) {
+  const entry = loginAttempts.get(key);
+  const now = Date.now();
+  if (!entry || now - entry.firstAt > LOGIN_WINDOW_MS) return 0;
+  return entry.lockedUntil > now ? Math.ceil((entry.lockedUntil - now) / 1000) : 0;
+}
+
+function recordLoginFailure(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key) || { firstAt: now, failures: 0, lockedUntil: 0 };
+  if (now - entry.firstAt > LOGIN_WINDOW_MS) {
+    entry.firstAt = now;
+    entry.failures = 0;
+  }
+  entry.failures += 1;
+  if (entry.failures >= LOGIN_MAX_ATTEMPTS) entry.lockedUntil = now + LOGIN_LOCK_MS;
+  loginAttempts.set(key, entry);
+}
+
 export async function onRequestPost({ request, env }) {
   if (!env.DB) return json({ error: "数据库未绑定（D1 binding 缺失）" }, 500);
 
@@ -10,6 +41,9 @@ export async function onRequestPost({ request, env }) {
   const username = String(body.username || "").trim();
   const password = body.password || "";
   if (!username || !password) return json({ error: "用户名和密码不能为空" }, 400);
+  const attemptKey = loginKey(request);
+  const retryAfter = retryAfterSeconds(attemptKey);
+  if (retryAfter) return json({ error: "Too many login attempts" }, 429, { "Retry-After": String(retryAfter) });
 
   let account;
   try {
@@ -20,10 +54,12 @@ export async function onRequestPost({ request, env }) {
     console.error("Login account query failed", error);
     return json({ error: "账号服务未初始化，请先执行 schema.sql" }, 503);
   }
-  if (!account) return json({ error: "用户名不存在，请联系管理员开通账号" }, 404);
-
-  const passwordHash = await hashPassword(password, account.password_salt);
-  if (passwordHash !== account.password_hash) return json({ error: "密码错误" }, 401);
+  const passwordHash = await hashPassword(password, account?.password_salt || DUMMY_SALT);
+  if (!account || passwordHash !== account.password_hash) {
+    recordLoginFailure(attemptKey);
+    return json({ error: "用户名或密码错误" }, 401);
+  }
+  loginAttempts.delete(attemptKey);
 
   const token = crypto.randomUUID();
   const now = Date.now();

@@ -1,4 +1,6 @@
-const CURRENT_VERSION = "2.0.0";
+// Set HALO_MUSIC_VERSION in the Pages environment for every release. The
+// neutral fallback prevents a stale hard-coded version from being published.
+const CURRENT_VERSION = "0.0.0";
 const DEFAULT_RELEASE_NOTES = [
   "优化播放体验",
   "修复部分歌曲无法播放的问题",

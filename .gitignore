@@ -6,7 +6,7 @@ android/app/build/
 .wrangler/
 .wrangler-config/
 tools/
-*.test.js
+test-results/
 *.ps1
 .DS_Store
 .user-favorites.json

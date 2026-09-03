@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "wrangler pages dev .",
     "deploy": "wrangler pages deploy .",
-    "test": "node --test auth.test.js import.test.js playlist-import.test.js playback.test.js music.test.js",
+    "test": "node --test tests/*.test.js",
     "desktop:dev": "electron .",
     "desktop:dist": "npm run desktop:electron",
     "desktop:electron": "electron-builder --win nsis",
@@ -27,7 +27,7 @@
   "build": {
     "appId": "com.halomusic.desktop",
     "productName": "HALO Music",
-    "forceCodeSigning": false,
+    "forceCodeSigning": true,
     "publish": {
       "provider": "github",
       "owner": "zhoujungis",
@@ -51,8 +51,8 @@
         "nsis",
         "portable"
       ],
-      "signExecutable": false,
-      "signAndEditExecutable": false,
+      "signExecutable": true,
+      "signAndEditExecutable": true,
       "legalTrademarks": "HALO Music"
     },
     "electronDownload": {

@@ -1,15 +1,16 @@
+import { authenticatedUsername } from "./_auth.js";
+
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36";
 const API_TIMEOUT_MS = 5_500;
 const AUDIO_TIMEOUT_MS = 12_000;
 const BILI_SEARCH_TIMEOUT_MS = 9_000;
 const BILI_AUDIO_TIMEOUT_MS = 15_000;
-// tang 慢窗口实测 15~20 秒才应答：给它 22 秒，慢窗口下服务器也能解析成功
-// 并写入永久缓存，之后所有用户直接命中缓存秒回。
-const TANG_TIMEOUT_MS = 22_000;
+// Resolver requests can be slow, but must still have a bounded deadline.
+const QQ_RESOLVER_TIMEOUT_MS = 22_000;
 // Hard deadline for one detail request: bounds the worst case when upstream
 // lines hang instead of watching a spinner for 30+ seconds.
 const DETAIL_TIMEOUT_MS = 15_000;
-// QQ 详情需要覆盖 tang 慢窗口（22s 解析 + 校验时间），单独放宽到 35s。
+// QQ detail includes provider resolution and stream verification.
 const QQ_DETAIL_TIMEOUT_MS = 35_000;
 // Candidates verified in parallel per batch. 2 keeps the batch from probing
 // candidates beyond maxCount (no wasted upstream traffic).
@@ -354,35 +355,25 @@ async function searchQQLegacy(keyword, limit) {
   return normalizeQQLegacy(await readJson(response)).slice(0, limit);
 }
 
-async function searchQQTang(keyword, limit) {
-  const response = await request(`https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json`);
-  return normalizeQQProxy(await readJson(response)).slice(0, limit);
-}
-
-async function searchQQMeting(host, keyword, limit) {
-  const response = await request(`${host}?server=tencent&type=search&id=${encodeURIComponent(keyword)}`);
-  return normalizeQQProxy(await readJson(response)).slice(0, limit);
-}
-
-async function firstSearch(primary, fallbacks) {
-  const errors = [];
-  try {
-    const list = await primary.run();
-    if (list.length) return { list, source: primary.name, errors };
-    errors.push(`${primary.name}: 空结果`);
-  } catch (error) {
-    errors.push(`${primary.name}: ${error?.message || error}`);
-  }
-
-  const settled = await Promise.allSettled(fallbacks.map((source) => source.run()));
-  for (let index = 0; index < settled.length; index++) {
-    const result = settled[index];
-    if (result.status === "fulfilled" && result.value.length) {
-      return { list: result.value, source: fallbacks[index].name, errors };
+async function searchQQProvider(base, keyword, limit) {
+  let lastError = null;
+  const variants = [
+    { msg: keyword, type: "json" },
+    { server: "tencent", type: "search", id: keyword },
+  ];
+  for (const query of variants) {
+    try {
+      const endpoint = new URL(base);
+      Object.entries(query).forEach(([key, value]) => endpoint.searchParams.set(key, value));
+      const response = await request(endpoint.href);
+      const list = normalizeQQProxy(await readJson(response)).slice(0, limit);
+      if (list.length) return list;
+    } catch (error) {
+      lastError = error;
     }
-    errors.push(`${fallbacks[index].name}: ${result.status === "rejected" ? (result.reason?.message || result.reason) : "空结果"}`);
   }
-  return { list: [], source: "", errors };
+  if (lastError) throw lastError;
+  return [];
 }
 
 async function fastestSearch(sources) {
@@ -417,11 +408,141 @@ async function searchQQ(keyword, limit, env, waitUntil) {
   const sources = [
     { name: "qq-official-musicu", run: () => searchQQOfficial(keyword, limit) },
     { name: "qq-official-legacy", run: () => searchQQLegacy(keyword, limit) },
-    { name: "qq-tang", run: () => searchQQTang(keyword, limit) },
-    { name: "qq-meting-qijieya", run: () => searchQQMeting("https://api.qijieya.cn/meting/", keyword, limit) },
-    { name: "qq-meting-injahow", run: () => searchQQMeting("https://api.injahow.cn/meting/", keyword, limit) },
   ];
+  configuredProviderUrls(env?.QQ_SOURCE_URLS)
+    .forEach((base, index) => sources.push({
+      name: `qq-provider-${index + 1}`,
+      run: () => searchQQProvider(base, keyword, limit),
+    }));
   return cachedSearch(`search:qq:${keyword}:${limit}`, () => fastestSearch(sources), env, waitUntil);
+}
+
+function configuredProviderUrl(value) {
+  const url = String(value || "").trim().replace(/\/$/, "");
+  return /^https?:\/\//i.test(url) ? url : "";
+}
+
+function configuredProviderUrls(value) {
+  return String(value || "")
+    .split(/[\r\n,]+/)
+    .map((item) => configuredProviderUrl(item))
+    .filter(Boolean);
+}
+
+function neteaseProviderUrls(env) {
+  return configuredProviderUrls(env?.NETEASE_SOURCE_URLS);
+}
+
+async function searchNetease(keyword, limit, env) {
+  const providers = neteaseProviderUrls(env);
+  for (const base of providers) {
+    try {
+      const endpoint = new URL(`${base}/`);
+      endpoint.search = new URLSearchParams({ type: "search", id: keyword, limit: String(limit), server: "netease" });
+      const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
+      const rows = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      if (rows.length) return rows.slice(0, limit);
+    } catch (error) {
+      console.warn("Netease provider unavailable", error);
+    }
+  }
+  return [];
+}
+
+function validNeteaseId(value) {
+  return /^\d{1,20}$/.test(clean(value));
+}
+
+async function resolveNeteaseProvider(base, id, signal = null) {
+  const endpoint = new URL(`${base}/`);
+  endpoint.search = new URLSearchParams({ server: "netease", type: "url", id: clean(id), br: "320" });
+  const response = await request(endpoint.href, { redirect: "manual" }, API_TIMEOUT_MS, signal);
+  const redirect = response.headers.get("location");
+  if (redirect && response.status >= 300 && response.status < 400) {
+    return new URL(redirect, endpoint.href).href;
+  }
+  if (!redirect && response.status >= 300 && response.status < 400) {
+    response.body?.cancel();
+    const followed = await request(endpoint.href, { redirect: "follow" }, API_TIMEOUT_MS, signal);
+    if (followed.url && followed.url !== endpoint.href && /^https?:\/\//i.test(followed.url)) {
+      followed.body?.cancel();
+      return followed.url;
+    }
+    followed.body?.cancel();
+    throw new Error(`redirect without Location (HTTP ${response.status})`);
+  }
+  // A few Workers-compatible proxies hide Location when redirect mode is
+  // manual. If they followed the redirect anyway, Response.url still
+  // identifies the final audio resource without reading its body.
+  if (response.url && response.url !== endpoint.href && /^https?:\/\//i.test(response.url)) {
+    const type = (response.headers.get("content-type") || "").toLowerCase();
+    if (type.startsWith("audio/") || type.startsWith("video/") || type.includes("octet-stream")) {
+      response.body?.cancel();
+      return response.url;
+    }
+  }
+  if (!response.ok) {
+    response.body?.cancel();
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const body = (await response.text()).trim();
+  let value = body;
+  try {
+    const data = JSON.parse(body);
+    const parsed = typeof data === "string"
+      ? data
+      : firstText(
+        data?.url,
+        data?.audioUrl,
+        data?.data?.url,
+        data?.data?.audioUrl,
+        data?.data,
+      );
+    if (parsed) value = parsed;
+  } catch {
+    // Some proxies return a URL as plain text or use a non-JSON MIME type.
+  }
+  if (value.startsWith("@")) value = value.slice(1).trim();
+  if (/^(?:https?:)?\/\//i.test(value)) return new URL(value, endpoint.href).href;
+  throw new Error(`no URL (${response.headers.get("content-type") || "unknown"})`);
+}
+
+export async function resolveNeteaseUrl(id, env, signal = null) {
+  const providers = neteaseProviderUrls(env);
+  if (!providers.length) throw new Error("Netease providers are not configured");
+  const failures = [];
+  const attempts = providers.map((base) => resolveNeteaseProvider(base, id, signal).catch((error) => {
+    failures.push(`${base}: ${error?.message || error}`);
+    throw error;
+  }));
+  try {
+    return await Promise.any(attempts);
+  } catch {
+    if (signal?.aborted) throw Object.assign(new Error("Netease resolver aborted"), { name: "AbortError" });
+    const error = new Error("Netease providers returned no playable stream");
+    error.providerFailures = failures;
+    throw error;
+  }
+}
+
+async function proxyNeteaseLyric(id, env) {
+  for (const base of neteaseProviderUrls(env)) {
+    try {
+      const endpoint = new URL(`${base}/`);
+      endpoint.search = new URLSearchParams({ server: "netease", type: "lrc", id: clean(id) });
+      const response = await request(endpoint.href, {}, API_TIMEOUT_MS);
+      if (!response.ok) {
+        response.body?.cancel();
+        continue;
+      }
+      const headers = new Headers();
+      const type = response.headers.get("content-type");
+      if (type) headers.set("content-type", type);
+      headers.set("cache-control", "private, max-age=120");
+      return new Response(response.body, { status: response.status, headers });
+    } catch {}
+  }
+  return json({ error: "Netease providers unavailable" }, 503);
 }
 
 export function biliDurationSeconds(value) {
@@ -618,12 +739,23 @@ function validQQMid(value) {
   return /^[A-Za-z0-9]{8,32}$/.test(value);
 }
 
-async function tangQQDetail(mid, keyword, signal = null) {
+async function resolveQQDetail(mid, keyword, signal = null, env = null) {
   const query = keyword || mid;
-  const response = await request(`https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(query)}&type=json&mid=${encodeURIComponent(mid)}`, {}, TANG_TIMEOUT_MS, signal);
-  const data = await readJson(response);
-  if (!data || typeof data !== "object" || firstText(data.song_mid) !== mid) throw new Error("QQ 代理未返回目标歌曲");
-  return data;
+  let lastError = null;
+  for (const base of configuredProviderUrls(env?.QQ_SOURCE_URLS)) {
+    try {
+      const endpoint = new URL(base);
+      endpoint.searchParams.set("msg", query);
+      endpoint.searchParams.set("type", "json");
+      endpoint.searchParams.set("mid", mid);
+      const data = await readJson(await request(endpoint.href, {}, QQ_RESOLVER_TIMEOUT_MS, signal));
+      if (data && typeof data === "object" && firstText(data.song_mid) === mid) return data;
+    } catch (error) {
+      lastError = error;
+      if (signal?.aborted) throw error;
+    }
+  }
+  throw lastError || new Error("QQ provider returned no matching song");
 }
 
 function qqAudioChoices(detail) {
@@ -640,7 +772,7 @@ function qqAudioChoices(detail) {
     url: clean(url),
     quality,
     qualityLabel,
-    source: `qq-tang-${quality || `default-${index}`}`,
+    source: `qq-provider-${quality || `default-${index}`}`,
     // Keyed by the exact song mid, so no ID3 cross-check needed.
     skipIdentityCheck: true,
   }))
@@ -702,8 +834,7 @@ async function qqOfficialVkey(mid, keyword, mediaMid = "", signal = null) {
   return [];
 }
 
-// QQ 官方歌词接口：独立于音源链路，VIP 歌曲的歌词不受付费墙限制。
-// 当 tang 挂起或走浏览器直连路径拿不到详情时，用它兜底歌词。
+// QQ 官方歌词接口独立于音源链路，VIP 歌曲的歌词不受付费墙限制。
 async function qqOfficialLyric(mid, signal = null) {
   const response = await request(
     `https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=${encodeURIComponent(mid)}&format=json&nobase64=1`,
@@ -721,19 +852,23 @@ async function qqOfficialLyric(mid, signal = null) {
   return data.lyric;
 }
 
-async function qqAudioCandidates(mid, keyword, mediaMid, signal = null, { skipTang = false, tangDetail = null, tangAttempted = false } = {}) {
+async function qqAudioCandidates(mid, keyword, mediaMid, signal = null, { skipProxy = false, proxyDetail = null, proxyAttempted = false, env = null } = {}) {
   const candidates = [];
-  if (!skipTang && tangDetail) {
-    candidates.push(...qqAudioChoices(tangDetail));
-  } else if (!skipTang && !tangAttempted) {
-    try { candidates.push(...qqAudioChoices(await tangQQDetail(mid, keyword, signal))); } catch {}
+  if (!skipProxy && proxyDetail) {
+    candidates.push(...qqAudioChoices(proxyDetail));
+  } else if (!skipProxy && !proxyAttempted) {
+    try { candidates.push(...qqAudioChoices(await resolveQQDetail(mid, keyword, signal, env))); } catch {}
   }
-  const resolvedMediaMid = firstText(qqMediaMid(tangDetail), mediaMid);
+  const resolvedMediaMid = firstText(qqMediaMid(proxyDetail), mediaMid);
   try { candidates.push(...await qqOfficialVkey(mid, keyword, resolvedMediaMid, signal)); } catch {}
-  candidates.push(
-    { url: `https://api.injahow.cn/meting/?server=tencent&type=url&id=${encodeURIComponent(mid)}`, quality: null, qualityLabel: null, source: "qq-meting-injahow" },
-    { url: `https://api.qijieya.cn/meting/?server=tencent&type=url&id=${encodeURIComponent(mid)}`, quality: null, qualityLabel: null, source: "qq-meting-qijieya" },
-  );
+  configuredProviderUrls(env?.QQ_SOURCE_URLS).forEach((base, index) => {
+    candidates.push({
+      url: `${base}?server=tencent&type=url&id=${encodeURIComponent(mid)}`,
+      quality: null,
+      qualityLabel: null,
+      source: `qq-provider-${index + 1}`,
+    });
+  });
   return candidates;
 }
 
@@ -1033,6 +1168,11 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
   try {
     const url = new URL(requestObject.url);
     const action = url.searchParams.get("action") || "";
+    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
+      if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
+      const username = await authenticatedUsername(requestObject, env);
+      if (!username) return json({ error: "请先登录后播放" }, 401);
+    }
     const keyword = (url.searchParams.get("q") || "").trim().slice(0, 100);
     const limit = Math.min(30, Math.max(1, Number(url.searchParams.get("limit")) || 10));
     const duration = Math.min(24 * 60 * 60, Math.max(0, Number(url.searchParams.get("duration")) || 0));
@@ -1045,26 +1185,32 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       title: clean(url.searchParams.get("title")),
       artist: clean(url.searchParams.get("artist")),
     };
-    // Client-side tang resolution (the user's own IP, not our shared egress):
-    // tang throttles the shared server IP under load, while per-user IPs pass.
-    const browserTangCandidate = (() => {
-      const value = clean(url.searchParams.get("resolved_url"));
-      if (!value) return null;
-      try {
-        const parsed = new URL(value);
-        if (!/^https?:$/.test(parsed.protocol) || parsed.username || parsed.password
-          || !/(^|\.)qqmusic\.qq\.com$/i.test(parsed.hostname)) return null;
-        return {
-          url: parsed.href.replace(/^http:/i, "https:"),
-          source: "qq-tang-browser",
-          quality: null,
-          qualityLabel: null,
-          skipIdentityCheck: true,
-        };
-      } catch {
-        return null;
+
+    if (action === "netease_search") {
+      if (!keyword) return json({ error: "缺少关键词" }, 400);
+      const neteaseLimit = Math.min(120, Math.max(1, Number(url.searchParams.get("limit")) || 10));
+      const data = await searchNetease(keyword, neteaseLimit, env);
+      return json({ code: 200, data });
+    }
+
+    if (action === "netease_audio") {
+      const id = clean(url.searchParams.get("id"));
+      if (!validNeteaseId(id)) return json({ error: "网易云歌曲 ID 无效" }, 400);
+      const streamUrl = await resolveNeteaseUrl(id, env);
+      const range = requestObject.headers.get("range") || "bytes=0-";
+      const upstream = await request(streamUrl, { headers: { range, referer: "https://music.163.com/" } }, AUDIO_TIMEOUT_MS);
+      if (!isAudioResponse(upstream)) {
+        upstream.body?.cancel();
+        throw new Error(`Netease stream unavailable (${upstream.status})`);
       }
-    })();
+      return audioResponse(upstream, "netease");
+    }
+
+    if (action === "netease_lyric") {
+      const id = clean(url.searchParams.get("id"));
+      if (!validNeteaseId(id)) return json({ error: "网易云歌曲 ID 无效" }, 400);
+      return await proxyNeteaseLyric(id, env);
+    }
 
     if (action === "qq_search") {
       if (!keyword) return json({ error: "缺少关键词" }, 400);
@@ -1121,16 +1267,13 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       if (action === "qq_audio") {
         await compatibleQQCacheGet(audioCacheKey, mediaMid, env);
         const qqCandidates = async () => {
-          const candidates = await qqAudioCandidates(mid, keyword, mediaMid);
-          return browserTangCandidate ? [browserTangCandidate, ...candidates] : candidates;
+          const candidates = await qqAudioCandidates(mid, keyword, mediaMid, null, { env });
+          return candidates;
         };
         return await proxyLockedAudio(audioCacheKey, qqCandidates, lockedSource, requestObject, duration, lockedContainer, lockedBytes, env, targetIdentity);
       }
       return await withDetailDeadline(async (signal) => {
-        // 缓存命中时跳过全部音源上游解析——否则 tang 的超时会让命中缓存
-        // 的请求照样等十几秒（人多时这正是"一直加载"的来源）。
-        // 歌词例外：与音源并行独立获取，缓存命中/浏览器直连路径没有 tang 详情
-        // 可用时，官方歌词接口仍能独立返回（VIP 歌词不受付费墙限制）。
+        // 缓存命中时跳过全部音源上游解析，避免重复等待；歌词独立获取。
         const lyricFallback = qqOfficialLyric(mid, signal).catch(() => "");
         // 播放失败后客户端带 refresh=1 重试：绕过缓存重新解析并覆盖更新。
         const forceRefresh = url.searchParams.get("refresh") === "1";
@@ -1140,16 +1283,12 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
         let candidates;
         if (cachedAudio) {
           candidates = [];
-        } else if (browserTangCandidate) {
-          // 客户端已带浏览器直连的解析结果：跳过服务器侧 tang（正是它超时
-          // 或被限流才走到这里），用 vkey + meting 兜底。
-          candidates = [browserTangCandidate, ...await qqAudioCandidates(mid, keyword, mediaMid, signal, { skipTang: true })];
         } else {
-          try { detail = await tangQQDetail(mid, keyword, signal); } catch {}
+          try { detail = await resolveQQDetail(mid, keyword, signal, env); } catch {}
           if (!detail) {
             try { official = (await searchQQOfficial(keyword || mid, 20, signal)).find((song) => song.mid === mid) || null; } catch {}
           }
-          candidates = await qqAudioCandidates(mid, keyword, mediaMid || official?.mediaMid, signal, { tangDetail: detail, tangAttempted: true });
+          candidates = await qqAudioCandidates(mid, keyword, mediaMid || official?.mediaMid, signal, { proxyDetail: detail, proxyAttempted: true, env });
         }
         const identity = {
           title: firstText(cachedAudio?.identity?.title, detail?.song_title, detail?.song_name, official?.name, targetIdentity.title),
@@ -1167,9 +1306,6 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           params.set("source", entry.source);
           params.set("container", entry.container);
           params.set("bytes", String(entry.totalBytes));
-          if (browserTangCandidate && entry.source === browserTangCandidate.source) {
-            params.set("resolved_url", browserTangCandidate.url);
-          }
           return {
             url: `/api/music?${params}`,
             source: entry.source,
@@ -1207,6 +1343,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       action: new URL(requestObject.url).searchParams.get("action") || "",
       status: error?.status || (timeout ? 504 : 502),
       upstreamStatus: error?.upstreamStatus || null,
+      providerFailures: error?.providerFailures || undefined,
       message,
       stack: error?.stack || String(error),
     });

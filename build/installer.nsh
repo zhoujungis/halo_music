@@ -1,10 +1,5 @@
 !include nsDialogs.nsh
 
-!ifdef UNINSTALLER_OUT_FILE
-!undef UNINSTALLER_OUT_FILE
-!endif
-!define UNINSTALLER_OUT_FILE "${BUILD_RESOURCES_DIR}\\uninstaller-placeholder.txt"
-
 !ifndef BUILD_UNINSTALLER
 Var DesktopShortcutCheckbox
 Var StartupShortcutCheckbox
@@ -42,7 +37,6 @@ FunctionEnd
 !endif
 
 !macro customInstall
-  WriteUninstaller "$INSTDIR\Uninstall HALO Music.exe"
   ${If} $DesktopShortcutState == ${BST_CHECKED}
     CreateShortCut "$DESKTOP\HALO Music.lnk" "$INSTDIR\HALO Music.exe"
   ${EndIf}

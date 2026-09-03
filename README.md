@@ -327,6 +327,17 @@ database_name = "halo-music-db"
 database_id = "替换为你的 D1 database_id"
 ```
 
+音源地址通过 Cloudflare Pages 的环境变量配置，不写入前端代码。变量值支持
+逗号或换行分隔的多个地址，服务端会按顺序尝试，某个上游超时或失效会自动切换：
+
+```toml
+[vars]
+QQ_SOURCE_URLS = "https://your-qq-source.example/search,https://your-qq-backup.example/search"
+NETEASE_SOURCE_URLS = "https://musicapi.qijieya.cn/meting,https://your-netease-backup.example/meting"
+```
+
+生产环境建议在 Pages 控制台设置同名变量，避免把具体第三方地址提交到仓库。
+
 ## 测试
 
 项目使用 Node.js 原生 `node:test`：
@@ -447,3 +458,16 @@ npx electron . --url=https://your-project.pages.dev
 ## 许可证与第三方声明
 
 项目许可证见 [LICENSE](LICENSE)。
+
+### Tests and signing
+
+Run `npm test` to execute the repository tests under `tests/`. Search actions
+remain public, while playback and detail actions under `/api/music` require
+the HttpOnly session cookie.
+
+Release builds require a Windows signing certificate. Configure
+`CSC_LINK` and `CSC_KEY_PASSWORD` (or the equivalent electron-builder signing
+environment) before running `npm run desktop:dist`; builds intentionally fail
+when no certificate is available. Set `HALO_MUSIC_VERSION` in the Pages
+environment for each release so the Android update endpoint stays aligned with
+the desktop release.

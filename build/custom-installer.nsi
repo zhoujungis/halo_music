@@ -127,22 +127,6 @@ Function setInstallSectionSpaceRequired
   !insertmacro setSpaceRequired ${INSTALL_SECTION_ID}
 FunctionEnd
 
-Function un.onInit
-  SetShellVarContext all
-FunctionEnd
-
-Section "un.Uninstall"
-  SectionIn RO
-  Delete "$DESKTOP\HALO Music.lnk"
-  Delete "$SMSTARTUP\HALO Music.lnk"
-  Delete "$SMPROGRAMS\HALO Music.lnk"
-  Delete "$INSTDIR\Uninstall HALO Music.exe"
-  SetOutPath $TEMP
-  RMDir /r "$INSTDIR"
-  DeleteRegKey HKLM "${UNINSTALL_REGISTRY_KEY}"
-  DeleteRegKey HKLM "${INSTALL_REGISTRY_KEY}"
-SectionEnd
-
 !ifdef BUILD_UNINSTALLER
   !include "uninstaller.nsh"
 !endif

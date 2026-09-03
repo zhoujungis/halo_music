@@ -1,25 +1,11 @@
 
   (function(){
-    const APP_VERSION = '2.0.0';
+    const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || '0.0.0';
     const ANDROID_UPDATE_STORAGE_KEY = 'halo-music-android-update-dismissed';
-    // 临时验收开关：打开后 QQ 歌曲会直接走哔哩哔哩兜底，测试完成后改回 false。
-    const QQ_BILIBILI_FALLBACK_TEST_MODE = true;
 
     const translations = {
       zh: {
-        appTitle:"HALO 音乐广场",
-        shortcutHint:"快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果",
-        shortcutPanelTitle:"快捷键说明",
-        shortcutPanelDesc:"使用键盘可以更加方便地控制 HALO 音乐广场：",
-        shortcutPlayPause:"播放 / 暂停",
-        shortcutSeek:"快退 / 快进 5 秒",
-        shortcutVolume:"音量加 / 减",
-        shortcutPrevNext:"上一首 / 下一首",
-        shortcutFav:"收藏 / 取消收藏当前歌曲",
-        shortcutLyricsFX:"切换歌词炫酷效果",
-        shortcutMute:"静音 / 取消静音",
-        shortcutFocusSearch:"聚焦搜索框",
-        shortcutCloseModal:"提示：按 Esc 可以关闭弹窗。",
+        appTitle:"Halo音乐",
         searchTitle:"歌曲搜索",
         searchButton:"搜索",
         searchStatusIdle:"基于推荐算法，猜你想搜“周杰伦”",
@@ -69,6 +55,9 @@
         queueAdd:"加入播放列表",
         queueRemove:"从播放列表移除",
         queueEmpty:"播放列表为空",
+        queueClear:"清空播放列表",
+        toastQueueCleared:"播放列表已清空",
+        confirmClearQueue:"确定要清空播放列表吗？",
         importPlaylist:"导入歌单",
         modalImportPlaylistTitle:"导入平台歌单",
         modalImportPlaylistDesc:"粘贴歌单分享文本或链接，系统会自动识别平台并导入歌曲。",
@@ -121,19 +110,7 @@
         modalCancel:"取消"
       },
       en: {
-        appTitle:"HALO Music Square",
-        shortcutHint:"Shortcuts: Space Play/Pause · ←/→ Seek · ↑/↓ Volume · N/P Track · F Fav · L Lyrics FX",
-        shortcutPanelTitle:"Keyboard Shortcuts",
-        shortcutPanelDesc:"Control HALO Music Square more easily with your keyboard:",
-        shortcutPlayPause:"Play / Pause",
-        shortcutSeek:"Seek backward / forward 5s",
-        shortcutVolume:"Volume up / down",
-        shortcutPrevNext:"Previous / Next track",
-        shortcutFav:"Favorite / unfavorite current track",
-        shortcutLyricsFX:"Toggle lyrics FX",
-        shortcutMute:"Mute / unmute",
-        shortcutFocusSearch:"Focus on search box",
-        shortcutCloseModal:"Tip: press Esc to close dialogs.",
+        appTitle:"Halo Music",
         searchTitle:"Search",
         searchButton:"Search",
         searchStatusIdle:"Based on recommendations, try \"Jay Chou\"",
@@ -183,6 +160,9 @@
         queueAdd:"Add to queue",
         queueRemove:"Remove from queue",
         queueEmpty:"The playback list is empty",
+        queueClear:"Clear playback list",
+        toastQueueCleared:"Playback list cleared",
+        confirmClearQueue:"Clear the playback list?",
         importPlaylist:"Import playlist",
         modalImportPlaylistTitle:"Import playlist",
         modalImportPlaylistDesc:"Paste a shared playlist message or URL. The platform will be detected automatically.",
@@ -278,6 +258,28 @@
     let pendingPlaylistTracks = [];
     let nextAudioPreload = null;
     let activePlaybackBlobUrl = '';
+    let playbackRequestToken = 0;
+    let searchRequestToken = 0;
+    let mobileLyricsDrag=null;
+    let mobileLyricsDragSuppressUntil=0;
+    let mobileLyricsOriginalParent=null;
+    let mobileLyricsOriginalNextSibling=null;
+
+    async function fetchWithTimeout(input, options={}, timeoutMs=10000){
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),timeoutMs);
+      const externalSignal=options.signal;
+      const abort=()=>controller.abort();
+      if(externalSignal){
+        if(externalSignal.aborted)controller.abort();
+        else externalSignal.addEventListener('abort',abort,{once:true});
+      }
+      try{return await fetch(input,{...options,signal:controller.signal});}
+      finally{
+        clearTimeout(timer);
+        externalSignal?.removeEventListener('abort',abort);
+      }
+    }
     let nextTrackPrepareToken = 0;
     let preparedNextTrack = null;
     let workspaceRemovedTabs = [];
@@ -298,14 +300,23 @@
     function trackDisplaySource(track){
       return track?.playbackSource || track?.source || 'netease';
     }
+    let toastTimer = null;
     function showToast(msg){
       const toast=$('toast'); if(!toast)return;
       toast.textContent=msg;
       toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'),2000);
+      if(toastTimer)clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>{toast.classList.remove('show');toastTimer=null;},2000);
     }
     function updateDesktopPlaybackVisual(){
       dom.playerPanel?.classList.toggle('is-playing',Boolean(state.isPlaying));
+    }
+    function updatePlaylistTrackButtons(){
+      const currentUid=state.currentTrack?.uid||'';
+      dom.playlistList?.querySelectorAll('.track-item').forEach(item=>{
+        const playButton=item.querySelector('.track-actions .btn-secondary');
+        if(playButton)playButton.textContent=item.dataset.trackUid===currentUid&&state.isPlaying?'⏸':'▶';
+      });
     }
     function updateAuthUI(){
       document.body.classList.toggle('auth-gated',!state.isAuthenticated);
@@ -395,7 +406,14 @@
     async function toggleAuth(){
       if(!state.isAuthenticated){openLoginModal();return;}
       await librarySaveChain;
+      const previousUsername=state.profileName;
       try{await fetch('/api/logout',{method:'POST',credentials:'same-origin'});}catch(e){}
+      try{
+        if(previousUsername){
+          localStorage.removeItem(getLibraryStorageKey(previousUsername));
+          localStorage.removeItem(getPlayQueueStorageKey(previousUsername));
+        }
+      }catch(e){}
       dom.audio.pause();
       state.isAuthenticated=false;
       state.profileName='';
@@ -471,12 +489,6 @@
     }
 
     // ========== 旧的质量映射函数，暂时保留（不再使用 API 的 quality 字段） ==========
-    function neteaseQualityToTag(q){
-      const s = (q || '').toString().toLowerCase();
-      if (/lossless|无损|flac|ape|wav|hi-?res|sq|臻品|臻音|高清臻音|spatial/.test(s)) return 'lossless';
-      return 'normal';
-    }
-
     // ========== 新增：统一根据音频链接后缀判断音质 ==========
     function inferQualityFromUrl(url){
       if(!url) return {tag:null,label:''};
@@ -487,8 +499,7 @@
       if (losslessExts.includes(ext)) {
         return {tag:'lossless', label:'LOSSLESS'};
       }
-      // 其他一律当作 320K 显示
-      return {tag:'320k', label:'320K'};
+      return {tag:'normal', label:'STANDARD'};
     }
 
     // ===================== 歌单缓存 / 导出 =====================
@@ -998,10 +1009,10 @@
       return state.searchResults.some(existing=>`${normalizeMusicMatchText(existing?.title)}|${normalizeMusicMatchText(existing?.artist)}`===key);
     }
 
-    // 网易云搜索：qijieya meting search
-    async function searchNetease(kw, page, num){
+    // 网易云搜索：通过同源服务端代理
+    async function searchNetease(kw, page, num, token=searchRequestToken){
       const requestLimit=Math.max(1,page||1)*Math.max(1,num||10);
-      const url=`https://api.qijieya.cn/meting/?type=search&id=${encodeURIComponent(kw)}&limit=${encodeURIComponent(requestLimit)}&server=netease`;
+      const url=`/api/music?action=netease_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(requestLimit)}`;
       let added=0;
 
       function pickQueryParam(rawUrl, key){
@@ -1015,12 +1026,16 @@
       }
 
       try{
-        const res=await fetch(url);
+        const res=await fetchWithTimeout(url,{},10000);
         const json=await res.json();
-        if(!Array.isArray(json))return 0;
+        if(token!==searchRequestToken)return 0;
+        const rows=Array.isArray(json)?json:json?.data;
+        if(!Array.isArray(rows))return 0;
 
-        json.forEach((it, idx)=>{
-          const songId = pickQueryParam(it.url, 'id') || `${kw}-${idx+1}`;
+        rows.forEach((it, idx)=>{
+          if(token!==searchRequestToken)return;
+          const songId = pickQueryParam(it.url, 'id') || String(it.id||it.songid||it.song_id||it.url_id||'').trim();
+          if(!/^\d{1,20}$/.test(songId))return;
           const uid=`netease-${songId}`;
           if(state.trackMap.has(uid))return;
 
@@ -1031,14 +1046,14 @@
             keyword:kw,
 
             songid:songId,
-            title:it.name||'',
-            artist:it.artist||'',
+            title:it.name||it.title||'',
+            artist:Array.isArray(it.artist)?it.artist.join(' / '):(it.artist||it.author||''),
             album:'',
 
-            cover:it.pic||null,
-            audioUrl:it.url||null,
+            cover:it.pic||it.cover||it.coverUrl||null,
+            audioUrl:`/api/music?action=netease_audio&id=${encodeURIComponent(songId)}`,
             lrc:null,
-            lrcUrl:it.lrc||null,
+            lrcUrl:`/api/music?action=netease_lyric&id=${encodeURIComponent(songId)}`,
 
             detailsLoaded:false,
             quality:null,
@@ -1050,19 +1065,21 @@
           added++;
         });
 
-      }catch(e){console.error('netease(qijieya meting)',e);}
+      }catch(e){console.error('netease proxy search',e);}
       return added;
     }
 
     // QQ 搜索：由同源 Function 在官方接口和多个备用源之间自动切换。
-    async function searchQQ(kw, limit) {
+    async function searchQQ(kw, limit, token=searchRequestToken) {
       const url=`/api/music?action=qq_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
       let added=0;
       try{
-        const res=await fetch(url);
+        const res=await fetchWithTimeout(url,{},10000);
         const json=await res.json();
+        if(token!==searchRequestToken)return 0;
         if(!res.ok||json.code!==200||!Array.isArray(json.data))throw new Error(json.error||'QQ 搜索失败');
         json.data.forEach((it,idx)=>{
+          if(token!==searchRequestToken)return;
           const mid=String(it.mid||'').trim();
           if(!mid)return;
           const uid=`qq-${mid}`;
@@ -1110,6 +1127,9 @@
       if(!state.searchKeyword){showToast(t('toastNeedKeyword'));return;}
       const enabled=Object.keys(state.enabledSources).filter(k=>state.enabledSources[k]);
       if(!enabled.length){showToast(t('searchStatusNoSource'));return;}
+      if(state.searchInProgress&&!reset)return;
+      if(reset)searchRequestToken+=1;
+      const requestToken=searchRequestToken;
       state.searchInProgress=true;
       dom.searchStatus.textContent=t('searchStatusSearching');
 
@@ -1129,8 +1149,8 @@
       const tasks=[];
       for(const s of enabled){
         const limit=state.perSourceCurrentLimit[s]||state.perSourceLimit;
-        if(s==='netease')tasks.push(searchNetease(kw, 1, state.perSourceLimit));
-        if(s==='qq')tasks.push(searchQQ(kw,limit));
+        if(s==='netease')tasks.push(searchNetease(kw, state.perSourcePage.netease||1, state.perSourceLimit, requestToken));
+        if(s==='qq')tasks.push(searchQQ(kw,limit,requestToken));
       }
       let added=0;
       try{
@@ -1141,6 +1161,7 @@
         showToast(t('toastSearchError'));
       }
 
+      if(requestToken!==searchRequestToken)return;
       state.searchInProgress=false;
       dom.searchStatus.textContent=t('searchStatusDone');
       renderMiniSearchList();
@@ -1149,7 +1170,7 @@
       if(state.isAuthenticated&&!state.currentTrack && state.searchResults.length){
         playFromList('search',0);
       }
-      state.noMoreResults=true;
+      state.noMoreResults=added===0;
     }
 
     // ===================== 各平台详情 =====================
@@ -1157,12 +1178,8 @@
     // 网易云详情：搜索结果已返回播放、封面、歌词接口，这里只补全缓存歌曲和歌词内容
     async function fetchNeteaseDetails(track){
       if(track.songid){
-        if(!track.audioUrl){
-          track.audioUrl=`https://api.qijieya.cn/meting/?server=netease&type=url&id=${encodeURIComponent(track.songid)}`;
-        }
-        if(!track.lrcUrl){
-          track.lrcUrl=`https://api.qijieya.cn/meting/?server=netease&type=lrc&id=${encodeURIComponent(track.songid)}`;
-        }
+        if(!track.audioUrl)track.audioUrl=`/api/music?action=netease_audio&id=${encodeURIComponent(track.songid)}`;
+        if(!track.lrcUrl)track.lrcUrl=`/api/music?action=netease_lyric&id=${encodeURIComponent(track.songid)}`;
       }
 
       if(track.audioUrl){
@@ -1173,7 +1190,7 @@
 
       if(!track.lrc && track.lrcUrl){
         try{
-          const lr=await fetch(track.lrcUrl);
+          const lr=await fetchWithTimeout(track.lrcUrl,{},10000);
           const contentType=(lr.headers.get('content-type')||'').toLowerCase();
           if(contentType.includes('json')){
             const lj=await lr.json();
@@ -1190,52 +1207,15 @@
             track.lrc=await lr.text();
           }
         }catch(e){
-          console.warn('netease(qijieya meting) lyric fetch failed', e);
+          console.warn('netease proxy lyric fetch failed', e);
         }
       }
 
       track.detailsLoaded=true;
     }
 
-    // 服务器端 tang 解析失败或共享出口 IP 被限流时，浏览器用用户自己的 IP
-    // 直连 tang 拿 VIP 播放链接，再交回服务器校验代理。
-    // tang 慢窗口会拖到 15~20 秒才应答，这里给足 25 秒耐心等；
     // 服务器侧先成功时由外部 signal 提前取消，避免白白占用请求。
-    async function resolveQqViaBrowserTang(keyword,mid,{signal:externalSignal}={}){
-      try{
-        const controller=new AbortController();
-        const onExternalAbort=()=>controller.abort();
-        if(externalSignal){
-          if(externalSignal.aborted){controller.abort();}
-          else externalSignal.addEventListener('abort',onExternalAbort,{once:true});
-        }
-        const timer=setTimeout(()=>controller.abort(),25000);
-        try{
-          const res=await fetch(`https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json&mid=${encodeURIComponent(mid)}`,{signal:controller.signal});
-          const j=await res.json();
-          const data=(j&&typeof j==='object'&&!Array.isArray(j))?j:null;
-          if(!data||(data.song_mid&&data.song_mid!==mid))return null;
-          const lyric=String(data.song_lyric||data.lyric||'');
-          for(const key of ['song_play_url_hq','song_play_url_standard','song_play_url','song_play_url_sq','song_play_url_pq']){
-            const u=String(data[key]||'');
-            if(/^https?:\/\//i.test(u))return {url:u,lyric};
-          }
-          return null;
-        }finally{
-          clearTimeout(timer);
-          if(externalSignal)externalSignal.removeEventListener('abort',onExternalAbort);
-        }
-      }catch(e){
-        if(e&&e.name!=='AbortError')console.warn('QQ browser tang resolver unavailable',e);
-        return null;
-      }
-    }
-
-    // QQ 详情和音频统一走同源代理池，避免浏览器跨域和单点失效。
     async function fetchQQDetails(track,options={}) {
-      if(QQ_BILIBILI_FALLBACK_TEST_MODE&&track?.source==='qq'){
-        throw new Error('QQ fallback test mode');
-      }
       const keyword=(track.qqSearchKey||track.keyword||`${track.title||''} ${track.artist||''}`).trim();
       const mid=String(track.qqId||track.songMid||track.songid||'').trim();
       if(!mid)throw new Error('QQ 音乐歌曲 ID 缺失');
@@ -1247,7 +1227,6 @@
       // 播放失败后的重试：绕过服务器缓存强制重新解析并更新缓存。
       if(options.forceRefresh)params.set('refresh','1');
       // 先请求服务器，让已有 D1 缓存直接命中；只有服务器解析失败时才调用
-      // 浏览器 tang，避免每次播放都重复请求同一首歌。
       const fetchServer=async(p)=>{
         const ctrl=new AbortController();
         const timer=setTimeout(()=>ctrl.abort(),10000);
@@ -1259,36 +1238,7 @@
         }finally{clearTimeout(timer);}
       };
       let {r:res,json}=await fetchServer(params);
-      let browserLyric='';
-      let rawBrowserUrl='';
-      if(!res||!res.ok||json.code!==200||!json.data||!json.data.audioUrl){
-        // 服务器侧失败后，用浏览器解析结果重试一次。
-        const browser=await resolveQqViaBrowserTang(keyword,mid);
-        if(browser&&browser.url){
-          // 页面是 https，直接播放必须用 https，否则会被浏览器当混合内容拦截。
-          rawBrowserUrl=browser.url.replace(/^http:/i,'https:');
-          browserLyric=browser.lyric||'';
-          params.set('resolved_url',browser.url);
-          const retry=await fetchServer(params);
-          res=retry.r;
-          json=retry.json;
-        }
-      }
       if(!res||!res.ok||json.code!==200||!json.data){
-        // 服务器重试仍失败：直接播放浏览器解析到的原始地址（用户 IP 直连）。
-        if(rawBrowserUrl){
-          Object.assign(track,{
-            audioUrl:rawBrowserUrl,
-            audioCandidates:[rawBrowserUrl],
-            playbackSource:'qq',
-            lrc:browserLyric||track.lrc||null,
-            lrcUrl:null,
-            quality:null,
-            qualityLabel:null,
-            detailsLoaded:true
-          });
-          return;
-        }
         throw new Error(json.error||'QQ 音乐详情获取失败');
       }
       const d=json.data;
@@ -1304,7 +1254,7 @@
         audioUrl:d.audioUrl||track.audioUrl,
         audioCandidates,
         playbackSource:'qq',
-        lrc:d.lyric||browserLyric||track.lrc||null,
+        lrc:d.lyric||track.lrc||null,
         lrcUrl:null,
         quality:d.quality||track.quality||null,
         qualityLabel:d.qualityLabel||track.qualityLabel||null,
@@ -1361,7 +1311,7 @@
             if(!track.lrc && track.qqId){
               try{
                 const lyricParams=new URLSearchParams({action:'qq_lyric',id:String(track.qqId)});
-                const lyricResponse=await fetch(`/api/music?${lyricParams}`,{cache:'no-store'});
+                const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{cache:'no-store'},10000);
                 const lyricJson=await lyricResponse.json().catch(()=>null);
                 const lyric=lyricJson?.data?.lyric||'';
                 if(lyricResponse.ok&&lyricJson?.code===200&&lyric)track.lrc=lyric;
@@ -1392,8 +1342,8 @@
     function scoreQQImportCandidate(track,candidate){
       const targetTitle=normalizeMusicMatchText(track.title);
       const targetArtist=normalizeMusicMatchText(track.artist);
-      const title=normalizeMusicMatchText(candidate.song_title||candidate.song_name);
-      const artist=normalizeMusicMatchText(candidate.singer_name);
+      const title=normalizeMusicMatchText(candidate.song_title||candidate.song_name||candidate.name);
+      const artist=normalizeMusicMatchText(candidate.singer_name||candidate.artist);
       let score=0;
       if(title===targetTitle)score+=100;
       else if(title&&targetTitle&&(title.includes(targetTitle)||targetTitle.includes(title)))score+=45;
@@ -1406,16 +1356,16 @@
     async function fetchQishuiDetails(track){
       if(!track.qqId){
         const keyword=(track.keyword||`${track.title||''} ${track.artist||''}`).trim();
-        const response=await fetch(`https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(keyword)}&type=json`);
+        const response=await fetchWithTimeout(`/api/music?action=qq_search&q=${encodeURIComponent(keyword)}&limit=20`,{},10000);
         const json=await response.json();
-        const candidates=Array.isArray(json)?json:(Array.isArray(json?.data)?json.data:[]);
+        const candidates=Array.isArray(json?.data)?json.data:[];
         const matched=candidates
-          .filter(item=>item&&item.song_mid)
+          .filter(item=>item&&item.mid)
           .map(item=>({item,score:scoreQQImportCandidate(track,item)}))
           .sort((a,b)=>b.score-a.score)[0];
         if(!matched||matched.score<45)throw new Error('qishui track match failed');
-        track.qqId=matched.item.song_mid;
-        track.songMid=matched.item.song_mid;
+        track.qqId=matched.item.mid;
+        track.songMid=matched.item.mid;
         track.qqSearchKey=keyword;
       }
       await fetchQQDetails(track);
@@ -1504,6 +1454,74 @@
         });
         wrap.appendChild(div);
       });
+      updateMobileLyricWindow(-1);
+    }
+
+    function updateMobileLyricWindow(index){
+      const rows=[...(dom.lyricsInner?.querySelectorAll('.lyrics-line')||[])];
+      if(!rows.length)return;
+      const isMobileLyrics=window.matchMedia('(max-width: 760px)').matches
+        && document.body.dataset.mobileView==='lyrics';
+      if(!isMobileLyrics){
+        rows.forEach(row=>row.classList.remove('mobile-lyrics-visible'));
+        return;
+      }
+      const active=Number.isInteger(index)&&index>=0&&index<rows.length?index:0;
+      rows.forEach((row,i)=>row.classList.toggle('mobile-lyrics-visible',i===active));
+    }
+
+    function setupMobileLyricsDrag(){
+      const surface=dom.layout;
+      if(!surface||!dom.lyricsInner)return;
+      const isInteractiveTarget=target=>target?.closest?.('button,a,input,select,textarea,[contenteditable="true"],.track-item');
+      surface.addEventListener('pointerdown',event=>{
+        if(document.body.dataset.mobileView!=='lyrics')return;
+        if(event.pointerType==='mouse'&&event.button!==0)return;
+        if(isInteractiveTarget(event.target))return;
+        mobileLyricsDrag={
+          pointerId:event.pointerId,
+          startX:event.clientX,
+          startY:event.clientY,
+          x:parseFloat(dom.lyricsInner.dataset.dragX||'0')||0,
+          y:parseFloat(dom.lyricsInner.dataset.dragY||'0')||0,
+          moved:false
+        };
+        surface.setPointerCapture?.(event.pointerId);
+        dom.lyricsInner.classList.add('is-dragging');
+      });
+      surface.addEventListener('pointermove',event=>{
+        const drag=mobileLyricsDrag;
+        if(!drag||drag.pointerId!==event.pointerId)return;
+        const dx=event.clientX-drag.startX;
+        const dy=event.clientY-drag.startY;
+        if(Math.abs(dx)>3||Math.abs(dy)>3)drag.moved=true;
+        if(drag.moved)event.preventDefault();
+        const xLimit=Math.max(96,Math.round((surface.clientWidth-dom.lyricsInner.offsetWidth)/2));
+        const yMin=-10;
+        const yMax=Math.max(yMin,surface.clientHeight-dom.lyricsInner.offsetHeight-10);
+        const x=Math.max(-xLimit,Math.min(xLimit,drag.x+dx));
+        const y=Math.max(yMin,Math.min(yMax,drag.y+dy));
+        dom.lyricsInner.dataset.dragX=String(x);
+        dom.lyricsInner.dataset.dragY=String(y);
+        dom.lyricsInner.style.setProperty('--mobile-lyrics-x',`${x}px`);
+        dom.lyricsInner.style.setProperty('--mobile-lyrics-y',`${y}px`);
+      });
+      const finish=event=>{
+        const drag=mobileLyricsDrag;
+        if(!drag||drag.pointerId!==event.pointerId)return;
+        if(drag.moved)mobileLyricsDragSuppressUntil=Date.now()+350;
+        try{surface.releasePointerCapture?.(event.pointerId);}catch(error){}
+        mobileLyricsDrag=null;
+        dom.lyricsInner.classList.remove('is-dragging');
+      };
+      surface.addEventListener('pointerup',finish);
+      surface.addEventListener('pointercancel',finish);
+      surface.addEventListener('click',event=>{
+        if(Date.now()<mobileLyricsDragSuppressUntil){
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },true);
     }
 
     function seekToLyric(index){
@@ -1528,13 +1546,16 @@
       }
       if(idx<0||idx===state.currentLyricIndex)return;
       state.currentLyricIndex=idx;
+      updateMobileLyricWindow(idx);
       const wrap=dom.lyricsInner;
       wrap.querySelectorAll('.lyrics-line.active').forEach(el=>el.classList.remove('active'));
       const act=wrap.querySelector(`.lyrics-line[data-index="${idx}"]`);
       if(act){
         act.classList.add('active');
         const box=dom.lyricsContainer;
-        box.scrollTo({top:act.offsetTop-box.clientHeight*0.45,behavior:'smooth'});
+        if(!(window.matchMedia('(max-width: 760px)').matches&&document.body.dataset.mobileView==='lyrics')){
+          box.scrollTo({top:act.offsetTop-box.clientHeight*0.45,behavior:'smooth'});
+        }
       }
     }
 
@@ -1574,6 +1595,10 @@
     async function playTrack(track,context,options={}){
       if(!track)return;
       if(!requirePlayback())return;
+      const requestToken=++playbackRequestToken;
+      dom.audio.pause();
+      state.isPlaying=false;
+      updateDesktopPlaybackVisual();
       state.currentTrack=track;
       state.playContext=context||state.playContext;
       renderPlaylistList();
@@ -1620,28 +1645,60 @@
       renderLyrics();
       updateMainFavButton();
 
+      // Netease search results already contain a same-origin audio endpoint.
+      // Start it before awaiting lyrics/details so a real track click keeps
+      // its browser user-activation and does not require clicking Lyrics.
+      const earlyAudioUrl=track.source==='netease'&&track.audioUrl?track.audioUrl:'';
+      let earlyPlayback=null;
+      if(earlyAudioUrl){
+        try{
+          dom.audio.autoplay=true;
+          dom.audio.src=earlyAudioUrl;
+          dom.audio.load();
+          earlyPlayback=dom.audio.play();
+        }catch(error){
+          earlyPlayback=Promise.reject(error);
+        }
+      }
+
       try{
         if(!options.detailsReady || !track.audioUrl)await ensureTrackDetails(track);
+        if(requestToken!==playbackRequestToken)return;
         applyUI();
         state.lyricLines = track.lrc ? parseLRC(track.lrc) : [];
         renderLyrics();
         if(!track.audioUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
-        audioCandidateIndex=Math.max(0,(track.audioCandidates||[]).indexOf(track.audioUrl));
-        const preloadedUrl=await takePreloadedAudio(track);
-        releaseActivePlaybackBlob();
-        activePlaybackBlobUrl=preloadedUrl;
-        dom.audio.autoplay=true;
-        dom.audio.src=preloadedUrl||track.audioUrl;
-        dom.audio.load();
-        const playback=dom.audio.play();
-        await playback;
-        state.isPlaying=true;
-        updateDesktopPlaybackVisual();
+
+        if(earlyPlayback&&earlyAudioUrl===track.audioUrl){
+          await earlyPlayback;
+          if(requestToken!==playbackRequestToken)return;
+          state.isPlaying=true;
+          updateDesktopPlaybackVisual();
+          dom.playBtn.textContent='\u23f8';
+          dom.playerStatus.textContent=t('playerStatusPlaying');
+          updateMediaSession(track);
+          prepareUpcomingTrack();
+        }else{
+          audioCandidateIndex=Math.max(0,(track.audioCandidates||[]).indexOf(track.audioUrl));
+          const preloadedUrl=await takePreloadedAudio(track);
+          if(requestToken!==playbackRequestToken)return;
+          releaseActivePlaybackBlob();
+          activePlaybackBlobUrl=preloadedUrl;
+          dom.audio.autoplay=true;
+          dom.audio.src=preloadedUrl||track.audioUrl;
+          dom.audio.load();
+          const playback=dom.audio.play();
+          await playback;
+          if(requestToken!==playbackRequestToken)return;
+          state.isPlaying=true;
+          updateDesktopPlaybackVisual();
         dom.playBtn.textContent='⏸';
         dom.playerStatus.textContent=t('playerStatusPlaying');
         updateMediaSession(track);
         prepareUpcomingTrack();
+        }
       }catch(e){
+        if(requestToken!==playbackRequestToken)return;
         console.error(e);
         showToast(track._bilibiliFallbackError?t('toastBilibiliFallbackError'):t('toastPlayError'));
         dom.playerStatus.textContent=t('playerStatusIdle');
@@ -1704,7 +1761,7 @@
       const controller=new AbortController();
       const entry={url,blobUrl:'',controller,promise:null};
       nextAudioPreload=entry;
-      entry.promise=fetch(url,{cache:'force-cache',credentials:'same-origin',signal:controller.signal})
+      entry.promise=fetchWithTimeout(url,{cache:'force-cache',credentials:'same-origin',signal:controller.signal},12000)
         .then(response=>{
           if(!response.ok)throw new Error(`prefetch failed: ${response.status}`);
           return response.blob();
@@ -1783,8 +1840,10 @@
         if(type!=='results')showToast(t('toastPlaylistEmpty'));
         return;
       }
-      if(index<0)index=list.length-1;
-      if(index>=list.length)index=0;
+      if(!Number.isInteger(index)||index<0||index>=list.length){
+        showToast(t('toastPlayError'));
+        return;
+      }
       state.playContext={type,index,playlistId:plId||null};
       playTrack(list[index],state.playContext);
     }
@@ -1995,6 +2054,18 @@
       showToast(t('queueRemove'));
     }
 
+    function clearPlayQueue(){
+      if(!state.playQueue.length)return;
+      if(typeof window.confirm==='function'&&!window.confirm(t('confirmClearQueue')))return;
+      state.playQueue=[];
+      if(state.playContext.type==='results'||state.playContext.type==='queue'){
+        state.playContext={type:'queue',index:-1,playlistId:null};
+      }
+      savePlayQueueToStorage();
+      renderPlaylistList();
+      showToast(t('toastQueueCleared'));
+    }
+
     function renderSavePlaylistOptions(){
       dom.savePlaylistOptions.innerHTML='';
       const tracks=state.batchTracks.length?[...state.batchTracks]:(state.currentTrack?[state.currentTrack]:[]);
@@ -2137,7 +2208,7 @@
         let dismissedVersion='';
         try{dismissedVersion=sessionStorage.getItem(ANDROID_UPDATE_STORAGE_KEY)||'';}catch(e){}
         if(dismissedVersion===String(latestVersion))return;
-        if(dom.announcementModal.classList.contains('show')){
+        if(dom.announcementModal.classList.contains('show')||dom.loginModal.classList.contains('show')){
           window.setTimeout(()=>checkForAndroidUpdate(),500);
           return;
         }
@@ -2150,7 +2221,15 @@
     function showAnnouncementIfNeeded(){
       let dismissed=false;
       try{dismissed=localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)==='dismissed';}catch(e){}
-      if(!dismissed)setTimeout(openAnnouncementModal,120);
+      if(dismissed)return;
+      const openWhenAvailable=()=>{
+        if(dom.loginModal?.classList.contains('show')||dom.androidUpdateModal?.classList.contains('show')){
+          setTimeout(openWhenAvailable,500);
+          return;
+        }
+        openAnnouncementModal();
+      };
+      setTimeout(openWhenAvailable,120);
     }
 
     function createPlaylistForTrack(){
@@ -2244,6 +2323,17 @@
         meta.appendChild(tt);meta.appendChild(ar);
         const right=document.createElement('div');
         right.className='mini-right';
+        const queueBtn=document.createElement('button');
+        queueBtn.type='button';
+        queueBtn.className='btn btn-ghost btn-icon queue-add-btn ripple-target';
+        queueBtn.textContent='☷';
+        queueBtn.title=t('queueAdd');
+        queueBtn.setAttribute('aria-label',t('queueAdd'));
+        queueBtn.addEventListener('click',event=>{
+          event.stopPropagation();
+          addToPlayQueue(track);
+        });
+        right.appendChild(queueBtn);
         const badge=document.createElement('div');
         badge.className='mini-badge'; badge.textContent='#'+(i+1);
         right.appendChild(badge);
@@ -2288,6 +2378,10 @@
     function updatePlaymodeVisibility(){
       const activeTab=document.querySelector('.playlist-tab.active')?.dataset.tab||'results';
       dom.playlistPanel?.querySelector('.playmode-row')?.classList.toggle('is-hidden',activeTab!=='results');
+      if(dom.clearQueueBtn){
+        dom.clearQueueBtn.classList.toggle('is-hidden',activeTab!=='results');
+        dom.clearQueueBtn.disabled=state.playQueue.length===0;
+      }
     }
 
     function isMobileLibraryView(){
@@ -2558,7 +2652,8 @@
         const act=document.createElement('div');
         act.className='track-actions';
         const pBtn=document.createElement('button');
-        pBtn.className='btn btn-secondary btn-icon ripple-target'; pBtn.textContent='▶';
+        pBtn.className='btn btn-secondary btn-icon ripple-target';
+        pBtn.textContent=state.currentTrack?.uid===track.uid&&state.isPlaying?'⏸':'▶';
         const fBtn=document.createElement('button');
         fBtn.className='btn btn-secondary btn-icon ripple-target'; fBtn.textContent='❤';
         if(isFavorite(track)) fBtn.classList.add('btn-fav-active');
@@ -2821,6 +2916,7 @@
       dom.playlistList=$('playlist-list');
       dom.playlistInfo=$('playlist-info');
       dom.playlistPanel=document.querySelector('.playlist-panel');
+      dom.clearQueueBtn=$('clear-playlist-btn');
       dom.mobilePlaylistBack=$('mobile-playlist-back');
       dom.mobilePlaylistDelete=$('mobile-playlist-delete');
       dom.playlistSelectRow=$('playlist-select-row');
@@ -2852,9 +2948,6 @@
       dom.savePlaylistCloseBtn=$('save-playlist-close');
       dom.savePlaylistCreateBtn=$('save-playlist-create');
 
-      dom.shortcutToggleBtn=$('shortcut-toggle-btn');
-      dom.shortcutModal=$('shortcut-modal');
-      dom.shortcutCloseBtn=$('shortcut-close');
       dom.settingsToggleBtn=$('settings-toggle-btn');
       dom.settingsModal=$('settings-modal');
       dom.settingsCloseBtn=$('settings-close');
@@ -2891,6 +2984,28 @@
     }
 
     const mobileViews=['search','lyrics','me'];
+
+    function syncMobileLyricsMount(isPlaybackView){
+      const container=dom.lyricsContainer;
+      const playlist=dom.playlistPanel;
+      if(!container||!playlist)return;
+      if(!mobileLyricsOriginalParent){
+        mobileLyricsOriginalParent=container.parentNode;
+        mobileLyricsOriginalNextSibling=container.nextSibling;
+      }
+      if(isPlaybackView){
+        if(container.parentNode!==playlist)playlist.appendChild(container);
+        return;
+      }
+      if(container.parentNode!==mobileLyricsOriginalParent){
+        mobileLyricsOriginalParent.insertBefore(
+          container,
+          mobileLyricsOriginalNextSibling&&mobileLyricsOriginalNextSibling.parentNode===mobileLyricsOriginalParent
+            ? mobileLyricsOriginalNextSibling
+            : null
+        );
+      }
+    }
 
     function openWorkspace(view){
       const isSearch=view==='search';
@@ -3000,15 +3115,24 @@
         if(active)btn.setAttribute('aria-current','page');
         else btn.removeAttribute('aria-current');
       });
+      const isMobile=window.matchMedia('(max-width: 760px)').matches;
+      syncMobileLyricsMount(next==='lyrics'&&isMobile);
       document.querySelectorAll('.layout > .panel').forEach(panel=>{
         const panelView=panel.classList.contains('search-panel')?'search':panel.classList.contains('player-panel')?'lyrics':'me';
-        panel.setAttribute('aria-hidden',String(panelView!==next && window.matchMedia('(max-width: 760px)').matches));
+        const visible=next==='lyrics'
+          ? (panelView==='lyrics'||panelView==='me')
+          : panelView===next;
+        panel.setAttribute('aria-hidden',String(!visible&&isMobile));
       });
-      if(next==='me'){
+      if(next==='me' && options.openFavorites){
+        document.querySelector('.playlist-tab[data-tab="favorites"]')?.click();
+      }
+      if(next==='me' && isMobile && !options.openFavorites){
         const activeTab=document.querySelector('.playlist-tab.active')?.dataset.tab;
-        if(activeTab==='results' || options.openFavorites){
-          document.querySelector('.playlist-tab[data-tab="favorites"]')?.click();
-        }
+        if(activeTab==='results')document.querySelector('.playlist-tab[data-tab="favorites"]')?.click();
+      }
+      if(next==='lyrics' && isMobile){
+        document.querySelector('.playlist-tab[data-tab="results"]')?.click();
       }
     }
 
@@ -3044,7 +3168,7 @@
       },true);
       window.matchMedia('(max-width: 760px)').addEventListener('change',event=>{
         document.querySelectorAll('.layout > .panel').forEach(panel=>panel.setAttribute('aria-hidden',event.matches?panel.getAttribute('aria-hidden'):'false'));
-        if(event.matches)setMobileView(document.body.dataset.mobileView||'search');
+        setMobileView(document.body.dataset.mobileView||'search');
       });
     }
 
@@ -3056,6 +3180,7 @@
 
     function setupEvents(){
       setupMediaSessionHandlers();
+      setupMobileLyricsDrag();
       document.querySelectorAll('.lang-btn').forEach(btn=>{
         btn.addEventListener('click',()=>setLanguage(btn.dataset.lang));
       });
@@ -3140,6 +3265,7 @@
       dom.audio.addEventListener('play',()=>{
         state.isPlaying=true;
         updateDesktopPlaybackVisual();
+        updatePlaylistTrackButtons();
         dom.playBtn.textContent='⏸';
         dom.playerStatus.textContent=t('playerStatusPlaying');
         updateMediaSession(state.currentTrack);
@@ -3147,6 +3273,7 @@
       dom.audio.addEventListener('pause',()=>{
         state.isPlaying=false;
         updateDesktopPlaybackVisual();
+        updatePlaylistTrackButtons();
         dom.playBtn.textContent='▶';
         dom.playerStatus.textContent=t('playerStatusPaused');
         audioLevel = 0;
@@ -3254,9 +3381,6 @@
       dom.savePlaylistModal.addEventListener('click',e=>{if(e.target===dom.savePlaylistModal)closeSavePlaylistModal();});
       dom.mobilePlaylistBack.addEventListener('click',closeMobilePlaylistDetail);
       dom.mobilePlaylistDelete.addEventListener('click',deleteSelectedPlaylist);
-      dom.shortcutToggleBtn.addEventListener('click',()=>{dom.shortcutModal.classList.add('show');});
-      dom.shortcutCloseBtn.addEventListener('click',()=>{dom.shortcutModal.classList.remove('show');});
-      dom.shortcutModal.addEventListener('click',e=>{if(e.target===dom.shortcutModal)dom.shortcutModal.classList.remove('show');});
       dom.settingsToggleBtn.addEventListener('click',openSettings);
       dom.settingsCloseBtn.addEventListener('click',closeSettings);
       dom.settingsModal.addEventListener('click',e=>{if(e.target===dom.settingsModal)closeSettings();});
@@ -3309,57 +3433,8 @@
           else showToast(t('toastPlaymodeShuffle'));
         });
       });
+      dom.clearQueueBtn?.addEventListener('click',clearPlayQueue);
 
-      document.addEventListener('keydown',e=>{
-        const tag=document.activeElement.tagName.toLowerCase();
-        const typing=(tag==='input'||tag==='textarea');
-        const playlistOpen=dom.playlistModal.classList.contains('show');
-        const importPlaylistOpen=dom.importPlaylistModal.classList.contains('show');
-        const savePlaylistOpen=dom.savePlaylistModal.classList.contains('show');
-        const shortcutOpen=dom.shortcutModal.classList.contains('show');
-        const settingsOpen=dom.settingsModal.classList.contains('show');
-        const clientDownloadOpen=dom.clientDownloadModal.classList.contains('show');
-        const workspaceOpen=dom.workspaceModal.classList.contains('show');
-        const loginOpen=dom.loginModal.classList.contains('show');
-        const announcementOpen=dom.announcementModal.classList.contains('show');
-        const androidUpdateOpen=dom.androidUpdateModal.classList.contains('show');
-        if(e.key==='Escape'){
-          if(announcementOpen)closeAnnouncementModal();
-          if(playlistOpen)closePlaylistModal();
-          if(importPlaylistOpen)closeImportPlaylistModal();
-          if(savePlaylistOpen)closeSavePlaylistModal();
-          if(shortcutOpen)dom.shortcutModal.classList.remove('show');
-          if(settingsOpen)closeSettings();
-          if(clientDownloadOpen)closeClientDownloadModal();
-          if(workspaceOpen)closeWorkspace();
-          if(loginOpen)closeLoginModal();
-          if(androidUpdateOpen)dismissAndroidUpdate(pendingAndroidUpdateVersion);
-          return;
-        }
-
-        if(playlistOpen || importPlaylistOpen || savePlaylistOpen || shortcutOpen || settingsOpen || clientDownloadOpen || workspaceOpen || loginOpen || announcementOpen || androidUpdateOpen){
-          return;
-        }
-
-        if(e.code==='Space'&&!typing){e.preventDefault();togglePlayPause();}
-        if(e.key==='ArrowRight'&&!typing){dom.audio.currentTime=(dom.audio.currentTime||0)+5;}
-        if(e.key==='ArrowLeft'&&!typing){dom.audio.currentTime=Math.max(0,(dom.audio.currentTime||0)-5);}
-        if(e.key==='ArrowUp'&&!typing){dom.audio.volume=Math.min(1,(dom.audio.volume||0)+0.05);dom.volumeSlider.value=dom.audio.volume;}
-        if(e.key==='ArrowDown'&&!typing){dom.audio.volume=Math.max(0,(dom.audio.volume||0)-0.05);dom.volumeSlider.value=dom.audio.volume;}
-        if((e.key==='n'||e.key==='N')&&!typing)playNext('next');
-        if((e.key==='p'||e.key==='P')&&!typing)playNext('prev');
-        if((e.key==='f'||e.key==='F')&&!typing)toggleFavoriteCurrent();
-        if((e.key==='l'||e.key==='L')&&!typing){
-          state.lyricsAlt=!state.lyricsAlt;
-          dom.lyricsContainer.classList.toggle('alt-style',state.lyricsAlt);
-          showToast(t('toastLyricStyleSwitched'));
-        }
-        if((e.key==='m'||e.key==='M')&&!typing){
-          state.muted=!state.muted;
-          dom.audio.muted=state.muted;
-        }
-        if(e.key==='/'&&!typing){e.preventDefault();dom.searchInput.focus();dom.searchInput.select();}
-      });
     }
 
     // ===================== 初始化 =====================
@@ -3381,6 +3456,8 @@
       dom.audio.volume=parseFloat(dom.volumeSlider.value);
       updateAuthUI();
       loadAuthSession();
+      showAnnouncementIfNeeded();
+      checkForAndroidUpdate();
     }
 
     document.addEventListener('DOMContentLoaded',init);
