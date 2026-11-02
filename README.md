@@ -547,6 +547,8 @@ npx electron . --url=https://music.zhoujun.dev
 3. 当前前端主入口仍集中在 `index.html`，后续可以拆分为模块化组件、状态模块和样式文件。
 4. 当前自动化测试以协议、解析和状态逻辑为主，后续可以加入 Playwright 视觉回归基线。
 5. 用户库目前以 JSON 保存；若要支持协作歌单、增量同步或审计，可拆分为歌曲、歌单和关系表。
+6. 单 IP 注册限制在校园/公司 NAT 下可能误伤其他用户；后续可用 Captcha 或邀请码替代硬性限制。
+7. 播放解析限流目前是 Worker 实例内的内存桶；高流量场景建议叠加 Cloudflare Rate Limiting 规则。
 
 ## 许可证与第三方声明
 
