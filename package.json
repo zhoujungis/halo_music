@@ -68,8 +68,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "HALO Music",
       "runAfterFinish": true,
-      "include": "build/installer.nsh",
-      "script": "build/custom-installer.nsi"
+      "include": "build/installer.nsh"
     },
     "msi": {
       "artifactName": "HALO-Music-Setup-${arch}.${ext}"
