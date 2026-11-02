@@ -69,7 +69,7 @@ function authorized(request, env) {
   return null;
 }
 
-async function refreshTrack(origin, track) {
+async function refreshTrack(origin, track, token) {
   const params = new URLSearchParams({
     action: "qq_detail",
     id: String(track.mid),
@@ -83,7 +83,10 @@ async function refreshTrack(origin, track) {
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {
     const response = await fetch(`${origin}/api/music?${params}`, {
-      headers: { "user-agent": "HALO-Music-QQ-Cache-Refresh" },
+      headers: {
+        "user-agent": "HALO-Music-QQ-Cache-Refresh",
+        "x-cache-refresh-token": String(token || ""),
+      },
       signal: controller.signal,
     });
     await response.body?.cancel();
@@ -102,7 +105,7 @@ export async function onRequestPost({ request, env }) {
 
   let body = {};
   try { body = await request.json(); } catch {}
-  const limit = Math.min(10, Math.max(1, Number(body.limit) || 5));
+  const limit = Math.min(20, Math.max(1, Number(body.limit) || 10));
   const offset = Math.max(0, Number(body.offset) || 0);
 
   let rows;
@@ -120,10 +123,9 @@ export async function onRequestPost({ request, env }) {
   const tracks = rows?.results || [];
   const total = Number(count?.total || 0);
   const origin = new URL(request.url).origin;
-  const results = [];
-  for (const track of tracks) {
-    results.push(await refreshTrack(origin, track));
-  }
+  const results = await Promise.all(
+    tracks.map((track) => refreshTrack(origin, track, env.CACHE_REFRESH_TOKEN)),
+  );
 
   const nextOffset = offset + tracks.length;
   return json({

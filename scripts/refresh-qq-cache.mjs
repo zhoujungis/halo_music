@@ -21,7 +21,7 @@ while (rounds < 10000) {
       "content-type": "application/json",
       "user-agent": "HALO-Music-QQ-Cache-Refresh",
     },
-    body: JSON.stringify({ offset, limit: 5 }),
+    body: JSON.stringify({ offset, limit: 10 }),
   });
   if (!response.ok) {
     console.error(`cache refresh request failed: HTTP ${response.status}`);
@@ -43,7 +43,7 @@ while (rounds < 10000) {
   offset = Number(data.nextOffset || offset);
   console.log(`batch ${rounds}: ${refreshed}/${total} refreshed, ${failed} failed, next=${offset}`);
   if (data.done) break;
-  await wait(2000);
+  await wait(500);
 }
 
 console.log(`QQ cache refresh finished: ${refreshed}/${total} refreshed, ${failed} failed.`);

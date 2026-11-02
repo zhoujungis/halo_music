@@ -1189,7 +1189,9 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
     const action = url.searchParams.get("action") || "";
     if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
       if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
-      if (!allowMusicRequest(clientIp(requestObject))) {
+      const refreshToken = requestObject.headers.get("x-cache-refresh-token") || "";
+      const trustedRefresh = Boolean(env?.CACHE_REFRESH_TOKEN) && refreshToken === env.CACHE_REFRESH_TOKEN;
+      if (!trustedRefresh && !allowMusicRequest(clientIp(requestObject))) {
         return json({ error: "播放解析请求过于频繁，请稍后再试" }, 429, { "Retry-After": "60" });
       }
     }
