@@ -30,6 +30,7 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 - [Electron 桌面端](#electron-桌面端)
 - [Android 客户端](#android-客户端)
 - [自动发布](#自动发布)
+- [QQ 音频缓存定时刷新](#qq-音频缓存定时刷新)
 - [配置与部署说明](#配置与部署说明)
 - [常见问题](#常见问题)
 - [限制与后续方向](#限制与后续方向)
@@ -207,6 +208,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | `POST` | `/api/email-code` | 否 | 通过 Resend 发送注册验证码（60 秒冷却、限流） |
 | `POST` | `/api/register` | 否 | 校验邮箱验证码并创建账号，返回会话 Cookie |
+| `POST` | `/api/cache-refresh` | Bearer | 重新解析并刷新 D1 中已有 QQ 歌曲的音频缓存 |
 | `GET` | `/api/auth/google/start` | 否 | 跳转 Google OAuth 授权页 |
 | `GET` | `/api/auth/google/callback` | 否 | 处理 Google 回调、创建或关联账号并登录 |
 | `POST` | `/api/login` | 否 | 校验账号密码并创建会话 |
@@ -342,6 +344,8 @@ GOOGLE_CLIENT_SECRET=xxxxxxxx
 GOOGLE_REDIRECT_URI=http://localhost:8788/api/auth/google/callback
 # 可选；用于给注册 IP 哈希加 pepper
 AUTH_SECRET=change-me
+# 可选；QQ 缓存定时刷新接口的 Bearer token
+CACHE_REFRESH_TOKEN=change-me
 ```
 
 Google Cloud Console 的 OAuth 客户端需要把 `http://localhost:8788/api/auth/google/callback` 和线上 `https://music.zhoujun.dev/api/auth/google/callback` 加入授权重定向 URI。只要配置 `RESEND_API_KEY`，验证码邮件就会使用已验证的 `no-reply@music.zhoujun.dev` 发件；Google 登录需要 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET`。未配置对应变量时，邮箱注册或 Google 登录会返回明确的未配置提示，账号密码登录仍然可用。
@@ -487,6 +491,20 @@ gradle -p android assembleDebug -PhaloVersionName=2.0.0 -PhaloVersionCode=20000
 6. 如果配置了 `CLOUDFLARE_API_TOKEN` secret，同时部署 Cloudflare Pages；未配置时自动跳过
 
 每次 push 都会产生新的 patch 版本和 tag。需要 minor/major 版本时，手动修改 `package.json` 版本后再推送；工作流会使用该版本创建 tag。工作流会同步更新 `package-lock.json`、`wrangler.toml` 和 `index.html` 中的版本号。
+
+## QQ 音频缓存定时刷新
+
+`.github/workflows/refresh-qq-cache.yml` 每隔约 20 天运行一次（cron `0 19 */20 * *`，即北京时间 03:00，落在 1/21/31 日）：
+
+1. 从 D1 的收藏、自建歌单和听歌历史中提取 QQ 歌曲 mid
+2. 调用受保护的 `POST /api/cache-refresh`
+3. 服务端以 `refresh=1` 重新解析并覆盖 `music_cache` 中的音频地址
+
+需要在 GitHub 和 Cloudflare Pages 两处配置相同的 `CACHE_REFRESH_TOKEN` secret。也可以手动触发：
+
+```powershell
+gh workflow run refresh-qq-cache.yml
+```
 
 ## 配置与部署说明
 

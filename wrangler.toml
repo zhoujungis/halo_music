@@ -27,6 +27,7 @@ NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meti
 #   GOOGLE_CLIENT_SECRET  Google OAuth 2.0 client secret
 #   GOOGLE_REDIRECT_URI   Optional; defaults to <origin>/api/auth/google/callback
 #   AUTH_SECRET           Optional pepper mixed into stored registration IP hashes
+#   CACHE_REFRESH_TOKEN   Bearer token for POST /api/cache-refresh
 
 [[d1_databases]]
 binding = "DB"

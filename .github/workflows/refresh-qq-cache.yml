@@ -1,0 +1,28 @@
+name: Refresh QQ Audio Cache
+
+on:
+  schedule:
+    # 19:00 UTC = 03:00 Asia/Shanghai, on days 1/21/31 (about every 20 days).
+    - cron: "0 19 */20 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-qq-cache
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Refresh QQ audio cache
+        env:
+          SITE_URL: https://music.zhoujun.dev
+          CACHE_REFRESH_TOKEN: ${{ secrets.CACHE_REFRESH_TOKEN }}
+        run: node scripts/refresh-qq-cache.mjs
