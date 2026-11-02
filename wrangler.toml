@@ -9,7 +9,7 @@ ADMIN_USERNAME = "admin"
 HALO_MUSIC_VERSION = "2.0.0"
 # Verified Resend sender for Halo Music. RESEND_API_KEY is a secret and must be
 # set with `wrangler pages secret put RESEND_API_KEY`.
-RESEND_FROM = "no-reply@music.zhoujun.dev"
+RESEND_FROM = "no-reply@blog.zhoujun.dev"
 RESEND_SENDER_NAME = "HALO Music"
 # Provider endpoints are deployment configuration, not client-side URLs.
 # Use comma-separated URLs; each search/proxy operation tries the next one
