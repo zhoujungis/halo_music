@@ -16,36 +16,57 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      version_code: ${{ steps.version.outputs.version_code }}
-      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      version_code: ${{ steps.release.outputs.version_code }}
+      tag: ${{ steps.release.outputs.tag }}
+      sha: ${{ steps.release.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: version
-        name: Read version from package.json
+          fetch-tags: true
+      - id: plan
+        name: Plan next version
         shell: bash
         run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          CODE=$((10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH))
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "version_code=$CODE" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Move release tag to this commit
+          CURRENT="$(node -p "require('./package.json').version")"
+          if git rev-parse -q --verify "refs/tags/v$CURRENT" >/dev/null; then
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+          else
+            NEXT="$CURRENT"
+          fi
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+      - id: release
+        name: Bump version, commit and tag
         shell: bash
         run: |
+          NEXT="${{ steps.plan.outputs.next }}"
+          node scripts/bump-version.mjs "$NEXT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -fa "${{ steps.version.outputs.tag }}" -m "HALO Music ${{ steps.version.outputs.version }}" "$GITHUB_SHA"
-          git push origin "refs/tags/${{ steps.version.outputs.tag }}" --force
+          if ! git diff --quiet; then
+            git add package.json package-lock.json wrangler.toml index.html android/app/build.gradle
+            git commit -m "chore(release): v$NEXT [skip ci]"
+            git push origin HEAD:main
+          fi
+          SHA="$(git rev-parse HEAD)"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$NEXT"
+          CODE=$((10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH))
+          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "version_code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEXT" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          git tag -fa "v$NEXT" -m "HALO Music $NEXT" "$SHA"
+          git push origin "refs/tags/v$NEXT" --force
 
   windows:
     needs: prepare
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -71,6 +92,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -109,16 +132,29 @@ jobs:
     needs: [prepare, windows, android]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
       - name: List release assets
         run: ls -lh artifacts
+      - name: Deploy Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '184aee957761f720ea0b9b737bdb68be' }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN is not configured; skipping Pages deploy."
+            exit 0
+          fi
+          npx --yes wrangler@4 pages deploy . --project-name halo-music --branch main
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
           name: HALO Music ${{ needs.prepare.outputs.version }}
           generate_release_notes: true
           make_latest: true

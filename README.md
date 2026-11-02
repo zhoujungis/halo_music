@@ -479,13 +479,14 @@ gradle -p android assembleDebug -PhaloVersionName=2.0.0 -PhaloVersionCode=20000
 
 `.github/workflows/release.yml` 在 push 到 `main` 或手动触发时运行：
 
-1. 从 `package.json` 读取版本号
-2. 创建或强制更新 `v<version>` tag
+1. 读取 `package.json` 当前版本；如果对应 tag 已存在，自动递增 patch（例如 `2.0.0` → `2.0.1`）
+2. 提交版本变更并创建新的 `v<version>` tag
 3. `windows-latest` 构建 `.exe`、`.msi`、便携版和 `latest.yml`
 4. `ubuntu-latest` 构建 Android APK
 5. 创建或更新 GitHub Release 并上传全部资产
+6. 如果配置了 `CLOUDFLARE_API_TOKEN` secret，同时部署 Cloudflare Pages；未配置时自动跳过
 
-升级版本时请同时修改 `package.json` 的 `version` 和 `wrangler.toml` 的 `HALO_MUSIC_VERSION`。工作流不会自动部署 Cloudflare Pages。
+每次 push 都会产生新的 patch 版本和 tag。需要 minor/major 版本时，手动修改 `package.json` 版本后再推送；工作流会使用该版本创建 tag。工作流会同步更新 `package-lock.json`、`wrangler.toml` 和 `index.html` 中的版本号。
 
 ## 配置与部署说明
 
