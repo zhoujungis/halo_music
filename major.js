@@ -197,12 +197,12 @@
       return track?.playbackSource || track?.source || 'netease';
     }
     let toastTimer = null;
-    function showToast(msg){
+    function showToast(msg,duration=2000){
       const toast=$('toast'); if(!toast)return;
       toast.textContent=msg;
       toast.classList.add('show');
       if(toastTimer)clearTimeout(toastTimer);
-      toastTimer=setTimeout(()=>{toast.classList.remove('show');toastTimer=null;},2000);
+      toastTimer=setTimeout(()=>{toast.classList.remove('show');toastTimer=null;},duration);
     }
     function updateDesktopPlaybackVisual(){
       dom.playerPanel?.classList.toggle('is-playing',Boolean(state.isPlaying));
@@ -918,7 +918,8 @@
     function playlistImportSuccessMessage(stat,meta={}){
       const base=`${t('toastPlaylistImported')}：新增 ${stat.addedPlaylists} 个歌单，${stat.addedFavorites} 首收藏，${stat.addedPlaylistTracks} 首歌单歌曲。`;
       if(!meta.truncated)return base;
-      return `${base} 原歌单共 ${meta.total} 首，已按平台限制导入前 ${meta.imported} 首。`;
+      const skipped=Math.max(0,Number(meta.total||0)-Number(meta.imported||0));
+      return `${base} 原歌单共 ${meta.total} 首，受平台单次导入限制只导入了前 ${meta.imported} 首，跳过 ${skipped} 首。`;
     }
 
     function openImportPlaylistModal(){
@@ -969,7 +970,7 @@
         const stat=importPlaylistData(data);
         if(stat.empty){showToast(t('toastPlaylistImportEmpty'));return;}
         const imported=data.playlists?.[0]?.tracks?.length||stat.addedPlaylistTracks;
-        showToast(playlistImportSuccessMessage(stat,{truncated:data.truncated,total:data.total,imported}));
+        showToast(playlistImportSuccessMessage(stat,{truncated:data.truncated,total:data.total,imported}),5000);
         dom.importPlaylistUrl.value='';
         dom.importPlaylistModal.classList.remove('show');
         dom.importPlaylistModal.setAttribute('aria-hidden','true');
@@ -995,7 +996,7 @@
           if(stat.empty){
             showToast(t('toastPlaylistImportEmpty'));
           }else{
-            showToast(playlistImportSuccessMessage(stat));
+            showToast(playlistImportSuccessMessage(stat),5000);
             dom.importPlaylistModal.classList.remove('show');
             dom.importPlaylistModal.setAttribute('aria-hidden','true');
           }
@@ -2545,7 +2546,10 @@
         title.textContent=t('libraryEmptyFavoritesTitle');
         description.textContent=t('libraryEmptyFavoritesDescription');
         action.textContent=t('libraryBrowseAction');
-        action.addEventListener('click',()=>setMobileView('search'));
+        action.addEventListener('click',()=>{
+          if(window.matchMedia('(max-width: 760px)').matches)setMobileView('search');
+          else setDesktopView('search');
+        });
       }else{
         title.textContent=t('libraryEmptyPlaylistsTitle');
         description.textContent=t('libraryEmptyPlaylistsDescription');
@@ -2842,7 +2846,12 @@
     // ===================== 背景粒子 & 水波纹 =====================
 
     function setupParticles(){
-      const canvas=$('bg-canvas');const ctx=canvas.getContext('2d');
+      const canvas=$('bg-canvas');
+      if(!canvas)return;
+      const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+      if(reduceMotion.matches){canvas.style.display='none';return;}
+      const ctx=canvas.getContext('2d');
+      if(!ctx)return;
       function resize(){
         const dpr=window.devicePixelRatio||1;
         canvas.width=window.innerWidth*dpr;
@@ -2851,7 +2860,7 @@
       }
       resize();window.addEventListener('resize',resize);
       const parts=[];
-      const N=90;
+      const N=window.matchMedia('(max-width: 760px)').matches?45:90;
       for(let i=0;i<N;i++){
         parts.push({
           x:Math.random()*window.innerWidth,
@@ -2866,7 +2875,15 @@
       }
       let mouse={x:window.innerWidth/2,y:window.innerHeight/2};
       window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+      let frameId=null;
+      function start(){
+        if(frameId===null&&!document.hidden)frameId=requestAnimationFrame(tick);
+      }
+      function stop(){
+        if(frameId!==null){cancelAnimationFrame(frameId);frameId=null;}
+      }
       function tick(){
+        frameId=null;
         ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
         const pulse = 1 + audioLevel * 2.2;
         for(const p of parts){
@@ -2900,9 +2917,14 @@
             }
           }
         }
-        requestAnimationFrame(tick);
+        if(!document.hidden)frameId=requestAnimationFrame(tick);
       }
-      tick();
+      document.addEventListener('visibilitychange',()=>{document.hidden?stop():start();});
+      reduceMotion.addEventListener?.('change',event=>{
+        if(event.matches){stop();canvas.style.display='none';}
+        else{canvas.style.display='';resize();start();}
+      });
+      start();
     }
 
     function setupRipple(){

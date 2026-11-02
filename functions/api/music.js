@@ -1,7 +1,28 @@
+import { clientIp } from "./_auth.js";
+
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36";
 const API_TIMEOUT_MS = 5_500;
 const AUDIO_TIMEOUT_MS = 12_000;
 const BILI_SEARCH_TIMEOUT_MS = 9_000;
+const MUSIC_RATE_WINDOW_MS = 10 * 60 * 1000;
+const MUSIC_RATE_LIMIT = 240;
+const musicRateBuckets = new Map();
+
+function allowMusicRequest(ip) {
+  const now = Date.now();
+  if (musicRateBuckets.size > 5000) {
+    for (const [key, bucket] of musicRateBuckets) {
+      if (bucket.resetAt <= now) musicRateBuckets.delete(key);
+    }
+  }
+  let bucket = musicRateBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + MUSIC_RATE_WINDOW_MS };
+    musicRateBuckets.set(ip, bucket);
+  }
+  bucket.count += 1;
+  return bucket.count <= MUSIC_RATE_LIMIT;
+}
 const BILI_AUDIO_TIMEOUT_MS = 15_000;
 // Resolver requests can be slow, but must still have a bounded deadline.
 const QQ_RESOLVER_TIMEOUT_MS = 22_000;
@@ -1166,8 +1187,11 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
   try {
     const url = new URL(requestObject.url);
     const action = url.searchParams.get("action") || "";
-    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
+    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
       if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
+      if (!allowMusicRequest(clientIp(requestObject))) {
+        return json({ error: "播放解析请求过于频繁，请稍后再试" }, 429, { "Retry-After": "60" });
+      }
     }
     const keyword = (url.searchParams.get("q") || "").trim().slice(0, 100);
     const limit = Math.min(30, Math.max(1, Number(url.searchParams.get("limit")) || 10));

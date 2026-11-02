@@ -83,7 +83,8 @@ test("resend payload uses the music domain sender address", async () => {
     const payload = JSON.parse(captured.options.body);
     assert.equal(payload.from, "HALO Music <no-reply@music.zhoujun.dev>");
     assert.deepEqual(payload.to, ["user@halo.test"]);
-    assert.match(payload.subject, /123456/);
+    assert.equal(payload.subject, "HALO Music 邮箱验证码");
+    assert.doesNotMatch(payload.subject, /123456/);
     assert.match(payload.html, /123456/);
   } finally {
     globalThis.fetch = originalFetch;

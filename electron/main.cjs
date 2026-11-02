@@ -2,7 +2,7 @@ const { app, BrowserWindow, shell } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const path = require("node:path");
 
-const DEFAULT_APP_URL = "https://halo-music.pages.dev";
+const DEFAULT_APP_URL = "https://music.zhoujun.dev";
 const APP_URL = process.env.HALO_MUSIC_URL || DEFAULT_APP_URL;
 let mainWindow;
 

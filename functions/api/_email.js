@@ -67,7 +67,7 @@ export async function sendVerificationEmail(env, email, code) {
     body: JSON.stringify({
       from: resendFrom(env),
       to: [email],
-      subject: `HALO Music 验证码：${code}`,
+      subject: "HALO Music 邮箱验证码",
       html: verificationEmailHtml(code),
       text: `HALO Music 验证码：${code}\n\n验证码 10 分钟内有效，最多尝试 5 次。\n如果不是你本人操作，请忽略这封邮件。`,
     }),

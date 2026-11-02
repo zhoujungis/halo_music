@@ -1,0 +1,44 @@
+plugins {
+  id 'com.android.application'
+}
+
+def haloVersionName = project.findProperty('haloVersionName') ?: '2.0.0'
+def haloVersionCode = (project.findProperty('haloVersionCode') ?: '20000').toInteger()
+
+android {
+  namespace 'com.halomusic.app'
+  compileSdk 34
+
+  defaultConfig {
+    applicationId 'com.halomusic.app'
+    minSdk 23
+    targetSdk 34
+    versionCode haloVersionCode
+    versionName haloVersionName
+  }
+
+  signingConfigs {
+    release {
+      if (System.getenv('ANDROID_KEYSTORE_PATH')) {
+        storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+        storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+        keyAlias System.getenv('ANDROID_KEY_ALIAS')
+        keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+      }
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+      if (System.getenv('ANDROID_KEYSTORE_PATH')) {
+        signingConfig signingConfigs.release
+      }
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}

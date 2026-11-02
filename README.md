@@ -8,6 +8,10 @@
 
 HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线音乐应用，同时提供 Electron 桌面客户端。它把多个平台的搜索结果统一成 HALO Track 数据结构，在浏览器端完成搜索、播放、歌词和歌单交互，在服务端负责鉴权、缓存、音频解析和公开歌单导入。
 
+- 在线体验：<https://music.zhoujun.dev>
+- 客户端下载：[Windows .exe](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.exe) · [Windows .msi](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.msi) · [Android .apk](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music.apk)
+- GitHub：<https://github.com/zhoujungis/halo_music>
+
 > 本项目用于学习、研究和演示。音乐内容、音频地址及相关版权归对应平台和原作者所有，请遵守当地法律、上游平台服务条款与版权政策。
 
 ## 目录
@@ -24,6 +28,8 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 - [数据库初始化](#数据库初始化)
 - [测试](#测试)
 - [Electron 桌面端](#electron-桌面端)
+- [Android 客户端](#android-客户端)
+- [自动发布](#自动发布)
 - [配置与部署说明](#配置与部署说明)
 - [常见问题](#常见问题)
 - [限制与后续方向](#限制与后续方向)
@@ -41,7 +47,8 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 | 账号 | 邮箱验证码注册、Google 登录、登录/退出、30 天会话、D1 库同步；单 IP 限一个账号 | `functions/api/*.js`、`functions/api/auth/google/` |
 | 管理 | `/admin` 管理面板，查看账号、会话、收藏和缓存概况 | `admin/`、`functions/api/admin.js` |
 | 缓存 | 搜索缓存、音源解析缓存、内存 LRU、D1 二级缓存 | `functions/api/music.js`、`schema.sql` |
-| 桌面端 | Electron 原生窗口、外链交给系统浏览器、Windows 安装包/便携版 | `electron/`、`package.json` |
+| 桌面端 | Electron 原生窗口、外链交给系统浏览器、Windows .exe/.msi/便携版 | `electron/`、`package.json` |
+| Android | 轻量 WebView 客户端，加载线上站点 | `android/` |
 
 ## 界面与交互
 
@@ -138,6 +145,9 @@ flowchart TB
 ├─ electron/
 │  ├─ main.cjs                # BrowserWindow 生命周期和安全策略
 │  └─ preload.cjs             # contextBridge 暴露最小桌面信息
+├─ android/                   # Android WebView 客户端与 Gradle 工程
+├─ .github/workflows/
+│  └─ release.yml             # 自动构建 Windows/Android 并更新 Release
 ├─ schema.sql                 # D1 表、索引和缓存表
 ├─ wrangler.toml              # Pages 与 D1 绑定配置
 ├─ _routes.json               # 仅将 /api/* 路由交给 Functions
@@ -426,7 +436,7 @@ Electron main process
         │
         ├─ BrowserWindow（默认 1440×920，最小 960×640）
         ├─ preload.cjs（最小化 contextBridge）
-        └─ loadURL(HALO_MUSIC_URL 或默认 Pages 地址)
+        └─ loadURL(HALO_MUSIC_URL 或 https://music.zhoujun.dev)
 ```
 
 启动开发窗口：
@@ -435,23 +445,51 @@ Electron main process
 npm run desktop:dev
 ```
 
-构建 Windows NSIS 安装包：
+构建 Windows NSIS / MSI / 便携版：
 
 ```powershell
 npm run desktop:all
 ```
 
-构建便携版：
+构建单独的便携版：
 
 ```powershell
 npm run desktop:portable
 ```
 
-产物写入 `release/`。应用 ID 为 `com.halomusic.desktop`，产品名为 `HALO Music`，图标来自 `icon.svg`。
+产物写入 `release/`：
+
+- `HALO-Music-Setup-x64.exe`：NSIS 安装包
+- `HALO-Music-Setup-x64.msi`：MSI 安装包
+- `HALO-Music-Portable-x64.exe`：便携版
+
+应用 ID 为 `com.halomusic.desktop`，产品名为 `HALO Music`，图标来自 `icon-512.png`。CI 默认构建未签名版本；如需签名，配置 `CSC_LINK` 和 `CSC_KEY_PASSWORD`。
+
+## Android 客户端
+
+`android/` 是一个轻量 WebView 壳，直接加载 `https://music.zhoujun.dev`，不重复打包前端资源。需要 JDK 17 和 Android SDK 34：
+
+```powershell
+gradle -p android assembleDebug -PhaloVersionName=2.0.0 -PhaloVersionCode=20000
+```
+
+产物位于 `android/app/build/outputs/apk/debug/app-debug.apk`。CI 会把它重命名为 `HALO-Music-<version>.apk` 和稳定的 `HALO-Music.apk` 上传到 Release。
+
+## 自动发布
+
+`.github/workflows/release.yml` 在 push 到 `main` 或手动触发时运行：
+
+1. 从 `package.json` 读取版本号
+2. 创建或强制更新 `v<version>` tag
+3. `windows-latest` 构建 `.exe`、`.msi`、便携版和 `latest.yml`
+4. `ubuntu-latest` 构建 Android APK
+5. 创建或更新 GitHub Release 并上传全部资产
+
+升级版本时请同时修改 `package.json` 的 `version` 和 `wrangler.toml` 的 `HALO_MUSIC_VERSION`。工作流不会自动部署 Cloudflare Pages。
 
 ## 配置与部署说明
 
-本 README 只记录配置方式，不代表本次开发会自动部署。项目脚本如下：
+本 README 记录配置方式。`npm run deploy` 不会自动执行；客户端安装包由 GitHub Actions 自动构建并更新 Release。项目脚本如下：
 
 | 命令 | 作用 |
 | --- | --- |
@@ -459,8 +497,9 @@ npm run desktop:portable
 | `npm run deploy` | 部署 Pages（需要明确执行） |
 | `npm test` | 执行 Node 原生测试 |
 | `npm run desktop:dev` | 启动 Electron 开发窗口 |
-| `npm run desktop:all` | 构建 Windows NSIS 安装包 |
+| `npm run desktop:all` | 构建 Windows NSIS/MSI/便携版 |
 | `npm run desktop:portable` | 构建 Windows 便携版 |
+| `gradle -p android assembleDebug` | 构建 Android APK |
 
 Electron 地址可以通过环境变量覆盖：
 
@@ -516,12 +555,9 @@ npx electron . --url=https://music.zhoujun.dev
 ### Tests and signing
 
 Run `npm test` to execute the repository tests under `tests/`. Search actions
-remain public, while playback and detail actions under `/api/music` require
-the HttpOnly session cookie.
+remain public, while playback and detail actions under `/api/music` are
+rate-limited by client IP. Release builds are unsigned unless `CSC_LINK` and
+`CSC_KEY_PASSWORD` are configured in GitHub Actions secrets.
 
-Release builds require a Windows signing certificate. Configure
-`CSC_LINK` and `CSC_KEY_PASSWORD` (or the equivalent electron-builder signing
-environment) before running `npm run desktop:dist`; builds intentionally fail
-when no certificate is available. Set `HALO_MUSIC_VERSION` in the Pages
-environment for each release so the Android update endpoint stays aligned with
-the desktop release.
+Set `HALO_MUSIC_VERSION` in the Pages environment (and `wrangler.toml`) for each
+release so the Android update endpoint stays aligned with the GitHub Release.

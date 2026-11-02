@@ -68,8 +68,7 @@
   --header-h: 58px;
   --nav-h: 62px;
 
-  --font: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system,
-          "Segoe UI", Roboto, sans-serif;
+  --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
   --font-num: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
 }
 
@@ -1860,6 +1859,7 @@ footer {
 .settings-menu-item span { color: var(--text-dim); font-size: 11px; }
 
 .client-download-list { display: flex; flex-direction: column; gap: 8px; }
+.client-download-label { margin: 4px 0 -2px; color: var(--text-dim); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .client-download-option {
   display: flex;
   align-items: center;
@@ -2553,7 +2553,7 @@ footer {
   --sh-1: 0 2px 8px rgba(31, 42, 36, .05);
   --sh-2: 0 16px 44px rgba(31, 42, 36, .10);
   --sh-3: 0 28px 80px rgba(31, 42, 36, .16);
-  --font: "DM Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
 }
 
 html[data-theme="light"] {

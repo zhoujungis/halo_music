@@ -1,0 +1,126 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-main
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: version
+        name: Read version from package.json
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          CODE=$((10#$MAJOR * 10000 + 10#$MINOR * 100 + 10#$PATCH))
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Move release tag to this commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${{ steps.version.outputs.tag }}" -m "HALO Music ${{ steps.version.outputs.version }}" "$GITHUB_SHA"
+          git push origin "refs/tags/${{ steps.version.outputs.tag }}" --force
+
+  windows:
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build Windows installers
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.msi
+            release/*.yml
+            release/*.blockmap
+
+  android:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build APK
+        env:
+          HALO_VERSION: ${{ needs.prepare.outputs.version }}
+          HALO_VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
+        run: |
+          gradle -p android assembleDebug --no-daemon \
+            -PhaloVersionName="$HALO_VERSION" \
+            -PhaloVersionCode="$HALO_VERSION_CODE"
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk "artifacts/HALO-Music-${HALO_VERSION}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "artifacts/HALO-Music.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          if-no-files-found: error
+          path: artifacts/*.apk
+
+  release:
+    needs: [prepare, windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: List release assets
+        run: ls -lh artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: HALO Music ${{ needs.prepare.outputs.version }}
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: false
+          files: |
+            artifacts/*.exe
+            artifacts/*.msi
+            artifacts/*.apk
+            artifacts/*.yml
+            artifacts/*.blockmap

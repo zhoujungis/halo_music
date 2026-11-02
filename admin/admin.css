@@ -15,7 +15,7 @@
   --danger-soft: rgba(178, 59, 59, .10);
   --danger-line: rgba(178, 59, 59, .28);
   --shadow: 0 16px 44px rgba(31, 42, 36, .10);
-  font-family: "DM Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

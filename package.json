@@ -11,7 +11,7 @@
     "test": "node --test tests/*.test.js",
     "desktop:dev": "electron .",
     "desktop:dist": "npm run desktop:electron",
-    "desktop:electron": "electron-builder --win nsis",
+    "desktop:electron": "electron-builder --win",
     "desktop:portable": "electron-builder --win portable",
     "desktop:all": "npm run desktop:electron"
   },
@@ -27,14 +27,14 @@
   "build": {
     "appId": "com.halomusic.desktop",
     "productName": "HALO Music",
-    "forceCodeSigning": true,
+    "forceCodeSigning": false,
     "publish": {
       "provider": "github",
       "owner": "zhoujungis",
       "repo": "halo_music",
       "releaseType": "release"
     },
-    "icon": "icon.svg",
+    "icon": "icon-512.png",
     "directories": {
       "output": "release"
     },
@@ -49,6 +49,7 @@
     "win": {
       "target": [
         "nsis",
+        "msi",
         "portable"
       ],
       "signExecutable": true,
@@ -59,7 +60,7 @@
       "mirror": "https://npmmirror.com/mirrors/electron/"
     },
     "nsis": {
-      "artifactName": "HALO-Music-Setup-${version}-${arch}.${ext}",
+      "artifactName": "HALO-Music-Setup-${arch}.${ext}",
       "oneClick": false,
       "perMachine": true,
       "allowToChangeInstallationDirectory": true,
@@ -70,8 +71,11 @@
       "include": "build/installer.nsh",
       "script": "build/custom-installer.nsi"
     },
+    "msi": {
+      "artifactName": "HALO-Music-Setup-${arch}.${ext}"
+    },
     "portable": {
-      "artifactName": "HALO-Music-Portable-${version}-${arch}.${ext}"
+      "artifactName": "HALO-Music-Portable-${arch}.${ext}"
     }
   }
 }
