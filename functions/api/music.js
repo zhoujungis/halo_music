@@ -1,5 +1,3 @@
-import { authenticatedUsername } from "./_auth.js";
-
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36";
 const API_TIMEOUT_MS = 5_500;
 const AUDIO_TIMEOUT_MS = 12_000;
@@ -1170,8 +1168,6 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
     const action = url.searchParams.get("action") || "";
     if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
       if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
-      const username = await authenticatedUsername(requestObject, env);
-      if (!username) return json({ error: "请先登录后播放" }, 401);
     }
     const keyword = (url.searchParams.get("q") || "").trim().slice(0, 100);
     const limit = Math.min(30, Math.max(1, Number(url.searchParams.get("limit")) || 10));

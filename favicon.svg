@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="HALO Music">
+  <title>HALO Music</title>
+  <rect width="512" height="512" rx="38" fill="#3F6B57"/>
+  <path d="M138 128h64v98h108v-98h64v256h-64v-98H202v98h-64z" fill="#FFFFFF"/>
+</svg>

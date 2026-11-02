@@ -3,16 +3,30 @@ compatibility_date = "2025-01-01"
 pages_build_output_dir = "."
 
 [vars]
-# Username allowlist for the read-only /admin dashboard. Provision this user
-# directly in D1 because public registration is disabled.
+# Username allowlist for the read-only /admin dashboard.
 ADMIN_USERNAME = "admin"
 # Keep this value in sync with package.json for deployments.
 HALO_MUSIC_VERSION = "2.0.0"
+# Verified Resend sender for Halo Music. RESEND_API_KEY is a secret and must be
+# set with `wrangler pages secret put RESEND_API_KEY`.
+RESEND_FROM = "no-reply@music.zhoujun.dev"
+RESEND_SENDER_NAME = "HALO Music"
 # Provider endpoints are deployment configuration, not client-side URLs.
 # Use comma-separated URLs; each search/proxy operation tries the next one
 # when an upstream times out or returns an invalid response.
 QQ_SOURCE_URLS = "https://tang.api.s01s.cn/music_open_api.php,https://api.qijieya.cn/meting,https://api.injahow.cn/meting"
 NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://musicapi.qijieya.cn/meting"
+
+# Registration secrets. Do not commit real values: put them in .dev.vars for
+# local development and in the Pages dashboard (or `wrangler pages secret put`)
+# for production.
+#   RESEND_API_KEY        Resend API key used by POST /api/email-code
+#   RESEND_FROM           Optional; defaults to no-reply@music.zhoujun.dev
+#   RESEND_SENDER_NAME    Optional display name when RESEND_FROM is a bare address
+#   GOOGLE_CLIENT_ID      Google OAuth 2.0 client ID
+#   GOOGLE_CLIENT_SECRET  Google OAuth 2.0 client secret
+#   GOOGLE_REDIRECT_URI   Optional; defaults to <origin>/api/auth/google/callback
+#   AUTH_SECRET           Optional pepper mixed into stored registration IP hashes
 
 [[d1_databases]]
 binding = "DB"

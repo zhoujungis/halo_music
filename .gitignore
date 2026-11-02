@@ -1,4 +1,5 @@
 node_modules/
+.dev.vars
 release/
 android/.gradle/
 android/build/
@@ -11,3 +12,6 @@ test-results/
 .DS_Store
 .user-favorites.json
 .claude/
+.commandcode/
+.workbuddy-ai/
+.tmp*

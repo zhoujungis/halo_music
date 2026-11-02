@@ -3,40 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <title>Halo音乐</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=5" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=5" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=5" />
+  <meta name="theme-color" content="#f7f7f2" />
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
-  <script>try{document.documentElement.dataset.theme=localStorage.getItem('halo-music-theme')||'dark';}catch(e){}</script>
+  <script>try{var _t=localStorage.getItem('halo-music-theme')||'light';document.documentElement.dataset.theme=_t;var _m=document.querySelector('meta[name="theme-color"]');if(_m)_m.setAttribute('content',_t==='light'?'#f7f7f2':'#18201c');}catch(e){}</script>
   <meta name="app-version" content="2.0.0" />
-  <link rel="stylesheet" href="styles.css" />
-  <!-- 圆润可爱字体 -->
+  <link rel="stylesheet" href="styles.css?v=5" />
+  <!-- Editorial interface typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="auth-gated">
+<body>
   <canvas id="bg-canvas"></canvas>
 
   <div class="app">
     <header class="ripple-target">
       <div class="logo-area">
-        <div class="pikachu-box ripple-target">
-          <img src="icon.svg" alt="HALO Music" class="pikachu-img">
+        <div class="brand-mark ripple-target">
+          <img src="favicon.svg?v=5" alt="HALO Music" class="brand-mark-img">
         </div>
         <div class="title-text">
           <h1 data-i18n="appTitle">Halo音乐</h1>
         </div>
       </div>
       <div class="header-controls">
-        <!-- Authentication is available from settings. -->
-          
-        <button id="settings-toggle-btn" class="settings-toggle-btn ripple-target" type="button" aria-haspopup="dialog" aria-controls="settings-modal" aria-label="打开设置" title="设置">⚙</button>
+        <nav class="desktop-nav" aria-label="主导航">
+          <button type="button" data-desktop-view="search">发现</button>
+          <button type="button" data-desktop-view="lyrics" aria-current="page">正在播放</button>
+          <button type="button" data-desktop-view="queue">播放队列</button>
+          <button type="button" data-desktop-view="me">我的音乐</button>
+        </nav>
+        <button id="account-nav-button" class="account-nav-button ripple-target" type="button" aria-label="登录账号">
+          <span id="account-nav-avatar" class="account-nav-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-7 2-7 4.5V21h14v-2.5c0-2.5-3-4.5-7-4.5Z" fill="currentColor"/></svg>
+          </span>
+          <span id="account-nav-label" class="account-nav-label">登录</span>
+        </button>
+        <button id="client-download-nav-button" class="client-download-nav-button ripple-target" type="button" aria-label="下载客户端" title="下载客户端"><span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v10"/><path d="m7 9 5 5 5-5"/><path d="M5 18v2h14v-2"/></svg></span><b>下载客户端</b></button>
         <div class="nav-links">
         </div>
-        <button id="theme-toggle" class="theme-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon">☀</span></button>
-        <div class="lang-toggle ripple-target">
-          <button class="lang-btn active" data-lang="zh">中</button>
-          <button class="lang-btn" data-lang="en">EN</button>
-        </div>
+        <button id="theme-toggle" class="theme-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg></span></button>
       </div>
     </header>
 
@@ -45,13 +55,13 @@
       <section class="panel search-panel ripple-target">
         <div class="panel-header">
           <div class="panel-title">
-            <span class="icon">🔍</span>
+            <span class="icon">⌕</span>
             <span data-i18n="searchTitle">歌曲搜索</span>
           </div>
         </div>
         <div class="search-panel-content">
           <div class="search-row ripple-target">
-            <span class="search-prefix">🔍</span>
+            <span class="search-prefix" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span>
             <input id="search-input" class="input" type="text"
                    placeholder="输入歌名 / 歌手，回车搜索…" />
             <button id="search-btn" class="btn ripple-target" data-i18n="searchButton">搜索</button>
@@ -59,9 +69,13 @@
 
           <div class="search-stats">
             <span id="search-status" data-i18n="searchStatusIdle">基于推荐算法，猜你想搜“周杰伦”</span>
+            <button id="search-select-toggle" class="search-select-toggle ripple-target" type="button" aria-pressed="false">选择</button>
             <div id="search-batch-toolbar" class="search-batch-toolbar">
               <div class="search-batch-actions">
-                <input id="search-batch-select-all" class="search-batch-select-all" type="checkbox" data-i18n-title="searchBatchSelectAll" title="全选" aria-label="全选" />
+                <label class="search-batch-select-all-wrap">
+                  <input id="search-batch-select-all" class="search-batch-select-all" type="checkbox" data-i18n-title="searchBatchSelectAll" title="全选" aria-label="全选" />
+                  <span data-i18n="searchBatchSelectAll">全选</span>
+                </label>
                 <button id="search-batch-queue" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="queueAdd" title="加入播放列表" aria-label="加入播放列表">☷</button>
                 <button id="search-batch-favorite" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchFavorite" title="加入收藏" aria-label="加入收藏">♥</button>
                 <button id="search-batch-playlist" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchPlaylist" title="加入歌单" aria-label="加入歌单">＋</button>
@@ -132,8 +146,8 @@
                   <button id="next-btn" class="btn btn-secondary btn-icon ripple-target" title="下一首 (N)">⏭</button>
                 </div>
                 <div class="control-secondary">
-                  <span>🔊</span>
-                  <input id="volume-slider" class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.8" />
+                  <span class="volume-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></span>
+                  <input id="volume-slider" class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="音量" title="音量" />
                 </div>
               </div>
             </div>
@@ -144,7 +158,7 @@
           <div id="lyrics-inner" class="lyrics-inner"></div>
         </div>
 
-        <audio id="audio" preload="auto"></audio>
+        <audio id="audio" preload="auto" aria-hidden="true"></audio>
       </section>
 
       <!-- 右：播放列表 -->
@@ -159,6 +173,7 @@
             <div class="playlist-tab active" data-tab="results" data-i18n="tabResults">正在播放</div>
             <div class="playlist-tab" data-tab="favorites" data-i18n="tabFavorites">收藏</div>
             <div class="playlist-tab" data-tab="playlists" data-i18n="tabCustomLists">歌单</div>
+            <div class="playlist-tab" data-tab="profile">我的信息</div>
           </div>
         </div>
 
@@ -166,9 +181,15 @@
           <div class="playlist-bar">
             <div class="playlist-top-row">
               <div class="playmode-row">
-                <button class="playmode-btn active ripple-target" data-mode="list" title="列表循环">🔁</button>
-                <button class="playmode-btn ripple-target" data-mode="single" title="单曲循环">🔂</button>
-                <button class="playmode-btn ripple-target" data-mode="shuffle" title="随机播放">🔀</button>
+                <button class="playmode-btn active ripple-target" data-mode="list" title="顺序播放" aria-label="顺序播放">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/></svg>
+                </button>
+                <button class="playmode-btn ripple-target" data-mode="single" title="单曲循环" aria-label="单曲循环">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/><path d="M11 10h2v5"/></svg>
+                </button>
+                <button class="playmode-btn ripple-target" data-mode="shuffle" title="随机播放" aria-label="随机播放">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                </button>
                 <button id="clear-playlist-btn" class="btn btn-ghost clear-playlist-btn ripple-target" type="button" data-i18n="queueClear" data-i18n-title="queueClear" title="清空播放列表" aria-label="清空播放列表">清空</button>
               </div>
             </div>
@@ -183,19 +204,52 @@
             </div>
           </div>
           <div id="playlist-list" class="playlist-list"></div>
+          <section id="account-profile-view" class="account-profile-view" hidden aria-label="我的信息">
+            <div class="account-profile-heading">
+              <div id="account-avatar-preview" class="account-avatar-preview" aria-hidden="true">H</div>
+              <div><h2 id="account-profile-name">我的信息</h2><p id="account-profile-id"></p></div>
+            </div>
+            <form id="account-profile-form" class="account-form">
+              <label>用户名<input id="account-display-name" type="text" minlength="2" maxlength="20" required /></label>
+              <label>头像图片地址<input id="account-avatar-url" type="url" maxlength="1000" placeholder="https://…（可留空）" /></label>
+              <button id="account-profile-save" class="btn btn-secondary" type="submit">保存资料</button>
+            </form>
+            <form id="account-password-form" class="account-form account-password-form">
+              <h3>修改密码</h3>
+              <label>当前密码<input id="account-current-password" type="password" autocomplete="current-password" required /></label>
+              <label>新密码<input id="account-new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required /></label>
+              <button class="btn btn-ghost" type="submit">更新密码</button>
+            </form>
+            <section class="listening-summary" aria-live="polite">
+              <h3>听歌总结</h3>
+              <div id="listening-summary-content" class="listening-summary-content">正在加载…</div>
+            </section>
+            <section class="account-session-actions">
+              <button id="account-logout" class="btn btn-ghost" type="button">退出登录</button>
+              <details class="account-delete-details">
+                <summary>注销账户</summary>
+                <p>注销后账号、收藏、歌单和听歌记录都会删除，无法恢复。</p>
+                <label>输入当前密码确认<input id="account-delete-password" type="password" autocomplete="current-password" /></label>
+                <button id="account-delete" class="btn btn-danger" type="button">永久注销账户</button>
+              </details>
+            </section>
+          </section>
         </div>
       </section>
     </main>
 
     <nav id="mobile-nav" class="mobile-nav" aria-label="移动端导航">
       <button type="button" data-mobile-view="search" aria-current="page">
-        <span aria-hidden="true">⌕</span><small>搜索</small>
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span><small>搜索</small>
       </button>
       <button type="button" data-mobile-view="lyrics">
-        <span aria-hidden="true">♫</span><small>播放</small>
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/></svg></span><small>正在播放</small>
+      </button>
+      <button type="button" data-mobile-view="queue">
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span><small>队列</small>
       </button>
       <button type="button" data-mobile-view="me">
-        <span aria-hidden="true">♡</span><small>我的</small>
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c0-3.2 2.9-5.5 6.5-5.5s6.5 2.3 6.5 5.5"/></svg></span><small>我的</small>
       </button>
     </nav>
 
@@ -250,34 +304,14 @@
   </div>
 
 
-  <div id="settings-modal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div class="modal-header">
-        <div class="modal-title-wrap"><div class="modal-title-icon">⚙</div><span id="settings-title">设置</span></div>
-        <button id="settings-close" class="modal-close-btn" type="button" aria-label="关闭设置">×</button>
-      </div>
-      <p class="modal-desc">选择要打开的内容</p>
-      <div class="settings-menu" role="menu">
-        <button class="settings-menu-item" type="button" data-desktop-view="search" role="menuitem"><strong>搜索</strong><span>查找并播放歌曲</span></button>
-        <button class="settings-menu-item" type="button" data-desktop-view="playlists" role="menuitem"><strong>我的歌单</strong><span>只显示收藏和歌单</span></button>
-        <button class="settings-menu-item" type="button" data-desktop-view="queue" role="menuitem"><strong>播放列表</strong><span>管理当前播放队列</span></button>
-        <button id="client-download-button" class="settings-menu-item" type="button" role="menuitem"><strong>下载客户端</strong><span>Windows / Android 客户端</span></button>
-      </div>
-    </div>
-  </div>
-
   <div id="client-download-modal" class="modal-backdrop" aria-hidden="true">
     <div class="modal client-download-modal" role="dialog" aria-modal="true" aria-labelledby="client-download-title">
       <div class="modal-header">
         <div class="modal-title-wrap"><div class="modal-title-icon">↓</div><span id="client-download-title">下载客户端</span></div>
         <button id="client-download-close" class="modal-close-btn" type="button" aria-label="关闭下载客户端">×</button>
       </div>
-      <p class="modal-desc">选择对应平台下载 HALO Music 客户端</p>
+      <p class="modal-desc">下载 HALO Music 安卓客户端</p>
       <div class="client-download-list">
-        <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest" target="_blank" rel="noopener noreferrer">
-          <span class="client-download-copy"><strong>Windows客户端</strong><code>latest release</code></span>
-          <span class="client-download-arrow" aria-hidden="true">↗</span>
-        </a>
         <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest" target="_blank" rel="noopener noreferrer">
           <span class="client-download-copy"><strong>安卓客户端</strong><code>latest release</code></span>
           <span class="client-download-arrow" aria-hidden="true">↗</span>
@@ -313,54 +347,80 @@
   </div>
 
   <div id="login-modal" class="modal-backdrop login-modal" aria-hidden="true">
-    <div class="modal ripple-target" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal ripple-target auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <div class="auth-brand-row">
+        <span class="auth-brand-mark">H</span>
+        <span>HALO MUSIC <i>ACCOUNT</i></span>
+        <span class="auth-brand-tag">SECURE ACCESS</span>
+      </div>
       <div class="modal-header">
-        <div class="modal-title-wrap"><div class="modal-title-icon">H</div><span id="login-title">登录后开始播放</span></div>
+        <div class="modal-title-wrap">
+          <div class="modal-title-icon">H</div>
+          <div class="auth-heading">
+            <span id="login-title">登录 HALO MUSIC</span>
+            <small id="login-description">登录后可同步收藏与歌单；搜索和播放无需登录</small>
+          </div>
+        </div>
         <button id="login-close" class="modal-close-btn" type="button" aria-label="关闭登录">×</button>
       </div>
-      <p id="login-description" class="modal-desc">访客可以搜索和浏览。登录后才可解析和播放歌曲。</p>
+      <div class="auth-tabs" role="tablist" aria-label="账号入口">
+        <button id="auth-tab-login" class="auth-tab is-active" type="button" role="tab" aria-selected="true">登录</button>
+        <button id="auth-tab-register" class="auth-tab" type="button" role="tab" aria-selected="false">注册</button>
+      </div>
+      <button id="google-auth-btn" class="google-auth-btn" type="button">
+        <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true" focusable="false">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span id="google-auth-label">使用 Google 账号继续</span>
+      </button>
+      <div class="auth-divider"><span>或使用邮箱</span></div>
       <form id="login-form" class="login-form">
-        <label>用户名<input id="login-account-input" type="text" maxlength="20" autocomplete="username" placeholder="3-20 位字母、数字、下划线或中文" /></label>
-        <label>密码<input id="login-password-input" type="password" minlength="8" autocomplete="current-password" placeholder="至少 8 位密码" /></label>
+        <label class="auth-field">
+          <span>用户名</span>
+          <input id="login-account-input" type="text" minlength="3" maxlength="20" autocomplete="username" placeholder="3–20 位字母、数字、下划线或中文" />
+        </label>
+        <label class="auth-field">
+          <span>密码</span>
+          <div class="auth-password-wrap">
+            <input id="login-password-input" type="password" minlength="8" autocomplete="current-password" placeholder="至少 8 位密码" />
+            <button class="auth-password-toggle" type="button" data-target="login-password-input" aria-label="显示密码">显示</button>
+          </div>
+        </label>
+        <p id="login-error" class="auth-error" role="alert" hidden></p>
         <div class="login-actions"><button id="login-submit" class="btn ripple-target" type="submit">登录</button></div>
       </form>
-      <p class="login-notice">账号密码仅以加盐摘要形式保存在服务端；收藏和自建歌单会同步至当前登录账号。</p>
-    </div>
-  </div>
-
-  <div id="announcement-modal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-title" aria-describedby="announcement-description">
-      <div class="modal-header">
-        <div>
-          <p class="announcement-kicker">重要提示 · HALO Music</p>
-          <div id="announcement-title" class="announcement-title">加群下载 APP</div>
+      <form id="register-form" class="login-form" hidden>
+        <label class="auth-field">
+          <span>邮箱</span>
+          <input id="register-email-input" type="email" inputmode="email" maxlength="254" autocomplete="email" placeholder="you@gmail.com" />
+        </label>
+        <label class="auth-field">
+          <span>邮箱验证码</span>
+          <div class="auth-code-row">
+            <input id="register-code-input" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位数字" />
+            <button id="register-send-code" class="btn btn-secondary auth-send-code" type="button">发送验证码</button>
+          </div>
+        </label>
+        <div class="auth-field-row">
+          <label class="auth-field">
+            <span>用户名</span>
+            <input id="register-username-input" type="text" minlength="3" maxlength="20" autocomplete="username" placeholder="3–20 位字符" />
+          </label>
+          <label class="auth-field">
+            <span>设置密码</span>
+            <div class="auth-password-wrap">
+              <input id="register-password-input" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="至少 8 位" />
+              <button class="auth-password-toggle" type="button" data-target="register-password-input" aria-label="显示密码">显示</button>
+            </div>
+          </label>
         </div>
-        <button id="announcement-close" class="modal-close-btn" type="button" aria-label="关闭公告">×</button>
-      </div>
-      <p id="announcement-description" class="announcement-copy">安卓 APP 和 Windows 客户端已上线，获取版本更新和使用帮助。</p>
-      <div class="app-download-callout" role="note" aria-label="加群下载 APP">
-        <span class="app-download-eyebrow">HALO MUSIC APP</span>
-        <strong class="app-download-title">下载 HALO Music APP</strong>
-        <span class="app-download-detail"><strong>安卓 APP 和 Windows 客户端已上线。</strong></span>
-      </div>
-      <p class="announcement-section-label">本次更新内容</p>
-      <div class="announcement-updates" aria-label="本次更新内容">
-        <div class="announcement-update">
-          <strong>歌词修复</strong>
-          <span>VIP 歌曲（如周杰伦）此前经常没有歌词。现已接入官方歌词接口独立获取，无论走哪条音源线路，歌词都能正常显示。</span>
-        </div>
-        <div class="announcement-update">
-          <strong>播放稳定性</strong>
-          <span>音源解析加入 15 秒超时保护，不再无限等待；服务器解析失败时自动在浏览器直连重试。</span>
-        </div>
-        <div class="announcement-update">
-          <strong>加载提速</strong>
-          <span>解析成功的音源会持续缓存（可支撑上万首歌曲的并发访问），缓存命中约 0.1 秒返回；播放失败时自动重新解析并更新缓存。人多时不再出现"一直加载音源失败"。</span>
-        </div>
-      </div>
-      <div class="announcement-actions">
-        <button id="announcement-confirm" class="btn btn-ghost ripple-target" type="button">稍后再看</button>
-      </div>
+        <p id="register-error" class="auth-error" role="alert" hidden></p>
+        <div class="login-actions"><button id="register-submit" class="btn ripple-target" type="submit">创建账号</button></div>
+      </form>
+      <p class="login-notice">验证码由 Resend 发送，10 分钟内有效；每个 IP 仅可注册一个账号。</p>
     </div>
   </div>
 
@@ -390,6 +450,6 @@
 
   <div id="toast"></div>
 
-  <script src="major.js"></script>
+  <script src="major.js?v=5"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
         appTitle:"Halo音乐",
         searchTitle:"歌曲搜索",
         searchButton:"搜索",
-        searchStatusIdle:"基于推荐算法，猜你想搜“周杰伦”",
+        searchStatusIdle:"搜索即可播放 · 登录后可收藏与同步歌单",
         searchStatusSearching:"正在搜索中…",
         searchStatusDone:"搜索完成。",
         searchStatusNoSource:"请至少选择一个音乐源。",
@@ -35,13 +35,13 @@
         playlistInfoResults:"正在播放列表",
         playlistInfoFavorites:"收藏列表",
         playlistInfoPlaylist:"歌单",
-        libraryLoginTitle:"登录后同步收藏",
-        libraryLoginDescription:"登录账号后管理收藏与歌单",
+        libraryLoginTitle:"登录后查看收藏与歌单",
+        libraryLoginDescription:"搜索和播放无需登录；登录后会同步收藏与歌单到你的账号",
         libraryEmptyFavoritesTitle:"还没有收藏歌曲",
         libraryEmptyFavoritesDescription:"去搜索页发现喜欢的音乐",
         libraryEmptyPlaylistsTitle:"还没有自建歌单",
         libraryEmptyPlaylistsDescription:"创建一张歌单，把喜欢的歌收在一起",
-        libraryLoginAction:"登录",
+        libraryLoginAction:"登录 / 注册",
         libraryBrowseAction:"去搜索",
         libraryCreateAction:"新建",
         mobileImportAction:"导入",
@@ -108,116 +108,10 @@
         modalNewPlaylistDesc:"给你的歌单取一个可爱的名字吧～",
         modalConfirm:"确定",
         modalCancel:"取消"
-      },
-      en: {
-        appTitle:"Halo Music",
-        searchTitle:"Search",
-        searchButton:"Search",
-        searchStatusIdle:"Based on recommendations, try \"Jay Chou\"",
-        searchStatusSearching:"Searching…",
-        searchStatusDone:"Search completed.",
-        searchStatusNoSource:"Please select at least one music source.",
-        searchBatchNoResults:"No search results.",
-        searchBatchSelectAll:"Select all",
-        searchBatchUnselectAll:"Deselect all",
-        searchBatchFavorite:"Add favorites",
-        searchBatchPlaylist:"Add to playlist",
-        searchBatchNeedSelection:"Select at least one song first.",
-        searchBatchFavoriteResult:"Added {added} songs to favorites",
-        searchBatchPlaylistTitle:"Save selected songs",
-        searchBatchPlaylistDescription:"Choose a playlist. Songs already in it will be skipped.",
-        searchBatchPlaylistSaved:"Saved {added}",
-        playerTitle:"Now Playing",
-        playerStatusIdle:"Idle",
-        playerStatusLoading:"Loading audio…",
-        playerStatusPlaying:"Playing",
-        playerStatusPaused:"Paused",
-        lyricsEmpty:"No lyrics yet. Try a song with LRC lyrics.",
-        playlistTitle:"Playlists",
-        tabResults:"Now Playing",
-        tabFavorites:"Favorites",
-        tabCustomLists:"Playlists",
-        playlistInfoResults:"Now Playing",
-        playlistInfoFavorites:"Favorites List",
-        playlistInfoPlaylist:"Playlist",
-        libraryLoginTitle:"Sign in to sync your library",
-        libraryLoginDescription:"Manage favorites and playlists with your account.",
-        libraryEmptyFavoritesTitle:"No favorites yet",
-        libraryEmptyFavoritesDescription:"Find music you love from Search.",
-        libraryEmptyPlaylistsTitle:"No playlists yet",
-        libraryEmptyPlaylistsDescription:"Create a playlist to keep your favorite songs together.",
-        libraryLoginAction:"Sign in",
-        libraryBrowseAction:"Browse music",
-        libraryCreateAction:"New",
-        mobileImportAction:"Import",
-        mobileExportAction:"Export",
-        saveToPlaylistTitle:"Save to playlist",
-        saveToPlaylistDescription:"Choose a playlist for the current track.",
-        saveToPlaylistEmpty:"No playlists yet. Create one first.",
-        playlistAlreadyContains:"Saved",
-        playlistOpenLabel:"Open playlist",
-        newPlaylist:"New playlist",
-        queueAdd:"Add to queue",
-        queueRemove:"Remove from queue",
-        queueEmpty:"The playback list is empty",
-        queueClear:"Clear playback list",
-        toastQueueCleared:"Playback list cleared",
-        confirmClearQueue:"Clear the playback list?",
-        importPlaylist:"Import playlist",
-        modalImportPlaylistTitle:"Import playlist",
-        modalImportPlaylistDesc:"Paste a shared playlist message or URL. The platform will be detected automatically.",
-        importPlaylistPlaceholder:"Paste a shared message or playlist URL…",
-        importPlaylistNote:"Public playlists only. Large QQ Music playlists are limited to the first 1,200 tracks.",
-        importPlaylistFile:"Import JSON file",
-        importPlaylistConfirm:"Import",
-        importPlaylistLoading:"Parsing playlist…",
-        providerNeteaseFull:"Netease Cloud Music",
-        providerQishuiFull:"Qishui Music",
-        providerQQFull:"QQ Music",
-        exportPlaylist:"Export playlist",
-        deletePlaylist:"Delete playlist",
-        removeFromPlaylist:"Remove from playlist",
-        footerText:"For demo only. All music copyrights belong to original owners.",
-        toastAddedFavorite:"Added to favorites",
-        toastRemovedFavorite:"Removed from favorites",
-        toastAddedToPlaylist:"Added to playlist",
-        toastAlreadyInList:"This song is already in this list.",
-        toastNoMore:"No more results to load.",
-        toastNeedKeyword:"Please enter a search keyword first.",
-        toastSearchError:"An error occurred while searching.",
-        toastPlayError:"Playback failed. Please try again.",
-        toastBilibiliFallback:"QQ Music is unavailable; switched to Bilibili audio.",
-        toastBilibiliFallbackError:"Bilibili fallback failed. Please try again.",
-        toastLyricStyleSwitched:"Lyrics FX toggled.",
-        toastPlaylistCreated:"Playlist created.",
-        toastPlaylistDeleted:"Playlist deleted.",
-        toastTrackRemovedFromPlaylist:"Removed from playlist.",
-        confirmDeletePlaylist:"Delete this playlist?",
-        confirmRemoveTrack:"Remove this song from the playlist?",
-        toastPlaylistImported:"Import completed",
-        toastPlaylistImportEmpty:"No usable playlists or favorites found in this file.",
-        toastPlaylistImportError:"Import failed. Please choose a JSON file exported by this site.",
-        toastPlaylistExported:"Playlist file exported.",
-        toastPlaylistExportEmpty:"No playlist to export.",
-        toastPlaylistEmpty:"Playlist is empty. Add some songs first.",
-        toastPlaymodeList:"Play mode: list loop",
-        toastPlaymodeSingle:"Play mode: single loop",
-        toastPlaymodeShuffle:"Play mode: shuffle",
-        toastNeedPlaylistSelected:"Please select a playlist first.",
-        toastNoCurrentTrack:"No track is currently playing.",
-        sourceNetease:"Netease",
-        sourceQQ:"QQ Music",
-        sourceBilibili:"Bilibili",
-        sourceQishui:"Qishui Music",
-        modalNewPlaylistTitle:"Create Playlist",
-        modalNewPlaylistDesc:"Give your playlist a cute name!",
-        modalConfirm:"Confirm",
-        modalCancel:"Cancel"
       }
     };
 
     const state = {
-      language:'zh',
       enabledSources:{netease:true, qq:true},
       perSourceLimit:30,
       perSourceCurrentLimit:{netease:30, qq:30},
@@ -225,6 +119,7 @@
 
       searchKeyword:'',
       searchResults:[],
+      searchSelectMode:false,
       trackMap:new Map(),
       favorites:[],
       playlists:[],
@@ -249,7 +144,9 @@
     const LIBRARY_STORAGE_KEY = 'halo-music-library-v1';
     const PLAY_QUEUE_STORAGE_KEY = 'halo-music-play-queue-v1';
     const THEME_STORAGE_KEY = 'halo-music-theme';
-    const ANNOUNCEMENT_STORAGE_KEY = 'halo-music-announcement-2026-08-v3';
+    const GUEST_AVATAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-7 2-7 4.5V21h14v-2.5c0-2.5-3-4.5-7-4.5Z" fill="currentColor"/></svg>';
+    const SUN_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>';
+    const MOON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>';
 
     const dom = {};
     let audioLevel = 0;
@@ -260,10 +157,9 @@
     let activePlaybackBlobUrl = '';
     let playbackRequestToken = 0;
     let searchRequestToken = 0;
-    let mobileLyricsDrag=null;
-    let mobileLyricsDragSuppressUntil=0;
-    let mobileLyricsOriginalParent=null;
-    let mobileLyricsOriginalNextSibling=null;
+    // How many lyric lines to show either side of the active one on mobile.
+    // One either side keeps each line tall enough to be a real tap target.
+    const MOBILE_LYRIC_WINDOW = 1;
 
     async function fetchWithTimeout(input, options={}, timeoutMs=10000){
       const controller=new AbortController();
@@ -289,7 +185,7 @@
     let pendingAndroidUpdateVersion = '';
 
     function $(id){return document.getElementById(id);}
-    function t(k){const lang=state.language;return (translations[lang]&&translations[lang][k])||translations.zh[k]||k;}
+    function t(k){return translations.zh[k]||k;}
     function sourceTranslationKey(source){
       if(source==='netease')return 'sourceNetease';
       if(source==='qq')return 'sourceQQ';
@@ -319,18 +215,76 @@
       });
     }
     function updateAuthUI(){
-      document.body.classList.toggle('auth-gated',!state.isAuthenticated);
+      const authenticated=state.isAuthenticated;
+      document.body.classList.toggle('is-guest',!authenticated);
+      if(dom.accountNavLabel)dom.accountNavLabel.textContent=authenticated?(state.profileName||'我的账号'):'登录';
+      if(dom.accountNavAvatar){
+        if(authenticated)dom.accountNavAvatar.textContent=(state.profileName||'H').slice(0,1).toUpperCase();
+        else dom.accountNavAvatar.innerHTML=GUEST_AVATAR_ICON;
+      }
+      if(dom.accountNavButton){
+        dom.accountNavButton.classList.toggle('is-authenticated',authenticated);
+        dom.accountNavButton.setAttribute('aria-label',authenticated?`我的账号：${state.profileName}`:'登录账号');
+        dom.accountNavButton.title=authenticated?'打开我的音乐':'登录 / 注册';
+      }
     }
     function setAuthGate(authenticated){
       state.isAuthenticated=Boolean(authenticated);
-      document.body.classList.toggle('auth-gated',!state.isAuthenticated);
+      updateAuthUI();
     }
-    function setAuthMode(){
-      dom.loginTitle.textContent='登录后开始播放';
-      dom.loginDescription.textContent='访客可以搜索和浏览。登录后才可解析和播放歌曲。';
+    const AUTH_ERROR_MESSAGES={
+      google_not_configured:'Google 登录尚未配置，请联系管理员',
+      google_database:'账号数据库暂不可用',
+      google_cancelled:'已取消 Google 登录',
+      google_state:'登录会话已过期，请重试',
+      google_token:'Google 授权失败，请重试',
+      google_profile:'无法读取 Google 资料，请重试',
+      google_email:'Google 账号邮箱未验证，无法登录',
+      google_ip_used:'当前网络已注册过账号，每个 IP 仅可注册一个账号',
+      google_conflict:'该邮箱已绑定其他 Google 账号',
+      google_failed:'Google 登录失败，请稍后重试'
+    };
+    let authMode='login';
+    let registerCodeTimer=null;
+
+    function authMessage(value){
+      return AUTH_ERROR_MESSAGES[value]||'登录失败，请稍后重试';
+    }
+    function setAuthError(element,message){
+      if(!element)return;
+      element.textContent=message||'';
+      element.hidden=!message;
+    }
+    function setAuthMode(mode='login'){
+      authMode=mode==='register'?'register':'login';
+      const registering=authMode==='register';
+      dom.loginForm.hidden=registering;
+      dom.registerForm.hidden=!registering;
+      dom.authTabLogin.classList.toggle('is-active',!registering);
+      dom.authTabRegister.classList.toggle('is-active',registering);
+      dom.authTabLogin.setAttribute('aria-selected',String(!registering));
+      dom.authTabRegister.setAttribute('aria-selected',String(registering));
+      dom.loginTitle.textContent=registering?'创建 HALO MUSIC 账号':'登录 HALO MUSIC';
+      dom.loginDescription.textContent=registering?'邮箱验证码注册，或直接使用 Google 账号':'登录后可同步收藏与歌单；搜索和播放无需登录';
+      dom.googleAuthLabel.textContent=registering?'使用 Google 账号注册':'使用 Google 账号继续';
       dom.loginSubmit.textContent='登录';
       dom.loginPasswordInput.autocomplete='current-password';
-      dom.loginAccountInput.focus();
+      setAuthError(dom.loginError,'');
+      setAuthError(dom.registerError,'');
+      setTimeout(()=>(registering?dom.registerEmailInput:dom.loginAccountInput).focus(),40);
+    }
+    function handleAuthRedirect(){
+      let url;
+      try{url=new URL(window.location.href);}catch(e){return;}
+      const provider=url.searchParams.get('auth');
+      const error=url.searchParams.get('auth_error');
+      if(!provider&&!error)return;
+      url.searchParams.delete('auth');
+      url.searchParams.delete('auth_error');
+      const query=url.searchParams.toString();
+      try{history.replaceState(null,'',url.pathname+(query?`?${query}`:'')+url.hash);}catch(e){}
+      if(error){showToast(authMessage(error));return;}
+      if(provider==='google'&&state.isAuthenticated)showToast('已使用 Google 账号登录');
     }
     async function loadAuthSession(){
       let authenticated=false;
@@ -350,26 +304,26 @@
       finally{
         setAuthGate(authenticated);
         updateAuthUI();
-        if(!authenticated)openLoginModal();
+        if(!authenticated && !state.currentTrack && window.matchMedia('(min-width: 761px)').matches){
+          setDesktopView('search');
+        }
+        handleAuthRedirect();
       }
     }
-    function openLoginModal(){
-      setAuthMode();
+    function openLoginModal(mode='login'){
+      setAuthMode(mode);
       dom.loginModal.classList.add('show');
       dom.loginModal.setAttribute('aria-hidden','false');
-      setTimeout(()=>dom.loginAccountInput.focus(),40);
+      setTimeout(()=>(mode==='register'?dom.registerEmailInput:dom.loginAccountInput).focus(),40);
     }
     function closeLoginModal(){
-      if(!state.isAuthenticated)return;
       dom.loginModal.classList.remove('show');
       dom.loginModal.setAttribute('aria-hidden','true');
       dom.loginPasswordInput.value='';
+      dom.registerPasswordInput.value='';
     }
     function requirePlayback(){
-      if(state.isAuthenticated)return true;
-      showToast('登录后即可解析并播放歌曲');
-      openLoginModal();
-      return false;
+      return true;
     }
     function requireLibraryAccess(){
       if(state.isAuthenticated)return true;
@@ -377,11 +331,23 @@
       openLoginModal();
       return false;
     }
+    async function completeAuth(username,successMessage='登录成功，收藏与歌单已同步'){
+      setAuthGate(true);
+      state.profileName=username||state.profileName;
+      closeLoginModal();
+      updateAuthUI();
+      await loadLibraryForAuthenticatedUser();
+      loadPlayQueueFromStorage(getPlayQueueStorageKey(state.profileName));
+      renderPlaylistList();
+      showToast(successMessage);
+    }
     async function submitLogin(){
       const username=dom.loginAccountInput.value.trim();
       const password=dom.loginPasswordInput.value;
-      if(!username||!password){showToast('请输入用户名和密码');return;}
+      if(!username||!password){setAuthError(dom.loginError,'请输入用户名和密码');return;}
+      setAuthError(dom.loginError,'');
       dom.loginSubmit.disabled=true;
+      dom.loginSubmit.textContent='登录中…';
       try{
         const response=await fetch('/api/login',{
           method:'POST',
@@ -390,18 +356,89 @@
           body:JSON.stringify({username,password})
         });
         const data=await response.json().catch(()=>({}));
-        if(!response.ok){showToast(data.error||'请求失败，请稍后重试');return;}
-        setAuthGate(true);
-        state.profileName=data.username||username;
-        closeLoginModal();
-        updateAuthUI();
-        await loadLibraryForAuthenticatedUser();
-        loadPlayQueueFromStorage(getPlayQueueStorageKey(state.profileName));
-        renderPlaylistList();
-        showToast('登录成功，已解锁播放');
+        if(!response.ok){setAuthError(dom.loginError,data.error||'请求失败，请稍后重试');return;}
+        await completeAuth(data.username||username);
       }catch(e){
-        showToast('网络错误，无法连接登录服务');
-      }finally{dom.loginSubmit.disabled=false;}
+        setAuthError(dom.loginError,'网络错误，无法连接登录服务');
+      }finally{
+        dom.loginSubmit.disabled=false;
+        dom.loginSubmit.textContent='登录';
+      }
+    }
+    async function sendRegisterCode(){
+      const email=dom.registerEmailInput.value.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+        setAuthError(dom.registerError,'请输入有效的邮箱地址');
+        return;
+      }
+      setAuthError(dom.registerError,'');
+      dom.registerSendCode.disabled=true;
+      let remaining=60;
+      const renderCountdown=()=>{
+        if(remaining<=0){
+          dom.registerSendCode.textContent='重新发送';
+          dom.registerSendCode.disabled=false;
+          if(registerCodeTimer){clearInterval(registerCodeTimer);registerCodeTimer=null;}
+          return;
+        }
+        dom.registerSendCode.textContent=`${remaining}s 后重发`;
+        remaining-=1;
+      };
+      try{
+        const response=await fetch('/api/email-code',{
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok){
+          setAuthError(dom.registerError,data.error||'验证码发送失败，请稍后重试');
+          dom.registerSendCode.disabled=false;
+          dom.registerSendCode.textContent='发送验证码';
+          return;
+        }
+        showToast('验证码已发送，请检查邮箱');
+        remaining=Number(data.cooldown||60);
+        renderCountdown();
+        registerCodeTimer=setInterval(renderCountdown,1000);
+      }catch(e){
+        setAuthError(dom.registerError,'网络错误，无法发送验证码');
+        dom.registerSendCode.disabled=false;
+        dom.registerSendCode.textContent='发送验证码';
+      }
+    }
+    async function submitRegister(){
+      const email=dom.registerEmailInput.value.trim();
+      const code=dom.registerCodeInput.value.trim();
+      const username=dom.registerUsernameInput.value.trim();
+      const password=dom.registerPasswordInput.value;
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){setAuthError(dom.registerError,'请输入有效的邮箱地址');return;}
+      if(!/^\d{6}$/.test(code)){setAuthError(dom.registerError,'请输入 6 位邮箱验证码');return;}
+      if(username.length<3||username.length>20){setAuthError(dom.registerError,'用户名需为 3–20 位');return;}
+      if(password.length<8){setAuthError(dom.registerError,'密码至少需要 8 位');return;}
+      setAuthError(dom.registerError,'');
+      dom.registerSubmit.disabled=true;
+      dom.registerSubmit.textContent='创建中…';
+      try{
+        const response=await fetch('/api/register',{
+          method:'POST',
+          credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email,code,username,password})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok){setAuthError(dom.registerError,data.error||'注册失败，请稍后重试');return;}
+        await completeAuth(data.username||username,'账号创建成功，已自动登录');
+      }catch(e){
+        setAuthError(dom.registerError,'网络错误，无法连接注册服务');
+      }finally{
+        dom.registerSubmit.disabled=false;
+        dom.registerSubmit.textContent='创建账号';
+      }
+    }
+    function startGoogleAuth(){
+      window.location.assign('/api/auth/google/start');
     }
     async function toggleAuth(){
       if(!state.isAuthenticated){openLoginModal();return;}
@@ -420,20 +457,24 @@
       state.favorites=[];
       state.playlists=[];
       state.playQueue=[];
+      state.currentTrack=null;
+      document.body.classList.remove('has-track');
       state.playContext={type:'results',index:-1,playlistId:null};
+      closeAccountProfile();
       renderPlaylistOptions();
       renderPlaylistList();
       updateMainFavButton();
       setAuthGate(false);
-      openLoginModal();
-      updateAuthUI();
-      showToast('已退出登录，播放功能已锁定');
+      showToast('已退出登录，收藏和歌单已隐藏');
     }
     function applyTheme(theme){
       const next=theme==='light'?'light':'dark';
       document.documentElement.dataset.theme=next;
-      dom.themeIcon.textContent=next==='light'?'☾':'☀';
+      dom.themeIcon.innerHTML=next==='light'?MOON_ICON:SUN_ICON;
       dom.themeToggle.title=next==='light'?'切换暗色模式':'切换亮色模式';
+      // Keep the mobile browser chrome in step with the app background.
+      const meta=document.querySelector('meta[name="theme-color"]');
+      if(meta) meta.setAttribute('content',next==='light'?'#f7f7f2':'#18201c');
       try{localStorage.setItem(THEME_STORAGE_KEY,next);}catch(e){}
     }
     function toggleTheme(){
@@ -463,13 +504,8 @@
       return out;
     }
 
-    function setLanguage(lang){
-      if(lang!=='zh' && lang!=='en') lang='zh';
-      state.language=lang;
-      try{localStorage.setItem('halo-music-lang',lang);}catch(e){}
-      document.querySelectorAll('.lang-btn').forEach(btn=>{
-        btn.classList.toggle('active',btn.dataset.lang===lang);
-      });
+    // 界面只提供中文，文案在启动时统一注入一次即可。
+    function applyStaticText(){
       document.querySelectorAll('[data-i18n]').forEach(el=>{
         const key=el.dataset.i18n;
         if(key) el.textContent = t(key);
@@ -478,12 +514,8 @@
         const key=el.dataset.i18nTitle;
         if(key){el.title=t(key);el.setAttribute('aria-label',t(key));}
       });
-      dom.searchInput.placeholder = lang==='zh'
-        ? '输入歌名 / 歌手，回车搜索…'
-        : 'Type song / artist, press Enter…';
-      dom.playlistNameInput.placeholder = lang==='zh'
-        ? '例如：通勤歌单 / 宝可梦歌单'
-        : 'e.g. Commute mix / Pokemon list';
+      dom.searchInput.placeholder = '输入歌名 / 歌手，回车搜索…';
+      dom.playlistNameInput.placeholder = '例如：通勤歌单 / 宝可梦歌单';
       renderPlaylistOptions();
       updatePlaylistInfoLabel();
     }
@@ -629,7 +661,7 @@
       state.playlists=Array.isArray(data.playlists)
         ? data.playlists.map((pl,idx)=>({
             id:pl.id || ('pl-cached-'+idx+'-'+Date.now()),
-            name:pl.name || (state.language==='zh'?'未命名歌单':'Untitled Playlist'),
+            name:pl.name || '未命名歌单',
             tracks:Array.isArray(pl.tracks) ? pl.tracks.map(deserializeTrack).filter(Boolean) : []
           }))
         : [];
@@ -782,7 +814,7 @@
         if(!normalized.length)return false;
         result.playlists.push({
           id:`import-${source}-${importText(raw?.id,raw?.dissid,raw?.rid,raw?.playlistId,raw?.playlist_id,name,Date.now())}-${result.playlists.length}`,
-          name:importText(name,raw?.name,raw?.title,raw?.dissname,raw?.playlistName,raw?.listName,state.language==='zh'?'导入歌单':'Imported Playlist'),
+          name:importText(name,raw?.name,raw?.title,raw?.dissname,raw?.playlistName,raw?.listName,'导入歌单'),
           tracks:normalized
         });
         return true;
@@ -850,7 +882,7 @@
       importedPlaylists.forEach((pl,idx)=>{
         if(!pl || typeof pl!=='object') return;
 
-        const fallbackName=state.language==='zh' ? '导入歌单' : 'Imported Playlist';
+        const fallbackName='导入歌单';
         const name=(pl.name || fallbackName).toString().trim() || fallbackName;
         const rawId=(pl.id || '').toString().trim();
 
@@ -884,13 +916,9 @@
     }
 
     function playlistImportSuccessMessage(stat,meta={}){
-      const base=state.language==='zh'
-        ? `${t('toastPlaylistImported')}：新增 ${stat.addedPlaylists} 个歌单，${stat.addedFavorites} 首收藏，${stat.addedPlaylistTracks} 首歌单歌曲。`
-        : `${t('toastPlaylistImported')}: ${stat.addedPlaylists} playlists, ${stat.addedFavorites} favorites, ${stat.addedPlaylistTracks} playlist tracks added.`;
+      const base=`${t('toastPlaylistImported')}：新增 ${stat.addedPlaylists} 个歌单，${stat.addedFavorites} 首收藏，${stat.addedPlaylistTracks} 首歌单歌曲。`;
       if(!meta.truncated)return base;
-      return state.language==='zh'
-        ? `${base} 原歌单共 ${meta.total} 首，已按平台限制导入前 ${meta.imported} 首。`
-        : `${base} The source has ${meta.total} tracks; the first ${meta.imported} were imported.`;
+      return `${base} 原歌单共 ${meta.total} 首，已按平台限制导入前 ${meta.imported} 首。`;
     }
 
     function openImportPlaylistModal(){
@@ -926,7 +954,7 @@
     async function importPlaylistFromLink(){
       if(!requireLibraryAccess())return;
       const url=dom.importPlaylistUrl.value.trim();
-      if(!url){showToast(state.language==='zh'?'请粘贴歌单分享链接。':'Paste a playlist URL first.');return;}
+      if(!url){showToast('请粘贴歌单分享链接。');return;}
       releaseImportPlaylistFocus();
       setImportPlaylistLoading(true);
       try{
@@ -1143,6 +1171,7 @@
         state.noMoreResults=false;
         state.selectedSearchUids.clear();
         updateBatchToolbar();
+        renderMiniSearchList();
       }
 
       const kw=state.searchKeyword;
@@ -1167,7 +1196,7 @@
       renderMiniSearchList();
       renderPlaylistList();
       updateBatchToolbar();
-      if(state.isAuthenticated&&!state.currentTrack && state.searchResults.length){
+      if(!state.currentTrack && state.searchResults.length){
         playFromList('search',0);
       }
       state.noMoreResults=added===0;
@@ -1439,6 +1468,18 @@
 
       const arr=state.lyricLines;
       if(!arr.length){
+        const empty=document.createElement('div');
+        empty.className='lyrics-empty';
+        const head=document.createElement('p');
+        head.className='lyrics-empty-title';
+        head.textContent=track?'这首歌暂时没有歌词':'还没有在播放的歌曲';
+        const hint=document.createElement('p');
+        hint.className='lyrics-empty-hint';
+        hint.textContent=track?'先听旋律吧～':'搜索一首歌，开始播放';
+        empty.appendChild(head);
+        empty.appendChild(hint);
+        wrap.appendChild(empty);
+        updateMobileLyricWindow(-1);
         return;
       }
       arr.forEach((ln,i)=>{
@@ -1463,65 +1504,16 @@
       const isMobileLyrics=window.matchMedia('(max-width: 760px)').matches
         && document.body.dataset.mobileView==='lyrics';
       if(!isMobileLyrics){
-        rows.forEach(row=>row.classList.remove('mobile-lyrics-visible'));
+        rows.forEach(row=>row.classList.remove('mobile-lyrics-visible','mobile-lyrics-current'));
         return;
       }
       const active=Number.isInteger(index)&&index>=0&&index<rows.length?index:0;
-      rows.forEach((row,i)=>row.classList.toggle('mobile-lyrics-visible',i===active));
-    }
-
-    function setupMobileLyricsDrag(){
-      const surface=dom.layout;
-      if(!surface||!dom.lyricsInner)return;
-      const isInteractiveTarget=target=>target?.closest?.('button,a,input,select,textarea,[contenteditable="true"],.track-item');
-      surface.addEventListener('pointerdown',event=>{
-        if(document.body.dataset.mobileView!=='lyrics')return;
-        if(event.pointerType==='mouse'&&event.button!==0)return;
-        if(isInteractiveTarget(event.target))return;
-        mobileLyricsDrag={
-          pointerId:event.pointerId,
-          startX:event.clientX,
-          startY:event.clientY,
-          x:parseFloat(dom.lyricsInner.dataset.dragX||'0')||0,
-          y:parseFloat(dom.lyricsInner.dataset.dragY||'0')||0,
-          moved:false
-        };
-        surface.setPointerCapture?.(event.pointerId);
-        dom.lyricsInner.classList.add('is-dragging');
+      // Show a window of lines around the active one so the lyrics read as a
+      // passage instead of a single isolated line.
+      rows.forEach((row,i)=>{
+        row.classList.toggle('mobile-lyrics-visible',Math.abs(i-active)<=MOBILE_LYRIC_WINDOW);
+        row.classList.toggle('mobile-lyrics-current',i===active);
       });
-      surface.addEventListener('pointermove',event=>{
-        const drag=mobileLyricsDrag;
-        if(!drag||drag.pointerId!==event.pointerId)return;
-        const dx=event.clientX-drag.startX;
-        const dy=event.clientY-drag.startY;
-        if(Math.abs(dx)>3||Math.abs(dy)>3)drag.moved=true;
-        if(drag.moved)event.preventDefault();
-        const xLimit=Math.max(96,Math.round((surface.clientWidth-dom.lyricsInner.offsetWidth)/2));
-        const yMin=-10;
-        const yMax=Math.max(yMin,surface.clientHeight-dom.lyricsInner.offsetHeight-10);
-        const x=Math.max(-xLimit,Math.min(xLimit,drag.x+dx));
-        const y=Math.max(yMin,Math.min(yMax,drag.y+dy));
-        dom.lyricsInner.dataset.dragX=String(x);
-        dom.lyricsInner.dataset.dragY=String(y);
-        dom.lyricsInner.style.setProperty('--mobile-lyrics-x',`${x}px`);
-        dom.lyricsInner.style.setProperty('--mobile-lyrics-y',`${y}px`);
-      });
-      const finish=event=>{
-        const drag=mobileLyricsDrag;
-        if(!drag||drag.pointerId!==event.pointerId)return;
-        if(drag.moved)mobileLyricsDragSuppressUntil=Date.now()+350;
-        try{surface.releasePointerCapture?.(event.pointerId);}catch(error){}
-        mobileLyricsDrag=null;
-        dom.lyricsInner.classList.remove('is-dragging');
-      };
-      surface.addEventListener('pointerup',finish);
-      surface.addEventListener('pointercancel',finish);
-      surface.addEventListener('click',event=>{
-        if(Date.now()<mobileLyricsDragSuppressUntil){
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      },true);
     }
 
     function seekToLyric(index){
@@ -1600,6 +1592,7 @@
       state.isPlaying=false;
       updateDesktopPlaybackVisual();
       state.currentTrack=track;
+      document.body.classList.add('has-track');
       state.playContext=context||state.playContext;
       renderPlaylistList();
       scrollCurrentTrackIntoView();
@@ -1608,17 +1601,10 @@
         dom.trackTitle.textContent=track.title||'';
         dom.trackArtist.textContent=track.artist||'';
 
-        const sk=trackDisplaySource(track);
-        const key=sourceTranslationKey(sk);
-        dom.trackSourcePill.style.display='inline-flex';
-        dom.trackSourcePill.className='source-pill source-'+sk;
+        // 音乐源不再对外展示，只保留标题与歌手。
+        dom.trackSourcePill.style.display='none';
+        dom.trackSourcePill.className='source-pill';
         dom.trackSourcePill.innerHTML='';
-        const dot=document.createElement('span');
-        dot.className='source-dot '+sk;
-        const txt=document.createElement('span');
-        txt.textContent=t(key);
-        dom.trackSourcePill.appendChild(dot);
-        dom.trackSourcePill.appendChild(txt);
 
         // 显示音质：LOSSLESS 或 320K（根据 qualityLabel）
         if (track.qualityLabel) {
@@ -1677,6 +1663,7 @@
           dom.playBtn.textContent='\u23f8';
           dom.playerStatus.textContent=t('playerStatusPlaying');
           updateMediaSession(track);
+          recordPlayedTrack(track);
           prepareUpcomingTrack();
         }else{
           audioCandidateIndex=Math.max(0,(track.audioCandidates||[]).indexOf(track.audioUrl));
@@ -1695,6 +1682,7 @@
         dom.playBtn.textContent='⏸';
         dom.playerStatus.textContent=t('playerStatusPlaying');
         updateMediaSession(track);
+        recordPlayedTrack(track);
         prepareUpcomingTrack();
         }
       }catch(e){
@@ -1920,10 +1908,31 @@
     function updateBatchToolbar(){
       if(!dom.searchBatchToolbar)return;
       const allTracks=getInterleavedSearchList();
+      dom.searchBatchToolbar.style.display=allTracks.length?'':'none';
+      if(dom.searchSelectToggle)dom.searchSelectToggle.style.display=allTracks.length?'':'none';
       const allSelected=allTracks.length>0&&allTracks.every(track=>state.selectedSearchUids.has(track.uid));
       dom.searchBatchSelectAll.checked=allSelected;
       dom.searchBatchSelectAll.title=t(allSelected?'searchBatchUnselectAll':'searchBatchSelectAll');
       dom.searchBatchSelectAll.setAttribute('aria-label',dom.searchBatchSelectAll.title);
+    }
+
+    // Multi-select is opt-in on touch: a checkbox on every row makes the result
+    // list read as a form. The body class drives the CSS that swaps the status
+    // text for the batch actions and reveals the row checkboxes.
+    function setSearchSelectMode(on){
+      state.searchSelectMode=Boolean(on);
+      document.body.classList.toggle('search-selecting',state.searchSelectMode);
+      if(dom.searchSelectToggle){
+        dom.searchSelectToggle.textContent=state.searchSelectMode?'取消':'选择';
+        dom.searchSelectToggle.setAttribute('aria-pressed',String(state.searchSelectMode));
+      }
+      if(!state.searchSelectMode)state.selectedSearchUids.clear();
+      updateBatchToolbar();
+      renderMiniSearchList();
+    }
+
+    function exitSearchSelectMode(){
+      if(state.searchSelectMode)setSearchSelectMode(false);
     }
 
     function toggleSearchTrackSelection(uid){
@@ -1971,7 +1980,6 @@
     function addSelectedToPlayQueue(){
       const allTracks=getInterleavedSearchList();
       if(!allTracks.length){showToast(t('searchBatchNoResults'));return;}
-      if(!requireLibraryAccess())return;
       const tracks=allTracks.filter(track=>state.selectedSearchUids.has(track.uid));
       if(!tracks.length){showToast(t('searchBatchNeedSelection'));return;}
       const existing=new Set(state.playQueue.map(track=>track.uid));
@@ -2024,7 +2032,7 @@
     }
 
     function addToPlayQueue(track){
-      if(!track||!requireLibraryAccess())return false;
+      if(!track)return false;
       if(state.playQueue.some(item=>item.uid===track.uid)){
         showToast('歌曲已在播放列表');
         return false;
@@ -2091,7 +2099,7 @@
         const count=document.createElement('small');
         const marker=document.createElement('b');
         name.textContent=pl.name;
-        count.textContent=state.language==='zh'?`${pl.tracks.length} 首歌曲`:`${pl.tracks.length} tracks`;
+        count.textContent=`${pl.tracks.length} 首歌曲`;
         marker.textContent=saved?t('playlistAlreadyContains'):'+';
         copy.appendChild(name);copy.appendChild(count);
         option.appendChild(copy);option.appendChild(marker);
@@ -2123,17 +2131,6 @@
       dom.savePlaylistModal.classList.remove('show');
       dom.savePlaylistModal.setAttribute('aria-hidden','true');
       state.batchTracks=[];
-    }
-
-    function openAnnouncementModal(){
-      dom.announcementModal.classList.add('show');
-      dom.announcementModal.setAttribute('aria-hidden','false');
-    }
-
-    function closeAnnouncementModal(){
-      dom.announcementModal.classList.remove('show');
-      dom.announcementModal.setAttribute('aria-hidden','true');
-      try{localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY,'dismissed');}catch(e){}
     }
 
     function parseVersion(value){
@@ -2208,7 +2205,7 @@
         let dismissedVersion='';
         try{dismissedVersion=sessionStorage.getItem(ANDROID_UPDATE_STORAGE_KEY)||'';}catch(e){}
         if(dismissedVersion===String(latestVersion))return;
-        if(dom.announcementModal.classList.contains('show')||dom.loginModal.classList.contains('show')){
+        if(dom.loginModal.classList.contains('show')){
           window.setTimeout(()=>checkForAndroidUpdate(),500);
           return;
         }
@@ -2216,20 +2213,6 @@
       }catch(error){
         console.warn('Android update check failed:',error);
       }
-    }
-
-    function showAnnouncementIfNeeded(){
-      let dismissed=false;
-      try{dismissed=localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)==='dismissed';}catch(e){}
-      if(dismissed)return;
-      const openWhenAvailable=()=>{
-        if(dom.loginModal?.classList.contains('show')||dom.androidUpdateModal?.classList.contains('show')){
-          setTimeout(openWhenAvailable,500);
-          return;
-        }
-        openAnnouncementModal();
-      };
-      setTimeout(openWhenAvailable,120);
     }
 
     function createPlaylistForTrack(){
@@ -2296,6 +2279,48 @@
       const wrap=dom.searchMiniList;
       wrap.innerHTML='';
       const out=getInterleavedSearchList();
+      if(!out.length){
+        if(state.searchInProgress){
+          const loading=document.createElement('div');
+          loading.className='search-empty-state search-loading-state';
+          const spinner=document.createElement('div');
+          spinner.className='search-loading-spinner';
+          spinner.setAttribute('aria-hidden','true');
+          const copy=document.createElement('span');
+          copy.textContent='正在搜索多个音源…';
+          loading.append(spinner,copy);
+          wrap.appendChild(loading);
+          return;
+        }
+        const empty=document.createElement('div');
+        empty.className='search-empty-state';
+        const icon=document.createElement('div');
+        icon.className='search-empty-icon';
+        icon.setAttribute('aria-hidden','true');
+        icon.innerHTML='<svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>';
+        const title=document.createElement('strong');
+        title.textContent=state.searchKeyword?'没有找到相关歌曲':'搜索你喜欢的音乐';
+        const copy=document.createElement('span');
+        copy.textContent=state.searchKeyword?'换个关键词试试，或点击下面的推荐':'无需登录即可播放；登录后可收藏歌曲、创建歌单并跨设备同步。';
+        const chips=document.createElement('div');
+        chips.className='search-suggestion-chips';
+        ['周杰伦','林俊杰','陈奕迅','告五人'].forEach(name=>{
+          const chip=document.createElement('button');
+          chip.type='button';
+          chip.className='search-suggestion-chip ripple-target';
+          chip.textContent=name;
+          chip.addEventListener('click',()=>{
+            dom.searchInput.value=name;
+            state.searchKeyword=name;
+            state.noMoreResults=false;
+            searchAllSources(true);
+          });
+          chips.appendChild(chip);
+        });
+        empty.append(icon,title,copy,chips);
+        wrap.appendChild(empty);
+        return;
+      }
       out.forEach((track,i)=>{
         const item=document.createElement('div');
         item.className='search-mini-item ripple-target';
@@ -2370,7 +2395,7 @@
         const showMobileCount=Boolean(pl&&window.matchMedia('(max-width: 760px)').matches&&state.mobilePlaylistDetailId);
         dom.playlistInfo.style.display=showMobileCount?'':'none';
         dom.playlistInfo.textContent = showMobileCount
-          ? (state.language==='zh'?`${pl.tracks.length} 首歌曲`:`${pl.tracks.length} tracks`)
+          ? (`${pl.tracks.length} 首歌曲`)
           : '';
       }
     }
@@ -2409,7 +2434,7 @@
         const name=document.createElement('strong');
         name.textContent=playlist.name;
         const count=document.createElement('span');
-        count.textContent=state.language==='zh'?`${playlist.tracks.length} 首歌曲`:`${playlist.tracks.length} tracks`;
+        count.textContent=`${playlist.tracks.length} 首歌曲`;
         card.append(name,count);
         card.addEventListener('click',()=>{
           workspaceDesktopPlaylistId=playlist.id;
@@ -2483,7 +2508,7 @@
         const name=document.createElement('strong');
         const count=document.createElement('small');
         name.textContent=playlist.name;
-        count.textContent=state.language==='zh'?`${playlist.tracks.length} 首歌曲`:`${playlist.tracks.length} tracks`;
+        count.textContent=`${playlist.tracks.length} 首歌曲`;
         const arrow=document.createElement('b');arrow.setAttribute('aria-hidden','true');arrow.textContent='\u203A';
         copy.appendChild(name);copy.appendChild(count);
         card.appendChild(art);card.appendChild(copy);card.appendChild(arrow);
@@ -2543,7 +2568,24 @@
       const activeTab=document.querySelector('.playlist-tab.active')?.dataset.tab||'results';
       const mobileLibrary=isMobileLibraryView();
       const desktopLibrary=isDesktopLibraryWorkspace();
+      if(!state.isAuthenticated && activeTab!=='results'){
+        dom.playlistList.hidden=false;
+        dom.accountProfileView.hidden=true;
+        if(dom.playlistSelectRow)dom.playlistSelectRow.style.display='none';
+        if(dom.playlistSelectTools)dom.playlistSelectTools.style.display='none';
+        if(dom.playlistInfo)dom.playlistInfo.style.display='none';
+        wrap.classList.add('is-empty');
+        renderLibraryEmptyState(activeTab==='profile'?'favorites':activeTab);
+        return;
+      }
       let list=[];
+      if(activeTab==='profile'){
+        dom.playlistList.hidden=true;
+        dom.playlistPanel.querySelector('.playlist-bar').hidden=true;
+        dom.accountProfileView.hidden=false;
+        return;
+      }
+      dom.playlistList.hidden=false;
       if(activeTab==='results'){
         list=state.playQueue;
         dom.playlistSelectRow?.style && (dom.playlistSelectRow.style.display='none');
@@ -2596,13 +2638,31 @@
         const icon=document.createElement('div');
         icon.className='library-empty-icon';
         icon.setAttribute('aria-hidden','true');
-        icon.textContent='+';
+        icon.textContent='\u266A';
         const copy=document.createElement('div');
         copy.className='library-empty-copy';
         const title=document.createElement('strong');
-        title.textContent=t('queueEmpty');
+        const description=document.createElement('span');
+        const action=document.createElement('button');
+        action.type='button';
+        action.className='btn library-empty-action ripple-target';
+        if(state.currentTrack){
+          title.textContent='队列为空';
+          description.textContent=`当前正在播放《${state.currentTrack.title||'未知歌曲'}》。把歌曲加入队列后，可以手动管理接下来的播放顺序。`;
+          action.textContent='加入当前歌曲';
+          action.addEventListener('click',()=>addToPlayQueue(state.currentTrack));
+        }else{
+          title.textContent=t('queueEmpty');
+          description.textContent='从搜索结果或收藏中把歌曲加入队列。';
+          action.textContent='去搜索';
+          action.addEventListener('click',()=>{
+            if(window.matchMedia('(max-width: 760px)').matches)setMobileView('search');
+            else setDesktopView('search');
+          });
+        }
         copy.appendChild(title);
-        empty.appendChild(icon);empty.appendChild(copy);
+        copy.appendChild(description);
+        empty.appendChild(icon);empty.appendChild(copy);empty.appendChild(action);
         wrap.appendChild(empty);
         return;
       }
@@ -2640,13 +2700,8 @@
         const sub=document.createElement('div');
         sub.className='track-meta-sub';
         const aSpan=document.createElement('span'); aSpan.textContent=track.artist||'';
-        const sSpan=document.createElement('span');
-        const displaySource=trackDisplaySource(track);
-        const dot=document.createElement('span'); dot.className='source-dot '+displaySource;
-        const key=sourceTranslationKey(displaySource);
-        const txt=document.createElement('span'); txt.textContent=t(key);
-        sSpan.appendChild(dot);sSpan.appendChild(txt);
-        sub.appendChild(aSpan);sub.appendChild(sSpan);
+        // 音乐源不再对外展示。
+        sub.appendChild(aSpan);
         meta.appendChild(title);meta.appendChild(sub);
 
         const act=document.createElement('div');
@@ -2735,7 +2790,7 @@
     function createPlaylist(){
       if(!requireLibraryAccess())return;
       let name=dom.playlistNameInput.value.trim();
-      if(!name)name=state.language==='zh'?'未命名歌单':'Untitled Playlist';
+      if(!name)name='未命名歌单';
       const id='pl-'+Date.now()+'-'+Math.random().toString(16).slice(2);
       const pl={id,name,tracks:[]};
       const shouldSaveCurrent=createPlaylistForCurrentTrack;
@@ -2805,7 +2860,7 @@
           vy:(Math.random()-0.5)*0.4,
           r:1+Math.random()*2.5,
           baseR:1+Math.random()*2.5,
-          hue:200+Math.random()*120,
+          hue:120+Math.random()*60,
           a:0.22+Math.random()*0.3
         });
       }
@@ -2840,7 +2895,7 @@
               const al=0.10*(1-d/100)*(0.6+audioLevel*1.5);
               ctx.beginPath();
               ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
-              ctx.strokeStyle=`rgba(120,160,255,${al})`;
+              ctx.strokeStyle=`rgba(127,166,143,${al})`;
               ctx.stroke();
             }
           }
@@ -2875,12 +2930,95 @@
       });
     }
 
+    async function accountRequest(url,options={}){
+      const response=await fetch(url,{credentials:'same-origin',...options});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||'请求失败，请稍后重试');
+      return data;
+    }
+    function renderAccountSummary(summary={}){
+      const target=dom.listeningSummary;
+      target.replaceChildren();
+      const stats=document.createElement('div');
+      stats.className='listening-summary-stats';
+      [[summary.plays||0,'次播放'],[summary.uniqueTracks||0,'首歌曲']].forEach(([value,label])=>{
+        const item=document.createElement('div');item.className='listening-stat';
+        const strong=document.createElement('strong');strong.textContent=Number(value).toLocaleString();
+        const small=document.createElement('span');small.textContent=label;
+        item.append(strong,small);stats.appendChild(item);
+      });
+      target.appendChild(stats);
+      const heading=document.createElement('h4');heading.textContent='最常听';target.appendChild(heading);
+      const top=Array.isArray(summary.topTracks)?summary.topTracks:[];
+      if(!top.length){const empty=document.createElement('p');empty.className='account-muted';empty.textContent='开始播放歌曲后，这里会显示你的听歌总结。';target.appendChild(empty);return;}
+      const list=document.createElement('ol');list.className='listening-top-tracks';
+      top.forEach(track=>{const item=document.createElement('li');const title=document.createElement('strong');title.textContent=track.title||'未知歌曲';const detail=document.createElement('span');detail.textContent=`${track.artist||'未知歌手'} · ${track.plays||0} 次`;item.append(title,detail);list.appendChild(item);});
+      target.appendChild(list);
+      if(summary.lastPlayed){const recent=document.createElement('p');recent.className='account-muted';recent.textContent=`最近播放：${summary.lastPlayed.title} · ${summary.lastPlayed.artist||'未知歌手'}`;target.appendChild(recent);}
+    }
+    async function loadAccountProfile(){
+      if(!state.isAuthenticated){openLoginModal();return;}
+      dom.accountProfileView.hidden=false;
+      dom.playlistList.hidden=true;
+      dom.playlistPanel.querySelector('.playlist-bar').hidden=true;
+      dom.accountProfileName.textContent=state.profileName||'我的信息';
+      try{
+        const [{profile},{summary}]=await Promise.all([accountRequest('/api/profile'),accountRequest('/api/history')]);
+        dom.accountProfileId.textContent=`账号：${profile.username}`;
+        dom.accountDisplayName.value=profile.display_name||profile.username;
+        dom.accountAvatarUrl.value=profile.avatar_url||'';
+        dom.accountProfileName.textContent=profile.display_name||profile.username;
+        dom.accountAvatarPreview.replaceChildren();
+        if(profile.avatar_url){const img=document.createElement('img');img.src=profile.avatar_url;img.alt='';img.referrerPolicy='no-referrer';img.onerror=()=>{img.remove();dom.accountAvatarPreview.textContent='H';};dom.accountAvatarPreview.appendChild(img);}
+        else dom.accountAvatarPreview.textContent=(profile.display_name||profile.username||'H').slice(0,1);
+        renderAccountSummary(summary);
+      }catch(error){
+        dom.listeningSummary.textContent=error.message;
+      }
+    }
+    function closeAccountProfile(){
+      dom.accountProfileView.hidden=true;
+      dom.playlistList.hidden=false;
+      dom.playlistPanel.querySelector('.playlist-bar').hidden=false;
+    }
+    async function saveAccountProfile(event){
+      event.preventDefault();
+      const previousUsername=state.profileName;
+      const payload={username:dom.accountDisplayName.value.trim(),displayName:dom.accountDisplayName.value.trim(),avatarUrl:dom.accountAvatarUrl.value.trim()};
+      try{
+        const result=await accountRequest('/api/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(result.username&&result.username!==previousUsername){
+          try{
+            const library=localStorage.getItem(getLibraryStorageKey(previousUsername));
+            const queue=localStorage.getItem(getPlayQueueStorageKey(previousUsername));
+            if(library)localStorage.setItem(getLibraryStorageKey(result.username),library);
+            if(queue)localStorage.setItem(getPlayQueueStorageKey(result.username),queue);
+          }catch(error){}
+          state.profileName=result.username;
+        }
+        showToast('资料已保存');
+        await loadAccountProfile();
+      }catch(error){showToast(error.message);}
+    }
+    async function changeAccountPassword(event){
+      event.preventDefault();
+      try{
+        await accountRequest('/api/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currentPassword:dom.accountCurrentPassword.value,newPassword:dom.accountNewPassword.value})});
+        dom.accountCurrentPassword.value='';dom.accountNewPassword.value='';showToast('密码已更新');
+      }catch(error){showToast(error.message);}
+    }
+    function recordPlayedTrack(track){
+      if(!state.isAuthenticated||!track?.uid)return;
+      fetch('/api/history',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:track.uid,title:track.title,artist:track.artist||''})}).catch(()=>{});
+    }
+
     // ===================== DOM / 事件绑定 =====================
 
     function setupDOM(){
       dom.searchInput=$('search-input');
       dom.searchBtn=$('search-btn');
       dom.searchStatus=$('search-status');
+      dom.searchSelectToggle=$('search-select-toggle');
       dom.searchBatchToolbar=$('search-batch-toolbar');
       dom.searchBatchSelectAll=$('search-batch-select-all');
       dom.searchBatchQueue=$('search-batch-queue');
@@ -2948,10 +3086,7 @@
       dom.savePlaylistCloseBtn=$('save-playlist-close');
       dom.savePlaylistCreateBtn=$('save-playlist-create');
 
-      dom.settingsToggleBtn=$('settings-toggle-btn');
-      dom.settingsModal=$('settings-modal');
-      dom.settingsCloseBtn=$('settings-close');
-      dom.clientDownloadButton=$('client-download-button');
+      dom.clientDownloadButton=$('client-download-nav-button');
       dom.clientDownloadModal=$('client-download-modal');
       dom.clientDownloadClose=$('client-download-close');
       dom.workspaceModal=$('workspace-modal');
@@ -2961,6 +3096,9 @@
 
       dom.themeToggle=$('theme-toggle');
       dom.themeIcon=$('theme-icon');
+      dom.accountNavButton=$('account-nav-button');
+      dom.accountNavAvatar=$('account-nav-avatar');
+      dom.accountNavLabel=$('account-nav-label');
       dom.loginModal=$('login-modal');
       dom.loginForm=$('login-form');
       dom.loginTitle=$('login-title');
@@ -2968,10 +3106,34 @@
       dom.loginAccountInput=$('login-account-input');
       dom.loginPasswordInput=$('login-password-input');
       dom.loginSubmit=$('login-submit');
+      dom.loginError=$('login-error');
+      dom.authTabLogin=$('auth-tab-login');
+      dom.authTabRegister=$('auth-tab-register');
+      dom.googleAuthBtn=$('google-auth-btn');
+      dom.googleAuthLabel=$('google-auth-label');
+      dom.registerForm=$('register-form');
+      dom.registerEmailInput=$('register-email-input');
+      dom.registerCodeInput=$('register-code-input');
+      dom.registerUsernameInput=$('register-username-input');
+      dom.registerPasswordInput=$('register-password-input');
+      dom.registerSendCode=$('register-send-code');
+      dom.registerSubmit=$('register-submit');
+      dom.registerError=$('register-error');
+      dom.accountProfileView=$('account-profile-view');
+      dom.accountProfileName=$('account-profile-name');
+      dom.accountProfileId=$('account-profile-id');
+      dom.accountAvatarPreview=$('account-avatar-preview');
+      dom.accountDisplayName=$('account-display-name');
+      dom.accountAvatarUrl=$('account-avatar-url');
+      dom.accountProfileForm=$('account-profile-form');
+      dom.accountPasswordForm=$('account-password-form');
+      dom.accountCurrentPassword=$('account-current-password');
+      dom.accountNewPassword=$('account-new-password');
+      dom.listeningSummary=$('listening-summary-content');
+      dom.accountLogout=$('account-logout');
+      dom.accountDeletePassword=$('account-delete-password');
+      dom.accountDelete=$('account-delete');
       dom.loginCloseBtn=$('login-close');
-      dom.announcementModal=$('announcement-modal');
-      dom.announcementClose=$('announcement-close');
-      dom.announcementConfirm=$('announcement-confirm');
       dom.androidUpdateModal=$('android-update-modal');
       dom.androidUpdateClose=$('android-update-close');
       dom.androidUpdateLater=$('android-update-later');
@@ -2983,29 +3145,7 @@
       dom.layout=document.querySelector('.layout');
     }
 
-    const mobileViews=['search','lyrics','me'];
-
-    function syncMobileLyricsMount(isPlaybackView){
-      const container=dom.lyricsContainer;
-      const playlist=dom.playlistPanel;
-      if(!container||!playlist)return;
-      if(!mobileLyricsOriginalParent){
-        mobileLyricsOriginalParent=container.parentNode;
-        mobileLyricsOriginalNextSibling=container.nextSibling;
-      }
-      if(isPlaybackView){
-        if(container.parentNode!==playlist)playlist.appendChild(container);
-        return;
-      }
-      if(container.parentNode!==mobileLyricsOriginalParent){
-        mobileLyricsOriginalParent.insertBefore(
-          container,
-          mobileLyricsOriginalNextSibling&&mobileLyricsOriginalNextSibling.parentNode===mobileLyricsOriginalParent
-            ? mobileLyricsOriginalNextSibling
-            : null
-        );
-      }
-    }
+    const mobileViews=['search','lyrics','queue','me'];
 
     function openWorkspace(view){
       const isSearch=view==='search';
@@ -3087,16 +3227,6 @@
       dom.workspaceModal.setAttribute('aria-hidden','true');
     }
 
-    function openSettings(){
-      dom.settingsModal.classList.add('show');
-      dom.settingsModal.setAttribute('aria-hidden','false');
-    }
-
-    function closeSettings(){
-      dom.settingsModal.classList.remove('show');
-      dom.settingsModal.setAttribute('aria-hidden','true');
-    }
-
     function openClientDownloadModal(){
       dom.clientDownloadModal.classList.add('show');
       dom.clientDownloadModal.setAttribute('aria-hidden','false');
@@ -3107,21 +3237,37 @@
       dom.clientDownloadModal.setAttribute('aria-hidden','true');
     }
 
+    function setDesktopView(view){
+      const next=['search','lyrics','queue','me'].includes(view)?view:'lyrics';
+      document.body.dataset.desktopView=next;
+      const title=document.querySelector('.playlist-panel [data-i18n="playlistTitle"]');
+      if(title)title.textContent=next==='me'?'我的音乐':'播放队列';
+      document.querySelectorAll('.desktop-nav [data-desktop-view]').forEach(button=>{
+        if(button.dataset.desktopView===next)button.setAttribute('aria-current','page');
+        else button.removeAttribute('aria-current');
+      });
+      if(next==='queue')document.querySelector('.playlist-tab[data-tab="results"]')?.click();
+      if(next==='me')document.querySelector('.playlist-tab[data-tab="favorites"]')?.click();
+      if(next==='search')setTimeout(()=>dom.searchInput?.focus(),80);
+    }
+
     function setMobileView(view, options={}){
       const next=mobileViews.includes(view)?view:'search';
       document.body.dataset.mobileView=next;
+      if(next==='queue'||next==='me'){
+        const title=document.querySelector('.playlist-panel [data-i18n="playlistTitle"]');
+        if(title)title.textContent=next==='me'?'我的音乐':'播放队列';
+      }
+      updateMobileLyricWindow(state.currentLyricIndex);
       document.querySelectorAll('[data-mobile-view]').forEach(btn=>{
         const active=btn.dataset.mobileView===next;
         if(active)btn.setAttribute('aria-current','page');
         else btn.removeAttribute('aria-current');
       });
       const isMobile=window.matchMedia('(max-width: 760px)').matches;
-      syncMobileLyricsMount(next==='lyrics'&&isMobile);
       document.querySelectorAll('.layout > .panel').forEach(panel=>{
-        const panelView=panel.classList.contains('search-panel')?'search':panel.classList.contains('player-panel')?'lyrics':'me';
-        const visible=next==='lyrics'
-          ? (panelView==='lyrics'||panelView==='me')
-          : panelView===next;
+        const panelView=panel.classList.contains('search-panel')?'search':panel.classList.contains('player-panel')?'lyrics':'library';
+        const visible=panelView===next||(panelView==='library'&&(next==='queue'||next==='me'));
         panel.setAttribute('aria-hidden',String(!visible&&isMobile));
       });
       if(next==='me' && options.openFavorites){
@@ -3131,7 +3277,7 @@
         const activeTab=document.querySelector('.playlist-tab.active')?.dataset.tab;
         if(activeTab==='results')document.querySelector('.playlist-tab[data-tab="favorites"]')?.click();
       }
-      if(next==='lyrics' && isMobile){
+      if((next==='lyrics'||next==='queue') && isMobile){
         document.querySelector('.playlist-tab[data-tab="results"]')?.click();
       }
     }
@@ -3180,15 +3326,17 @@
 
     function setupEvents(){
       setupMediaSessionHandlers();
-      setupMobileLyricsDrag();
-      document.querySelectorAll('.lang-btn').forEach(btn=>{
-        btn.addEventListener('click',()=>setLanguage(btn.dataset.lang));
+
+      document.querySelectorAll('.desktop-nav [data-desktop-view]').forEach(button=>{
+        button.addEventListener('click',()=>setDesktopView(button.dataset.desktopView));
       });
 
       dom.searchBtn.addEventListener('click',()=>{
         state.searchKeyword=dom.searchInput.value.trim(); state.noMoreResults=false;
+        exitSearchSelectMode();
         searchAllSources(true);
       });
+      dom.searchSelectToggle?.addEventListener('click',()=>setSearchSelectMode(!state.searchSelectMode));
       dom.searchBatchSelectAll.addEventListener('change',()=>{
         const tracks=getInterleavedSearchList();
         if(!tracks.length){
@@ -3340,6 +3488,12 @@
         tab.addEventListener('click',()=>{
           document.querySelectorAll('.playlist-tab').forEach(el=>el.classList.toggle('active',el===tab));
           const tName=tab.dataset.tab;
+          if(tName==='profile'){
+            if(!state.isAuthenticated){closeAccountProfile();renderPlaylistList();return;}
+            loadAccountProfile();
+            return;
+          }
+          closeAccountProfile();
           state.mobilePlaylistDetailId=null;
           if(tName==='results'){
             state.playContext.type='queue';state.playContext.playlistId=null;
@@ -3381,36 +3535,12 @@
       dom.savePlaylistModal.addEventListener('click',e=>{if(e.target===dom.savePlaylistModal)closeSavePlaylistModal();});
       dom.mobilePlaylistBack.addEventListener('click',closeMobilePlaylistDetail);
       dom.mobilePlaylistDelete.addEventListener('click',deleteSelectedPlaylist);
-      dom.settingsToggleBtn.addEventListener('click',openSettings);
-      dom.settingsCloseBtn.addEventListener('click',closeSettings);
-      dom.settingsModal.addEventListener('click',e=>{if(e.target===dom.settingsModal)closeSettings();});
-      dom.clientDownloadButton.addEventListener('click',()=>{
-        closeSettings();
-        openClientDownloadModal();
-      });
+      dom.clientDownloadButton.addEventListener('click',openClientDownloadModal);
       dom.clientDownloadClose.addEventListener('click',closeClientDownloadModal);
       dom.clientDownloadModal.addEventListener('click',e=>{if(e.target===dom.clientDownloadModal)closeClientDownloadModal();});
-      dom.settingsModal.querySelectorAll('[data-desktop-view]').forEach(button=>{
-        button.addEventListener('click',()=>{
-          const view=button.dataset.desktopView;
-          closeSettings();
-          if(view==='lyrics'){
-            closeWorkspace();
-            return;
-          }
-          if((view==='favorites'||view==='playlists')&&!state.isAuthenticated){
-            requireLibraryAccess();
-            return;
-          }
-          openWorkspace(view);
-        });
-      });
       dom.workspaceCloseBtn.addEventListener('click',closeWorkspace);
       dom.workspaceModal.addEventListener('click',e=>{if(e.target===dom.workspaceModal)closeWorkspace();});
 
-      dom.announcementClose.addEventListener('click',closeAnnouncementModal);
-      dom.announcementConfirm.addEventListener('click',closeAnnouncementModal);
-      dom.announcementModal.addEventListener('click',e=>{if(e.target===dom.announcementModal)closeAnnouncementModal();});
       dom.androidUpdateClose.addEventListener('click',()=>dismissAndroidUpdate(pendingAndroidUpdateVersion));
       dom.androidUpdateLater.addEventListener('click',()=>dismissAndroidUpdate(pendingAndroidUpdateVersion));
       dom.androidUpdateInstall.addEventListener('click',()=>{
@@ -3420,9 +3550,49 @@
       dom.androidUpdateModal.addEventListener('click',e=>{if(e.target===dom.androidUpdateModal)dismissAndroidUpdate(pendingAndroidUpdateVersion);});
 
       dom.themeToggle.addEventListener('click',toggleTheme);
+      dom.accountNavButton?.addEventListener('click',()=>{
+        if(!state.isAuthenticated){openLoginModal('login');return;}
+        if(window.matchMedia('(max-width: 760px)').matches)setMobileView('me');
+        else setDesktopView('me');
+      });
       dom.loginCloseBtn.addEventListener('click',closeLoginModal);
       dom.loginModal.addEventListener('click',e=>{if(e.target===dom.loginModal)closeLoginModal();});
+      document.addEventListener('keydown',e=>{
+        if(e.key==='Escape'&&dom.loginModal.classList.contains('show')){
+          e.preventDefault();
+          closeLoginModal();
+        }
+      });
       dom.loginForm.addEventListener('submit',e=>{e.preventDefault();submitLogin();});
+      dom.registerForm.addEventListener('submit',e=>{e.preventDefault();submitRegister();});
+      dom.registerSendCode.addEventListener('click',sendRegisterCode);
+      dom.authTabLogin.addEventListener('click',()=>setAuthMode('login'));
+      dom.authTabRegister.addEventListener('click',()=>setAuthMode('register'));
+      dom.googleAuthBtn.addEventListener('click',startGoogleAuth);
+      document.querySelectorAll('.auth-password-toggle').forEach(button=>{
+        button.addEventListener('click',()=>{
+          const input=$(button.dataset.target);
+          if(!input)return;
+          const show=input.type==='password';
+          input.type=show?'text':'password';
+          button.textContent=show?'隐藏':'显示';
+          button.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+          input.focus();
+        });
+      });
+      dom.accountProfileForm.addEventListener('submit',saveAccountProfile);
+      dom.accountPasswordForm.addEventListener('submit',changeAccountPassword);
+      dom.accountLogout.addEventListener('click',toggleAuth);
+      dom.accountDelete.addEventListener('click',async()=>{
+        if(!dom.accountDeletePassword.value){showToast('请输入当前密码以确认注销');return;}
+        dom.accountDelete.disabled=true;
+        try{
+          await accountRequest('/api/account',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:dom.accountDeletePassword.value})});
+          dom.audio.pause();state.isAuthenticated=false;state.profileName='';state.favorites=[];state.playlists=[];state.playQueue=[];state.currentTrack=null;document.body.classList.remove('has-track');
+          closeAccountProfile();setAuthGate(false);renderPlaylistList();showToast('账户及关联数据已注销');
+        }catch(error){showToast(error.message);}
+        finally{dom.accountDelete.disabled=false;}
+      });
 
       document.querySelectorAll('.playmode-btn').forEach(btn=>{
         btn.addEventListener('click',()=>{
@@ -3441,22 +3611,26 @@
 
     function init(){
       setupDOM();
-      try{const lg=localStorage.getItem('halo-music-lang'); if(lg)state.language=lg;}catch(e){}
-      try{applyTheme(localStorage.getItem(THEME_STORAGE_KEY)||'dark');}catch(e){applyTheme('dark');}
+      try{applyTheme(localStorage.getItem(THEME_STORAGE_KEY)||'light');}catch(e){applyTheme('light');}
       setupParticles();
       setupRipple();
       setupEvents();
       setupMobileNavigation();
-      setLanguage(state.language);
+      setDesktopView(document.body.dataset.desktopView||'lyrics');
+      applyStaticText();
       loadPlayQueueFromStorage();
       renderPlaylistOptions();
       renderPlaylistList();
+      renderMiniSearchList();
+      updateBatchToolbar();
+      // Paint the lyrics surface up front so an idle player shows its hint
+      // instead of an empty void.
+      renderLyrics();
       setPlaymodeUI();
       updateDesktopPlaybackVisual();
       dom.audio.volume=parseFloat(dom.volumeSlider.value);
       updateAuthUI();
       loadAuthSession();
-      showAnnouncementIfNeeded();
       checkForAndroidUpdate();
     }
 

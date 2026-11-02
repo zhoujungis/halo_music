@@ -3,8 +3,15 @@ CREATE TABLE IF NOT EXISTS "user" (
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   created_at INTEGER NOT NULL,
-  last_login_at INTEGER
+  last_login_at INTEGER,
+  email TEXT,
+  display_name TEXT,
+  avatar_url TEXT,
+  google_sub TEXT
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_email ON "user"(email) WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_google_sub ON "user"(google_sub) WHERE google_sub IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS music_sessions (
   token TEXT PRIMARY KEY,
@@ -38,3 +45,38 @@ CREATE TABLE IF NOT EXISTS search_cache (
 );
 
 CREATE INDEX IF NOT EXISTS idx_search_cache_expires_at ON search_cache(expires_at);
+
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  email TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  request_ip TEXT NOT NULL DEFAULT '',
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (email, purpose)
+);
+CREATE INDEX IF NOT EXISTS idx_email_verification_expires ON email_verification_codes(expires_at);
+
+CREATE TABLE IF NOT EXISTS music_play_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL,
+  track_uid TEXT NOT NULL,
+  title TEXT NOT NULL,
+  artist TEXT NOT NULL DEFAULT '',
+  played_at INTEGER NOT NULL,
+  FOREIGN KEY (username) REFERENCES "user"(username) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_music_history_user_time ON music_play_history(username, played_at DESC);
+
+CREATE TABLE IF NOT EXISTS registration_ips (
+  ip_hash TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_rate_limits (
+  key TEXT PRIMARY KEY,
+  window_started_at INTEGER NOT NULL,
+  count INTEGER NOT NULL
+);

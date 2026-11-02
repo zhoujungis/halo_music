@@ -38,7 +38,7 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 | 收藏 | 单曲收藏、搜索结果批量收藏、收藏列表 | `index.html`、`/api/library` |
 | 自建歌单 | 新建、删除、导入、导出、添加/移除歌曲 | `index.html`、`/api/library` |
 | 歌单导入 | 网易云、汽水音乐、QQ 音乐公开歌单链接，以及 HALO JSON | `functions/api/import-playlist.js` |
-| 账号 | 登录、退出、30 天会话、D1 库同步；公开注册已关闭 | `functions/api/*.js` |
+| 账号 | 邮箱验证码注册、Google 登录、登录/退出、30 天会话、D1 库同步；单 IP 限一个账号 | `functions/api/*.js`、`functions/api/auth/google/` |
 | 管理 | `/admin` 管理面板，查看账号、会话、收藏和缓存概况 | `admin/`、`functions/api/admin.js` |
 | 缓存 | 搜索缓存、音源解析缓存、内存 LRU、D1 二级缓存 | `functions/api/music.js`、`schema.sql` |
 | 桌面端 | Electron 原生窗口、外链交给系统浏览器、Windows 安装包/便携版 | `electron/`、`package.json` |
@@ -67,8 +67,8 @@ flowchart LR
 1. 搜索结果默认显示复选框；全选、收藏和歌单操作只作用于当前搜索结果。
 2. 空结果时点击批量操作会提示暂无搜索结果；未选歌曲时会提示先选择歌曲。
 3. 点击歌曲行会播放对应歌曲；点击歌词行会把 `audio.currentTime` 跳到该歌词的时间戳。
-4. 未登录用户可以搜索和浏览；解析音频并开始播放需要登录。
-5. 收藏和歌单先写入浏览器本地缓存；登录用户再异步同步到 D1，弱网时仍可使用本地数据。
+4. 未登录用户可以搜索、浏览并播放歌曲；收藏、歌单和个人信息需要登录后查看。
+5. 登录用户的收藏和歌单先写入浏览器本地缓存，再异步同步到 D1，弱网时仍可使用本地数据。
 
 ## 系统架构
 
@@ -121,9 +121,14 @@ flowchart TB
 ├─ styles.css                 # 页面样式
 ├─ admin/                     # /admin 管理页面
 ├─ functions/api/
-│  ├─ _auth.js                # PBKDF2、Cookie、会话校验、JSON 响应
+│  ├─ _auth.js                # PBKDF2、Cookie、会话校验、IP 哈希、JSON 响应
+│  ├─ _email.js               # Resend 验证码邮件与验证码哈希
+│  ├─ register.js             # POST /api/register（邮箱验证码注册）
+│  ├─ email-code.js           # POST /api/email-code（Resend 发送验证码）
+│  ├─ auth/google/
+│  │  ├─ start.js             # GET /api/auth/google/start
+│  │  └─ callback.js          # GET /api/auth/google/callback
 │  ├─ login.js                # POST /api/login
-│  ├─ register.js             # POST /api/register（已关闭）
 │  ├─ admin.js                # GET /api/admin
 │  ├─ logout.js               # POST /api/logout
 │  ├─ me.js                   # GET /api/me
@@ -186,11 +191,14 @@ flowchart LR
 
 ## 后端 API
 
-所有 Functions 位于 `functions/api/`，由 Cloudflare Pages 按文件名映射为 `/api/*`。除公开搜索外，用户库接口要求有效的 `hm_token` 会话 Cookie。
+所有 Functions 位于 `functions/api/`，由 Cloudflare Pages 按文件名映射为 `/api/*`。搜索、详情解析和音频播放是公开能力；用户库、账号和听歌记录接口要求有效的 `hm_token` 会话 Cookie。
 
 | 方法 | 路径 | 是否登录 | 作用 |
 | --- | --- | --- | --- |
-| `POST` | `/api/register` | 否 | 已关闭，返回 410 |
+| `POST` | `/api/email-code` | 否 | 通过 Resend 发送注册验证码（60 秒冷却、限流） |
+| `POST` | `/api/register` | 否 | 校验邮箱验证码并创建账号，返回会话 Cookie |
+| `GET` | `/api/auth/google/start` | 否 | 跳转 Google OAuth 授权页 |
+| `GET` | `/api/auth/google/callback` | 否 | 处理 Google 回调、创建或关联账号并登录 |
 | `POST` | `/api/login` | 否 | 校验账号密码并创建会话 |
 | `POST` | `/api/logout` | 否 | 删除当前会话并清理 Cookie |
 | `GET` | `/api/me` | 否 | 返回当前用户名，未登录返回 401 |
@@ -240,9 +248,13 @@ flowchart LR
 
 | 表 | 关键字段 | 用途 |
 | --- | --- | --- |
-| `user` | `username`, `password_hash`, `password_salt`, `last_login_at` | 账号、密码材料与最后登录时间（UTC+8 展示） |
+| `user` | `username`, `email`, `display_name`, `avatar_url`, `google_sub`, `password_hash`, `password_salt`, `last_login_at` | 账号、邮箱、Google 绑定、密码材料与最后登录时间（UTC+8 展示） |
 | `music_sessions` | `token`, `username`, `expires_at` | 30 天登录会话 |
 | `music_libraries` | `username`, `library_json`, `updated_at` | 用户收藏和自建歌单 JSON |
+| `email_verification_codes` | `email`, `purpose`, `code_hash`, `request_ip`, `expires_at`, `attempts` | 一次性邮箱验证码（只存哈希） |
+| `registration_ips` | `ip_hash`, `username`, `created_at` | 单 IP 单账号限制 |
+| `auth_rate_limits` | `key`, `window_started_at`, `count` | 验证码发送频率限制 |
+| `music_play_history` | `username`, `track_uid`, `title`, `played_at` | 听歌历史与总结 |
 | `music_cache` | `key`, `value_json`, `expires_at` | 音频/详情共享缓存 |
 | `search_cache` | `key`, `value_json`, `expires_at` | 搜索结果短期缓存 |
 
@@ -264,6 +276,14 @@ flowchart LR
 - 服务端只保存哈希和 salt，不保存明文密码。
 - 会话 token 使用随机 UUID，写入 `HttpOnly; Secure; SameSite=Lax` Cookie。
 - 会话默认有效期 30 天，过期访问会清理数据库记录。
+
+### 注册与登录
+
+- 邮箱注册先请求 `/api/email-code`，服务端通过 Resend 发送 6 位验证码；验证码 10 分钟有效、最多尝试 5 次，数据库只保存 `SHA-256(email:code)`。
+- 同一邮箱 60 秒内不可重复发送，滚动 1 小时内最多 5 次；同一来源 IP 每小时最多 10 次。
+- `registration_ips` 以哈希形式记录首次注册 IP，邮箱注册和 Google 首次建号都会检查，确保一个 IP 只能创建一个账号。注销账号时会释放该记录。
+- Google 登录使用服务端 OAuth 2.0 授权码流程，`state` 通过短期 HttpOnly Cookie 校验；只接受 Google 标记为已验证的邮箱。
+- Google 邮箱与已有邮箱账号一致时会自动关联；Google 新用户会生成唯一用户名，并同样受单 IP 限制。
 
 ### Electron 安全边界
 
@@ -298,7 +318,23 @@ npx wrangler d1 execute halo-music-db --local --file schema.sql
 npm run dev
 ```
 
-打开 Wrangler 输出的本地地址即可访问。公开注册已关闭，账号需由管理员直接写入 D1；项目不内置通用测试账号和密码。
+打开 Wrangler 输出的本地地址即可访问。注册需要在项目根目录的 `.dev.vars` 中配置 Resend 与 Google OAuth 凭据（该文件已被 `.gitignore` 忽略）：
+
+```ini
+# Resend 密钥（必须）
+RESEND_API_KEY=re_xxxxxxxx
+# 以下两项已在 wrangler.toml [vars] 里预配置，通常无需重复
+# RESEND_FROM=no-reply@music.zhoujun.dev
+# RESEND_SENDER_NAME="HALO Music"
+GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxxxxxxx
+# 可选；默认使用 <当前域名>/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:8788/api/auth/google/callback
+# 可选；用于给注册 IP 哈希加 pepper
+AUTH_SECRET=change-me
+```
+
+Google Cloud Console 的 OAuth 客户端需要把 `http://localhost:8788/api/auth/google/callback` 和线上 `https://music.zhoujun.dev/api/auth/google/callback` 加入授权重定向 URI。只要配置 `RESEND_API_KEY`，验证码邮件就会使用已验证的 `no-reply@music.zhoujun.dev` 发件；Google 登录需要 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET`。未配置对应变量时，邮箱注册或 Google 登录会返回明确的未配置提示，账号密码登录仍然可用。
 
 ## 数据库初始化
 
@@ -336,6 +372,23 @@ QQ_SOURCE_URLS = "https://your-qq-source.example/search,https://your-qq-backup.e
 NETEASE_SOURCE_URLS = "https://musicapi.qijieya.cn/meting,https://your-netease-backup.example/meting"
 ```
 
+注册相关变量属于密钥，不要提交到仓库。生产环境请在 Pages 控制台设置，或使用：
+
+```powershell
+npx wrangler pages secret put RESEND_API_KEY
+npx wrangler pages secret put RESEND_FROM
+npx wrangler pages secret put GOOGLE_CLIENT_ID
+npx wrangler pages secret put GOOGLE_CLIENT_SECRET
+npx wrangler pages secret put AUTH_SECRET
+```
+
+升级已有数据库时，按顺序执行 `migrations/` 下的 SQL（至少需要 `0005_accounts_and_listening_history.sql` 与 `0006_auth_registration.sql`）：
+
+```powershell
+npx wrangler d1 execute halo-music-db --remote --file migrations/0005_accounts_and_listening_history.sql
+npx wrangler d1 execute halo-music-db --remote --file migrations/0006_auth_registration.sql
+```
+
 生产环境建议在 Pages 控制台设置同名变量，避免把具体第三方地址提交到仓库。
 
 ## 测试
@@ -348,7 +401,8 @@ npm test
 
 测试覆盖：
 
-- 登录、会话和登出数据库流程（公开注册已关闭）
+- 登录、会话和登出数据库流程
+- 邮箱规范化、用户名校验、注册 IP 哈希和验证码哈希
 - 收藏和自建歌单按用户持久化
 - 网易云、QQ、汽水音乐字段归一化
 - 歌单分享链接识别与导入
@@ -411,25 +465,25 @@ npm run desktop:portable
 Electron 地址可以通过环境变量覆盖：
 
 ```powershell
-$env:HALO_MUSIC_URL = "https://your-project.pages.dev"
+$env:HALO_MUSIC_URL = "https://music.zhoujun.dev"
 npm run desktop:dev
 ```
 
 也可以使用命令行参数：
 
 ```powershell
-npx electron . --url=https://your-project.pages.dev
+npx electron . --url=https://music.zhoujun.dev
 ```
 
 ## 常见问题
 
-### 为什么搜索能用但播放提示登录？
+### 为什么收藏和歌单需要登录？
 
-搜索和浏览是公开能力；音频详情解析和播放需要认证。公开注册已关闭，请使用管理员预置的账号登录；本地环境没有预置账号。
+搜索、浏览和播放是公开能力；收藏、歌单和个人信息需要登录。打开登录弹窗后可以使用邮箱验证码注册、Google 账号登录，或使用已有账号密码登录。每个 IP 只能注册一个账号；如果当前网络已注册过，请直接登录原账号。
 
 ### 为什么收藏刷新后还在，但另一台设备没有？
 
-未登录时数据只在当前浏览器 localStorage。登录后页面会同步到 `/api/library`，不同设备需要使用同一账号。
+未登录时不展示收藏和歌单；登录后收藏与歌单会同步到 `/api/library`，不同设备需要使用同一账号。
 
 ### 为什么导入 QQ 歌单数量有限？
 

@@ -30,6 +30,55 @@ function bytesToHex(bytes) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export function clientIp(request) {
+  const forwarded = request.headers.get("CF-Connecting-IP")
+    || request.headers.get("x-forwarded-for")
+    || request.headers.get("x-real-ip")
+    || "unknown";
+  return forwarded.split(",")[0].trim() || "unknown";
+}
+
+export async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value)));
+  return bytesToHex(new Uint8Array(digest));
+}
+
+export async function registrationIpHash(ip, env) {
+  const pepper = String(env?.AUTH_SECRET || "halo-music-registration");
+  return sha256Hex(`${pepper}:${ip || "unknown"}`);
+}
+
+export function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+export function isValidEmail(email) {
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
+
+export function isValidUsername(username) {
+  return /^[\p{L}\p{N}_]{3,20}$/u.test(String(username || ""));
+}
+
+export function usernameFromEmail(email) {
+  const local = String(email || "")
+    .split("@")[0]
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}_]/gu, "");
+  return (local.length >= 3 ? local : `halo${local}`).slice(0, 20);
+}
+
+export async function createSession(env, username) {
+  const token = crypto.randomUUID();
+  const now = Date.now();
+  await env.DB.prepare('UPDATE "user" SET last_login_at = ? WHERE username = ?')
+    .bind(now, username).run();
+  await env.DB.prepare(
+    "INSERT INTO music_sessions (token, username, expires_at) VALUES (?, ?, ?)",
+  ).bind(token, username, now + SESSION_TTL_MS).run();
+  return token;
+}
+
 function hexToBytes(hex) {
   return new Uint8Array(hex.match(/.{1,2}/g).map((pair) => Number.parseInt(pair, 16)));
 }
