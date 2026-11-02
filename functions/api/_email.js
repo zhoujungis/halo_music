@@ -1,7 +1,7 @@
 import { sha256Hex } from "./_auth.js";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const DEFAULT_RESEND_FROM = "no-reply@blog.zhoujun.dev";
+const DEFAULT_RESEND_FROM = "no-reply@music.zhoujun.dev";
 
 export function isEmailConfigured(env) {
   return Boolean(String(env?.RESEND_API_KEY || "").trim());
