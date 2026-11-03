@@ -3142,7 +3142,7 @@ header {
   }
   .player-main { display: flex; width: 100%; justify-content: center; }
   .cover-wrapper {
-    width: min(320px, 33vh, 38vw);
+    width: min(300px, 32vh, 36vw);
     aspect-ratio: 1;
     border-radius: 7px;
     box-shadow: 16px 18px 0 -7px var(--surface-3), 17px 19px 0 -7px var(--line-strong), 0 30px 55px rgba(47, 38, 26, .14);
@@ -3184,7 +3184,7 @@ header {
   .lyrics-container {
     flex: 1 1 auto;
     width: min(620px, 100%);
-    min-height: 240px;
+    min-height: 150px;
     margin: 14px 0 auto;
     padding: 0;
     overflow: auto;
