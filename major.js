@@ -1274,16 +1274,56 @@
 
     // 「QQ音乐」入口的实际音源：JOOX。
     // 播放地址直接指向同源 joox_audio，由服务端按关键词 + 结果序号取流。
+    // 封面和歌词独立于音源解析：本地播放、解析失败时也要能补上。
+    async function refreshQqMetadata(track){
+      if(!track)return;
+      const keyword=(track.qqSearchKey||track.keyword||`${track.title||''} ${track.artist||''}`).trim();
+      const index=Number(track.jooxIndex)||Number(track.displayIndex)||1;
+      const tasks=[];
+      if(!track.cover){
+        const memo=coverMemo.get(track.uid);
+        if(memo)track.cover=memo;
+        else tasks.push((async()=>{
+          try{
+            const coverParams=new URLSearchParams({action:'cover_lookup',title:track.title||'',artist:track.artist||''});
+            if(track.duration)coverParams.set('duration',String(track.duration));
+            const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},12000);
+            const coverJson=await coverResponse.json().catch(()=>null);
+            const cover=coverJson?.data?.cover||'';
+            if(cover){
+              track.cover=cover;
+              coverMemo.set(track.uid,cover);
+            }
+          }catch(error){
+            console.warn('cover lookup unavailable',error);
+          }
+        })());
+      }
+      if(!track.lrc&&keyword){
+        tasks.push((async()=>{
+          try{
+            const lyricParams=new URLSearchParams({action:'joox_lyric',q:keyword,n:String(index)});
+            if(track.title)lyricParams.set('title',track.title);
+            if(track.artist)lyricParams.set('artist',track.artist);
+            if(track.duration)lyricParams.set('duration',String(track.duration));
+            const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},12000);
+            const lyricJson=await lyricResponse.json().catch(()=>null);
+            const lyric=lyricJson?.data?.lyric||'';
+            if(lyric)track.lrc=lyric;
+          }catch(error){
+            console.warn('lyric lookup unavailable',error);
+          }
+        })());
+      }
+      if(tasks.length)await Promise.allSettled(tasks);
+    }
+
     async function fetchQQDetails(track,options={}) {
       const keyword=(track.qqSearchKey||track.keyword||`${track.title||''} ${track.artist||''}`).trim();
       const index=Number(track.jooxIndex)||Number(track.displayIndex)||1;
       if(!keyword)throw new Error('JOOX 关键词缺失');
       const params=new URLSearchParams({action:'joox_audio',q:keyword,n:String(index)});
       const audioUrl=`/api/music?${params}`;
-      const lyricParams=new URLSearchParams({action:'joox_lyric',q:keyword,n:String(index)});
-      if(track.title)lyricParams.set('title',track.title);
-      if(track.artist)lyricParams.set('artist',track.artist);
-      if(track.duration)lyricParams.set('duration',String(track.duration));
       Object.assign(track,{
         audioUrl,
         audioCandidates:[audioUrl],
@@ -1292,35 +1332,7 @@
         quality:track.quality||null,
         qualityLabel:track.qualityLabel||null
       });
-      const coverPromise=(async()=>{
-        if(track.cover)return;
-        const memo=coverMemo.get(track.uid);
-        if(memo){track.cover=memo;return;}
-        try{
-          const coverParams=new URLSearchParams({action:'cover_lookup',title:track.title||'',artist:track.artist||''});
-          if(track.duration)coverParams.set('duration',String(track.duration));
-          const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},12000);
-          const coverJson=await coverResponse.json().catch(()=>null);
-          const cover=coverJson?.data?.cover||'';
-          if(cover){
-            track.cover=cover;
-            coverMemo.set(track.uid,cover);
-          }
-        }catch(error){
-          console.warn('JOOX cover lookup unavailable',error);
-        }
-      })();
-      const lyricPromise=(async()=>{
-        try{
-          const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},12000);
-          const lyricJson=await lyricResponse.json().catch(()=>null);
-          const lyric=lyricJson?.data?.lyric||'';
-          if(lyric)track.lrc=lyric;
-        }catch(error){
-          console.warn('JOOX lyric unavailable',error);
-        }
-      })();
-      await Promise.allSettled([coverPromise,lyricPromise]);
+      await refreshQqMetadata(track);
       // 歌词和封面都落定后再标记就绪，否则播放路径会提前返回、歌词渲染成空。
       track.detailsLoaded=true;
     }
@@ -1478,6 +1490,9 @@
           throw e;
         }
         console.warn('metadata unavailable, playing local file',e);
+      }
+      if(track.localAudio&&track.source==='qq'&&(!track.cover||!track.lrc)){
+        await refreshQqMetadata(track);
       }
       if(track.localAudio){
         track.audioUrl=track.localAudio;
@@ -1779,6 +1794,15 @@
         applyUI();
         state.lyricLines = track.lrc ? parseLRC(track.lrc) : [];
         renderLyrics();
+        // 本地播放或解析失败时封面/歌词可能缺失，后台补一次再刷新界面。
+        if(track.source==='qq'&&(!track.cover||!track.lrc)){
+          refreshQqMetadata(track).then(()=>{
+            if(requestToken!==playbackRequestToken)return;
+            applyUI();
+            state.lyricLines = track.lrc ? parseLRC(track.lrc) : [];
+            renderLyrics();
+          }).catch(()=>{});
+        }
         if(!track.audioUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
 
         if(earlyPlayback&&earlyAudioUrl===track.audioUrl){
