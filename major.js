@@ -1805,6 +1805,8 @@
 
     function preloadAudio(track){
       if(!track?.audioUrl)return;
+      // JOOX 代理流单曲 10MB 级，整段预取成 blob 会拖慢起播，直接流式播放。
+      if(track.source==='qq')return;
       const url=new URL(track.audioUrl,window.location.href).href;
       if(nextAudioPreload?.url===url)return;
       stopPreloadedAudio();
