@@ -337,6 +337,19 @@ function joinArtists(value) {
   return clean(value);
 }
 
+// Bilibili answers 412 to datacenter egress without a browser-ish cookie jar.
+// A fresh buvid3 is enough for the public web APIs.
+const BILIBILI_BUVID3 = `${crypto.randomUUID().toUpperCase()}infoc`;
+
+function bilibiliHeaders(referer, extra = {}) {
+  return {
+    referer,
+    origin: "https://www.bilibili.com",
+    cookie: `buvid3=${BILIBILI_BUVID3}; b_nut=${Math.floor(Date.now() / 1000)}`,
+    ...extra,
+  };
+}
+
 function qqCover(albumMid) {
   const mid = clean(albumMid);
   return mid ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${mid}.jpg` : "";
@@ -741,7 +754,7 @@ async function searchBilibili(keyword, targetTitle, targetArtist, targetDuration
       order: "totalrank",
     });
     const response = await request(`https://api.bilibili.com/x/web-interface/search/all/v2?${params}`, {
-      headers: { referer: "https://search.bilibili.com/", origin: "https://search.bilibili.com" },
+      headers: bilibiliHeaders("https://search.bilibili.com/"),
     }, BILI_SEARCH_TIMEOUT_MS);
     const data = await readJson(response);
     if (data?.code !== 0) throw new Error(`Bilibili search failed (${data?.code ?? "unknown"})`);
@@ -763,7 +776,7 @@ async function fetchBiliView(videoId, aid, signal = null) {
   if (videoId) params.set("bvid", videoId);
   else params.set("aid", aid);
   const response = await request(`https://api.bilibili.com/x/web-interface/view?${params}`, {
-    headers: { referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+    headers: bilibiliHeaders(videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/"),
   }, BILI_SEARCH_TIMEOUT_MS, signal);
   const data = await readJson(response);
   if (data?.code !== 0 || !data?.data) throw new Error(`Bilibili video detail failed (${data?.code ?? "unknown"})`);
@@ -799,7 +812,7 @@ async function fetchBiliPlayUrl(videoId, aid, cid, signal = null) {
     else params.set("avid", aid);
     try {
       const response = await request(`https://api.bilibili.com/x/player/playurl?${params}`, {
-        headers: { referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+        headers: bilibiliHeaders(videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/"),
       }, BILI_AUDIO_TIMEOUT_MS, signal);
       const data = await readJson(response);
       if (data?.code !== 0) {
@@ -837,7 +850,10 @@ async function proxyBilibiliAudio(videoId, aid, duration, page, requestObject) {
   const stream = await fetchBiliPlayUrl(videoId, aid, cid);
   const range = requestObject.headers.get("range") || "bytes=0-";
   const upstream = await request(stream.url, {
-    headers: { range, referer: videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/" },
+    headers: bilibiliHeaders(
+      videoId ? `https://www.bilibili.com/video/${videoId}` : "https://www.bilibili.com/",
+      { range },
+    ),
   }, BILI_AUDIO_TIMEOUT_MS);
   if (!isAudioResponse(upstream)) {
     upstream.body?.cancel();
