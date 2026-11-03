@@ -1435,6 +1435,14 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       if (!stream) throw new Error("JOOX 没有可播放的音质");
       const download = await beginDownload(requestObject, env, "joox");
       if (download instanceof Response) return download;
+      // 播放直接跳转到 JOOX CDN：走 Worker 代理时首字节约 3s、吞吐不到 1.5MB/s，
+      // 浏览器起播会明显卡顿。下载仍走代理，保证配额与附件头生效。
+      if (!download) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: stream.url, "Cache-Control": "no-store" },
+        });
+      }
       try {
         const range = requestObject.headers.get("range") || "bytes=0-";
         const upstream = await request(stream.url, {
@@ -1445,9 +1453,9 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           throw new Error(`JOOX stream unavailable (${upstream.status})`);
         }
         const audio = audioResponse(upstream, "joox", stream.container);
-        return download ? finishDownload(audio, download, requestObject) : audio;
+        return finishDownload(audio, download, requestObject);
       } catch (error) {
-        if (download) await releaseDownload(env, download.username, "joox", download.day);
+        await releaseDownload(env, download.username, "joox", download.day);
         throw error;
       }
     }
