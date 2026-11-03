@@ -1413,33 +1413,50 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       return await proxyNeteaseLyric(id, env);
     }
 
-    // JOOX 接口不带封面，用 iTunes 搜索按歌名 + 歌手补一张高清封面。
+    // JOOX 接口不带封面。用歌名 + 歌手在 QQ / 网易云公开搜索里找同一首，
+    // 复用它们返回的封面地址（QQ 的 y.gtimg.cn 图片可以直接加载）。
     if (action === "cover_lookup") {
       const title = clean(url.searchParams.get("title"));
       const artist = clean(url.searchParams.get("artist"));
       const term = [title, artist].filter(Boolean).join(" ");
       if (!term) return json({ code: 200, data: { cover: "" } });
-      const endpoint = new URL("https://itunes.apple.com/search");
-      endpoint.searchParams.set("term", term);
-      endpoint.searchParams.set("entity", "song");
-      endpoint.searchParams.set("limit", "5");
-      endpoint.searchParams.set("country", "tw");
-      const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
+
       const targetTitle = normalizedMatchText(title);
       const targetArtist = normalizedMatchText(artist);
-      const best = (Array.isArray(data?.results) ? data.results : [])
-        .map((item) => {
-          const itemTitle = normalizedMatchText(item?.trackName);
-          const itemArtist = normalizedMatchText(item?.artistName);
-          let score = 0;
-          if (itemTitle && targetTitle && (itemTitle === targetTitle || itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle))) score += 10;
-          if (itemArtist && targetArtist && (itemArtist === targetArtist || itemArtist.includes(targetArtist) || targetArtist.includes(itemArtist))) score += 5;
-          return { item, score };
-        })
-        .filter((entry) => entry.score >= 10)
-        .sort((a, b) => b.score - a.score)[0];
-      const raw = clean(best?.item?.artworkUrl100);
-      const cover = raw ? raw.replace(/\/\d+x\d+bb\.(jpg|png)$/i, "/600x600bb.jpg") : "";
+      const matches = (candidateTitle, candidateArtist) => {
+        const itemTitle = normalizedMatchText(candidateTitle);
+        const itemArtist = normalizedMatchText(candidateArtist);
+        if (!itemTitle || !targetTitle) return 0;
+        let score = 0;
+        if (itemTitle === targetTitle) score += 10;
+        else if (itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle)) score += 6;
+        if (itemArtist && targetArtist && (itemArtist === targetArtist || itemArtist.includes(targetArtist) || targetArtist.includes(itemArtist))) score += 5;
+        return score;
+      };
+
+      let cover = "";
+      try {
+        const songs = await searchQQOfficial(term, 10);
+        const best = songs
+          .map((song) => ({ song, score: matches(song.name, song.artist) }))
+          .filter((entry) => entry.score >= 10 && entry.song.cover)
+          .sort((a, b) => b.score - a.score)[0];
+        cover = best?.song?.cover || "";
+      } catch (error) {
+        console.warn("cover lookup via QQ failed", error);
+      }
+      if (!cover) {
+        try {
+          const rows = await searchNetease(term, 5, env);
+          const best = rows
+            .map((row) => ({ row, score: matches(row?.title, row?.author) }))
+            .filter((entry) => entry.score >= 10 && entry.row?.pic)
+            .sort((a, b) => b.score - a.score)[0];
+          cover = clean(best?.row?.pic);
+        } catch (error) {
+          console.warn("cover lookup via Netease failed", error);
+        }
+      }
       return json({ code: 200, data: { cover } });
     }
 
