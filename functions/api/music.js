@@ -1413,6 +1413,36 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       return await proxyNeteaseLyric(id, env);
     }
 
+    // JOOX 接口不带封面，用 iTunes 搜索按歌名 + 歌手补一张高清封面。
+    if (action === "cover_lookup") {
+      const title = clean(url.searchParams.get("title"));
+      const artist = clean(url.searchParams.get("artist"));
+      const term = [title, artist].filter(Boolean).join(" ");
+      if (!term) return json({ code: 200, data: { cover: "" } });
+      const endpoint = new URL("https://itunes.apple.com/search");
+      endpoint.searchParams.set("term", term);
+      endpoint.searchParams.set("entity", "song");
+      endpoint.searchParams.set("limit", "5");
+      endpoint.searchParams.set("country", "tw");
+      const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
+      const targetTitle = normalizedMatchText(title);
+      const targetArtist = normalizedMatchText(artist);
+      const best = (Array.isArray(data?.results) ? data.results : [])
+        .map((item) => {
+          const itemTitle = normalizedMatchText(item?.trackName);
+          const itemArtist = normalizedMatchText(item?.artistName);
+          let score = 0;
+          if (itemTitle && targetTitle && (itemTitle === targetTitle || itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle))) score += 10;
+          if (itemArtist && targetArtist && (itemArtist === targetArtist || itemArtist.includes(targetArtist) || targetArtist.includes(itemArtist))) score += 5;
+          return { item, score };
+        })
+        .filter((entry) => entry.score >= 10)
+        .sort((a, b) => b.score - a.score)[0];
+      const raw = clean(best?.item?.artworkUrl100);
+      const cover = raw ? raw.replace(/\/\d+x\d+bb\.(jpg|png)$/i, "/600x600bb.jpg") : "";
+      return json({ code: 200, data: { cover } });
+    }
+
     if (action === "joox_search") {
       const keyword = clean(url.searchParams.get("q"));
       if (!keyword) return json({ error: "缺少关键词" }, 400);

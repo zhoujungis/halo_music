@@ -1289,14 +1289,34 @@
         qualityLabel:track.qualityLabel||null,
         detailsLoaded:true
       });
-      try{
-        const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},10000);
-        const lyricJson=await lyricResponse.json().catch(()=>null);
-        const lyric=lyricJson?.data?.lyric||'';
-        if(lyric)track.lrc=lyric;
-      }catch(error){
-        console.warn('JOOX lyric unavailable',error);
-      }
+      const coverPromise=(async()=>{
+        if(track.cover)return;
+        const memo=coverMemo.get(track.uid);
+        if(memo){track.cover=memo;return;}
+        try{
+          const coverParams=new URLSearchParams({action:'cover_lookup',title:track.title||'',artist:track.artist||''});
+          const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},8000);
+          const coverJson=await coverResponse.json().catch(()=>null);
+          const cover=coverJson?.data?.cover||'';
+          if(cover){
+            track.cover=cover;
+            coverMemo.set(track.uid,cover);
+          }
+        }catch(error){
+          console.warn('JOOX cover lookup unavailable',error);
+        }
+      })();
+      const lyricPromise=(async()=>{
+        try{
+          const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},10000);
+          const lyricJson=await lyricResponse.json().catch(()=>null);
+          const lyric=lyricJson?.data?.lyric||'';
+          if(lyric)track.lrc=lyric;
+        }catch(error){
+          console.warn('JOOX lyric unavailable',error);
+        }
+      })();
+      await Promise.allSettled([coverPromise,lyricPromise]);
     }
 
     function normalizeMusicMatchText(value){
@@ -1336,6 +1356,7 @@
     }
 
     let audioCandidateIndex=0;
+    const coverMemo=new Map();
 
     function scoreNeteaseMatch(track,item){
       const targetTitle=normalizeMusicMatchText(track.title);
