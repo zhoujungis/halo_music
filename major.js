@@ -81,8 +81,6 @@
         toastNeedKeyword:"请先输入搜索关键词。",
         toastSearchError:"搜索时发生了一点小错误，请稍后再试。",
         toastPlayError:"播放失败，请稍后再试。",
-        toastBilibiliFallback:"QQ 音乐不可用，已切换哔哩哔哩音频",
-        toastQQVipBilibili:"会员歌曲，已切换哔哩哔哩音频",
         toastNeteaseFallback:"QQ 音乐暂无可用音源，已切换网易云音频",
         toastNeteaseFallbackError:"QQ 与网易云都没有可播放的版本，请稍后再试",
         downloadTitle:"下载当前歌曲",
@@ -95,7 +93,6 @@
         toastDownloadError:"下载失败，请稍后再试",
         toastDownloadStarted:"已开始下载",
         toastDownloadStartedRemaining:"已开始下载，今日该平台剩余 {remaining} 首",
-        toastBilibiliFallbackError:"哔哩哔哩兜底失败，请稍后再试",
         toastLyricStyleSwitched:"已切换歌词炫酷效果。",
         toastPlaylistCreated:"歌单创建成功。",
         toastPlaylistDeleted:"歌单已删除。",
@@ -117,6 +114,7 @@
         sourceQQ:"QQ音乐",
         sourceBilibili:"哔哩哔哩",
         sourceQishui:"汽水音乐",
+        sourceJoox:"JOOX",
         modalNewPlaylistTitle:"新建歌单",
         modalNewPlaylistDesc:"给你的歌单取一个可爱的名字吧～",
         modalConfirm:"确定",
@@ -216,6 +214,7 @@
       if(source==='qq')return 'sourceQQ';
       if(source==='bilibili')return 'sourceBilibili';
       if(source==='qishui')return 'sourceQishui';
+      if(source==='joox')return 'sourceJoox';
       return 'sourceNetease';
     }
     function trackDisplaySource(track){
@@ -564,7 +563,7 @@
     function serializeTrack(track){
       if(!track) return null;
       const keys=[
-        'uid','source','displayIndex','keyword','songid','songMid','qqId','qqSearchKey','qqIndex',
+        'uid','source','displayIndex','keyword','songid','songMid','qqId','qqSearchKey','qqIndex','jooxIndex',
         'title','artist','album','cover','pageUrl','duration','mediaMid',
         'quality','qualityLabel','qqQualityText','pay'
       ];
@@ -1123,36 +1122,39 @@
       return added;
     }
 
-    // QQ 搜索：由同源 Function 在官方接口和多个备用源之间自动切换。
+    // 界面上的「QQ音乐」入口现在由 JOOX 提供数据。
+    // 保留 source:'qq' 与原有文案，后端换成 joox_search。
     async function searchQQ(kw, limit, token=searchRequestToken) {
-      const url=`/api/music?action=qq_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
+      const url=`/api/music?action=joox_search&q=${encodeURIComponent(kw)}&limit=${encodeURIComponent(limit)}`;
       let added=0;
       try{
-        const res=await fetchWithTimeout(url,{},10000);
+        const res=await fetchWithTimeout(url,{},12000);
         const json=await res.json();
         if(token!==searchRequestToken)return 0;
-        if(!res.ok||json.code!==200||!Array.isArray(json.data))throw new Error(json.error||'QQ 搜索失败');
+        if(!res.ok||json.code!==200||!Array.isArray(json.data))throw new Error(json.error||'JOOX 搜索失败');
         json.data.forEach((it,idx)=>{
           if(token!==searchRequestToken)return;
-          const mid=String(it.mid||'').trim();
+          const mid=String(it.songmid||'').trim();
           if(!mid)return;
           const uid=`qq-${mid}`;
           if(state.trackMap.has(uid))return;
+          const index=Number(it.index)||idx+1;
           const track={
             uid,
             source:'qq',
             displayIndex:idx+1,
             keyword:kw,
             qqSearchKey:kw,
-            qqIndex:idx+1,
+            jooxIndex:index,
+            qqIndex:index,
             qqId:mid,
-            songid:mid,
+            songid:String(it.songid||mid),
             songMid:mid,
-            mediaMid:it.mediaMid||mid,
-            title:it.name||'',
+            mediaMid:mid,
+            title:it.title||'',
             artist:it.artist||'',
             album:it.album||'',
-            cover:it.cover||null,
+            cover:null,
             duration:Number(it.duration)||0,
             audioUrl:null,
             lrc:null,
@@ -1160,9 +1162,9 @@
             detailsLoaded:false,
             quality:null,
             qualityLabel:null,
-            qqQualityText:it.pay||null,
-            pay:it.pay||null,
-            resolverSource:json.source||null
+            qqQualityText:null,
+            pay:null,
+            resolverSource:'joox'
           };
           if(isDuplicateSearchTrack(track))return;
           state.trackMap.set(uid,track);
@@ -1170,7 +1172,7 @@
           added++;
         });
       }catch(e){
-        console.error('qq search pool',e);
+        console.error('joox search pool',e);
       }
       return added;
     }
@@ -1269,132 +1271,31 @@
       track.detailsLoaded=true;
     }
 
-    // 服务器侧先成功时由外部 signal 提前取消，避免白白占用请求。
+    // 「QQ音乐」入口的实际音源：JOOX。
+    // 播放地址直接指向同源 joox_audio，由服务端按关键词 + 结果序号取流。
     async function fetchQQDetails(track,options={}) {
       const keyword=(track.qqSearchKey||track.keyword||`${track.title||''} ${track.artist||''}`).trim();
-      const mid=String(track.qqId||track.songMid||track.songid||'').trim();
-      if(!mid)throw new Error('QQ 音乐歌曲 ID 缺失');
-      const params=new URLSearchParams({action:'qq_detail',id:mid,q:keyword});
-      if(track.mediaMid)params.set('media_mid',track.mediaMid);
-      if(track.duration)params.set('duration',String(track.duration));
-      if(track.title)params.set('title',track.title);
-      if(track.artist)params.set('artist',track.artist);
-      // 播放失败后的重试：绕过服务器缓存强制重新解析并更新缓存。
-      if(options.forceRefresh)params.set('refresh','1');
-      // 先请求服务器，让已有 D1 缓存直接命中；只有服务器解析失败时才调用
-      const fetchServer=async(p)=>{
-        const ctrl=new AbortController();
-        const timer=setTimeout(()=>ctrl.abort(),10000);
-        try{
-          const r=await fetch(`/api/music?${p}`,{signal:ctrl.signal});
-          return {r,json:await r.json()};
-        }catch(e){
-          return {r:null,json:{code:0}};
-        }finally{clearTimeout(timer);}
-      };
-      let {r:res,json}=await fetchServer(params);
-      if(!res||!res.ok||json.code!==200||!json.data){
-        throw new Error(json.error||'QQ 音乐详情获取失败');
-      }
-      const d=json.data;
-      const audioCandidates=Array.isArray(d.audioUrls)&&d.audioUrls.length
-        ?d.audioUrls.map(u=>u.url).filter(Boolean)
-        :(d.audioUrl?[d.audioUrl]:[]);
+      const index=Number(track.jooxIndex)||Number(track.displayIndex)||1;
+      if(!keyword)throw new Error('JOOX 关键词缺失');
+      const params=new URLSearchParams({action:'joox_audio',q:keyword,n:String(index)});
+      const audioUrl=`/api/music?${params}`;
+      const lyricParams=new URLSearchParams({action:'joox_lyric',q:keyword,n:String(index)});
       Object.assign(track,{
-        title:d.name||track.title,
-        artist:d.artist||track.artist,
-        album:d.album||track.album,
-        cover:d.cover||track.cover,
-        pageUrl:d.pageUrl||track.pageUrl,
-        audioUrl:d.audioUrl||track.audioUrl,
-        audioCandidates,
+        audioUrl,
+        audioCandidates:[audioUrl],
         playbackSource:'qq',
-        lrc:d.lyric||track.lrc||null,
         lrcUrl:null,
-        quality:d.quality||track.quality||null,
-        qualityLabel:d.qualityLabel||track.qualityLabel||null,
+        quality:track.quality||null,
+        qualityLabel:track.qualityLabel||null,
         detailsLoaded:true
       });
-    }
-
-    // QQ 搜索结果里的 pay 标记来自官方 pay_play 字段或第三方源的 vip 字段。
-    // 命中后不再尝试 QQ 音源解析：VIP 歌曲官方不会下发 purl，探测只会白白耗时。
-    function isQQPaidTrack(track){
-      if(!track||track.source!=='qq')return false;
-      const flag=String(track.pay||track.qqQualityText||'').trim();
-      return Boolean(flag)&&!/^(0|false|no|none|null|undefined)$/i.test(flag);
-    }
-
-    async function fetchBilibiliFallback(track){
-      if(!track||track.source!=='qq')throw new Error('Bilibili fallback is only available for QQ tracks');
-      if(track._bilibiliFallbackTried)throw new Error('Bilibili fallback already attempted');
-      track._bilibiliFallbackTried=true;
-      const title=String(track.title||'').trim();
-      const artist=String(track.artist||'').trim();
-      const query=[artist,title].filter(Boolean).join(' ').trim();
-      if(!query)throw new Error('Bilibili fallback query is empty');
-      const params=new URLSearchParams({action:'bili_search',q:query,title,artist});
-      if(track.duration)params.set('duration',String(track.duration));
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),20000);
       try{
-        const response=await fetch(`/api/music?${params}`,{cache:'no-store',signal:controller.signal});
-        let json=null;
-        try{json=await response.json();}catch(error){json=null;}
-        if(!response.ok||json?.code!==200||!Array.isArray(json?.data)){
-          throw new Error(json?.error||'Bilibili search failed');
-        }
-        const candidates=json.data.filter(item=>item&&item.audioUrl);
-        if(!candidates.length)throw new Error('No matching Bilibili video found');
-        let lastError=null;
-        for(const candidate of candidates){
-          try{
-            const probe=await fetch(candidate.audioUrl,{cache:'no-store',headers:{range:'bytes=0-1',accept:'audio/*,video/mp4,*/*'},signal:controller.signal});
-            if(!probe.ok){
-              let detail='Bilibili audio unavailable';
-              try{const payload=await probe.json();detail=payload?.error||detail;}catch(error){}
-              throw new Error(detail);
-            }
-            probe.body?.cancel();
-            Object.assign(track,{
-              audioUrl:candidate.audioUrl,
-              audioCandidates:[candidate.audioUrl],
-              playbackSource:'bilibili',
-              bilibiliBvid:candidate.bvid||'',
-              bilibiliAid:candidate.aid||'',
-              bilibiliPage:Number(candidate.page)||1,
-              fallbackDuration:Number(candidate.duration)||track.duration||0,
-              duration:Number(track.duration)||Number(candidate.duration)||0,
-              cover:track.cover||candidate.cover||null,
-              pageUrl:track.pageUrl||candidate.pageUrl||'',
-              detailsLoaded:true
-            });
-            // Bilibili is used only for audio here. Fetch QQ's lyric data
-            // independently so an audio-source failure does not remove lyrics.
-            if(!track.lrc && track.qqId){
-              try{
-                const lyricParams=new URLSearchParams({action:'qq_lyric',id:String(track.qqId)});
-                const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{cache:'no-store'},10000);
-                const lyricJson=await lyricResponse.json().catch(()=>null);
-                const lyric=lyricJson?.data?.lyric||'';
-                if(lyricResponse.ok&&lyricJson?.code===200&&lyric)track.lrc=lyric;
-              }catch(error){
-                console.warn('QQ lyric fallback unavailable',error);
-              }
-            }
-            showToast(t(track._qqVipFallback?'toastQQVipBilibili':'toastBilibiliFallback'));
-            return candidate;
-          }catch(error){
-            if(controller.signal.aborted)throw error;
-            lastError=error;
-          }
-        }
-        throw lastError||new Error('Bilibili audio unavailable');
+        const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},10000);
+        const lyricJson=await lyricResponse.json().catch(()=>null);
+        const lyric=lyricJson?.data?.lyric||'';
+        if(lyric)track.lrc=lyric;
       }catch(error){
-        track._bilibiliFallbackError=error?.message||'Bilibili fallback failed';
-        throw error;
-      }finally{
-        clearTimeout(timer);
+        console.warn('JOOX lyric unavailable',error);
       }
     }
 
@@ -1500,28 +1401,10 @@
         if(track.source==='netease') await fetchNeteaseDetails(track);
         else if(track.source==='qishui') await fetchQishuiDetails(track);
         else {
-          if(!track._bilibiliFallbackTried&&isQQPaidTrack(track)){
-            track._qqVipFallback=true;
-            try{
-              await fetchBilibiliFallback(track);
-              return;
-            }catch(fallbackError){
-              console.warn('VIP track Bilibili fallback unavailable',fallbackError);
-              track._qqVipFallback=false;
-            }
-          }
           try{
             await fetchQQDetails(track,options);
           }catch(error){
             if(track.source!=='qq')throw error;
-            if(!track._bilibiliFallbackTried){
-              try{
-                await fetchBilibiliFallback(track);
-                return;
-              }catch(fallbackError){
-                console.warn('Bilibili fallback unavailable',fallbackError);
-              }
-            }
             try{
               await fetchNeteaseFallback(track);
               return;
@@ -1867,7 +1750,7 @@
         console.error(e);
         showToast(track._neteaseFallbackError
           ?t('toastNeteaseFallbackError')
-          :track._bilibiliFallbackError?t('toastBilibiliFallbackError'):t('toastPlayError'));
+          :t('toastPlayError'));
         dom.playerStatus.textContent=t('playerStatusIdle');
       }
 
@@ -3698,15 +3581,6 @@
         // 2) 服务器缓存线路可能已失效：绕过缓存强制重新解析并更新缓存。
         const refreshTries=track._refreshTries||0;
         if(refreshTries>=2){
-          if(track.source==='qq'&&!track._bilibiliFallbackTried){
-            fetchBilibiliFallback(track).then(()=>{
-              playTrack(track,state.playContext,{detailsReady:true});
-            }).catch(()=>{
-              showToast(t('toastBilibiliFallbackError'));
-              dom.playerStatus.textContent=t('playerStatusIdle');
-            });
-            return;
-          }
           showToast(t('toastPlayError'));
           dom.playerStatus.textContent=t('playerStatusIdle');
           return;

@@ -11,11 +11,12 @@ HALO_MUSIC_VERSION = "2.0.9"
 # set with `wrangler pages secret put RESEND_API_KEY`.
 RESEND_FROM = "no-reply@music.zhoujun.dev"
 RESEND_SENDER_NAME = "HALO Music"
-# Provider endpoints are deployment configuration, not client-side URLs.
-# Use comma-separated URLs; each search/proxy operation tries the next one
-# when an upstream times out or returns an invalid response.
-QQ_SOURCE_URLS = "https://music.duanjinglin.com/api"
+# Music source configuration. The "QQ Music" entry in the UI is backed by
+# JOOX now, so only the Netease and JOOX endpoints are used.
+# Values here are deployment configuration, not hardcoded in Functions.
 NETEASE_SOURCE_URLS = "https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
+JOOX_API_URL = "https://apicx.asia/api/joox_music"
+JOOX_TOKEN = "f84ao9lMF_q7husBWRfgUw"
 
 # Registration secrets. Do not commit real values: put them in .dev.vars for
 # local development and in the Pages dashboard (or `wrangler pages secret put`)

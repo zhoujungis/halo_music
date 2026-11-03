@@ -373,6 +373,67 @@ function qqAudioCacheKey(mid) {
   return `qq:${mid}`;
 }
 
+// JOOX（腾讯旗下，港台/东南亚曲库）通过 Meting 兼容接口取数据。
+// 搜索返回歌曲列表，取流要再带结果序号 n 请求一次详情拿播放链接。
+// 地址与 token 都由 Cloudflare 环境变量提供，不在代码里写死。
+function jooxEndpoint(env) {
+  const base = String(env?.JOOX_API_URL || "").trim();
+  const token = String(env?.JOOX_TOKEN || "").trim();
+  if (!base || !token) {
+    throw Object.assign(new Error("JOOX 接口未配置（JOOX_API_URL / JOOX_TOKEN）"), { status: 503 });
+  }
+  return { base, token };
+}
+
+function jooxDuration(text) {
+  const parts = clean(text).split(":").map((part) => Number(part));
+  if (parts.some((part) => !Number.isFinite(part))) return 0;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return 0;
+}
+
+export function normalizeJooxSong(item, index = 0) {
+  return {
+    index: Number(item?.["序号"]) || index + 1,
+    songmid: clean(item?.songmid),
+    songid: clean(item?.["歌曲ID"]),
+    title: clean(item?.["歌曲名称"]),
+    artist: clean(item?.["歌手"]),
+    album: clean(item?.["专辑"]),
+    duration: jooxDuration(item?.["时长"]),
+  };
+}
+
+// 音质从高到低挑一个浏览器能直接播放的格式。
+export function pickJooxStream(links) {
+  const choices = [
+    ["OGG 320", "ogg"],
+    ["MP3 320", "mpeg"],
+    ["AAC 192", "mp4"],
+    ["OGG 192", "ogg"],
+    ["MP3 128", "mpeg"],
+    ["AAC 96", "mp4"],
+    ["30s 18", "mpeg"],
+  ];
+  for (const [label, container] of choices) {
+    const url = clean(links?.[label]);
+    if (/^https?:\/\//i.test(url)) return { url, container, label };
+  }
+  return null;
+}
+
+async function jooxRequest(env, keyword, index = 0, signal = null) {
+  const { base, token } = jooxEndpoint(env);
+  const endpoint = new URL(base);
+  endpoint.searchParams.set("msg", clean(keyword));
+  endpoint.searchParams.set("token", token);
+  endpoint.searchParams.set("br", "4");
+  if (index) endpoint.searchParams.set("n", String(index));
+  const response = await request(endpoint.href, {}, API_TIMEOUT_MS, signal);
+  return readJson(response);
+}
+
 function qqCacheMatchesMedia(cached, expectedMediaMid) {
   const expected = clean(expectedMediaMid);
   if (!expected) return true;
@@ -1297,7 +1358,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
   try {
     const url = new URL(requestObject.url);
     const action = url.searchParams.get("action") || "";
-    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric"].includes(action)) {
+    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric", "joox_search", "joox_audio", "joox_lyric"].includes(action)) {
       if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
       const refreshToken = requestObject.headers.get("x-cache-refresh-token") || "";
       const trustedRefresh = Boolean(env?.CACHE_REFRESH_TOKEN) && refreshToken === env.CACHE_REFRESH_TOKEN;
@@ -1350,6 +1411,45 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const id = clean(url.searchParams.get("id"));
       if (!validNeteaseId(id)) return json({ error: "网易云歌曲 ID 无效" }, 400);
       return await proxyNeteaseLyric(id, env);
+    }
+
+    if (action === "joox_search") {
+      const keyword = clean(url.searchParams.get("q"));
+      if (!keyword) return json({ error: "缺少关键词" }, 400);
+      const jooxLimit = Math.min(30, Math.max(1, Number(url.searchParams.get("limit")) || 10));
+      const data = await jooxRequest(env, keyword);
+      const songs = Array.isArray(data?.data?.songs) ? data.data.songs.slice(0, jooxLimit) : [];
+      return json({ code: 200, data: songs.map(normalizeJooxSong) });
+    }
+
+    if (action === "joox_audio" || action === "joox_lyric") {
+      const keyword = clean(url.searchParams.get("q"));
+      if (!keyword) return json({ error: "缺少关键词" }, 400);
+      const index = Math.min(30, Math.max(1, Number(url.searchParams.get("n")) || 1));
+      const detail = await jooxRequest(env, keyword, index);
+      const data = detail?.data || {};
+      if (action === "joox_lyric") {
+        return json({ code: 200, data: { lyric: normalizeTimedLyric(data["歌词内容"] || "") } });
+      }
+      const stream = pickJooxStream(data["播放链接"]);
+      if (!stream) throw new Error("JOOX 没有可播放的音质");
+      const download = await beginDownload(requestObject, env, "joox");
+      if (download instanceof Response) return download;
+      try {
+        const range = requestObject.headers.get("range") || "bytes=0-";
+        const upstream = await request(stream.url, {
+          headers: { range, referer: "https://www.joox.com/" },
+        }, AUDIO_TIMEOUT_MS);
+        if (!isAudioResponse(upstream)) {
+          upstream.body?.cancel();
+          throw new Error(`JOOX stream unavailable (${upstream.status})`);
+        }
+        const audio = audioResponse(upstream, "joox", stream.container);
+        return download ? finishDownload(audio, download, requestObject) : audio;
+      } catch (error) {
+        if (download) await releaseDownload(env, download.username, "joox", download.day);
+        throw error;
+      }
     }
 
     if (action === "qq_search") {
