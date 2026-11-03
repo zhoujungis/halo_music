@@ -93,6 +93,7 @@
         toastDownloadError:"下载失败，请稍后再试",
         toastDownloadStarted:"已开始下载",
         toastDownloadStartedRemaining:"已开始下载，今日该平台剩余 {remaining} 首",
+        toastLocalTrack:"这首歌已经在本地下载目录里，正在播放本地文件",
         toastLyricStyleSwitched:"已切换歌词炫酷效果。",
         toastPlaylistCreated:"歌单创建成功。",
         toastPlaylistDeleted:"歌单已删除。",
@@ -1420,9 +1421,37 @@
       return best.item;
     }
 
+    let localTrackBlobUrl='';
+
+    // 桌面端：播放前先在默认下载目录里找同名歌曲，找到就直接用本地文件。
+    async function resolveLocalAudio(track){
+      if(!window.haloDesktop?.findLocalTrack)return;
+      if(track.localAudio)return;
+      const name=[track.artist,track.title].filter(Boolean).join(' - ').trim();
+      if(!name)return;
+      try{
+        const found=await window.haloDesktop.findLocalTrack(name);
+        if(!found?.path)return;
+        const buffer=await window.haloDesktop.readLocalTrack(found.path);
+        if(!buffer)return;
+        const lower=String(found.name||'').toLowerCase();
+        const type=lower.endsWith('.flac')?'audio/flac'
+          :lower.endsWith('.m4a')?'audio/mp4'
+          :lower.endsWith('.ogg')?'audio/ogg'
+          :lower.endsWith('.wav')?'audio/wav'
+          :'audio/mpeg';
+        if(localTrackBlobUrl)URL.revokeObjectURL(localTrackBlobUrl);
+        localTrackBlobUrl=URL.createObjectURL(new Blob([buffer],{type}));
+        track.localAudio=localTrackBlobUrl;
+      }catch(error){
+        console.warn('local track lookup failed',error);
+      }
+    }
+
     async function ensureTrackDetails(track, options={}){
       if(!options.forceRefresh && track.detailsLoaded && track.audioUrl && (track.lrc || !track.lrcUrl)) return;
       if(!options.silent)dom.playerStatus.textContent=t('playerStatusLoading');
+      if(!options.forceRefresh)await resolveLocalAudio(track);
       try{
         if(track.source==='netease') await fetchNeteaseDetails(track);
         else if(track.source==='qishui') await fetchQishuiDetails(track);
@@ -1430,6 +1459,7 @@
           try{
             await fetchQQDetails(track,options);
           }catch(error){
+            if(track.localAudio)throw error;
             if(track.source!=='qq')throw error;
             try{
               await fetchNeteaseFallback(track);
@@ -1442,8 +1472,17 @@
           }
         }
       }catch(e){
-        console.warn(track.source+' 详情解析失败',e);
-        throw e;
+        // 本地已有文件时，网络元数据失败不影响播放。
+        if(!track.localAudio){
+          console.warn(track.source+' 详情解析失败',e);
+          throw e;
+        }
+        console.warn('metadata unavailable, playing local file',e);
+      }
+      if(track.localAudio){
+        track.audioUrl=track.localAudio;
+        track.audioCandidates=[track.localAudio];
+        track.detailsLoaded=true;
       }
     }
 
@@ -1475,6 +1514,7 @@
       const track=state.currentTrack;
       if(!track){showToast(t('toastNoCurrentTrack'));return;}
       if(!state.isAuthenticated){showToast(t('toastDownloadLogin'));openLoginModal();return;}
+      if(track.localAudio){showToast(t('toastLocalTrack'));return;}
       if(dom.downloadBtn?.disabled)return;
       if(dom.downloadBtn)dom.downloadBtn.disabled=true;
       try{
