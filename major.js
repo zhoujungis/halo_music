@@ -1289,8 +1289,7 @@
         playbackSource:'qq',
         lrcUrl:null,
         quality:track.quality||null,
-        qualityLabel:track.qualityLabel||null,
-        detailsLoaded:true
+        qualityLabel:track.qualityLabel||null
       });
       const coverPromise=(async()=>{
         if(track.cover)return;
@@ -1299,7 +1298,7 @@
         try{
           const coverParams=new URLSearchParams({action:'cover_lookup',title:track.title||'',artist:track.artist||''});
           if(track.duration)coverParams.set('duration',String(track.duration));
-          const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},8000);
+          const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},12000);
           const coverJson=await coverResponse.json().catch(()=>null);
           const cover=coverJson?.data?.cover||'';
           if(cover){
@@ -1312,7 +1311,7 @@
       })();
       const lyricPromise=(async()=>{
         try{
-          const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},10000);
+          const lyricResponse=await fetchWithTimeout(`/api/music?${lyricParams}`,{},12000);
           const lyricJson=await lyricResponse.json().catch(()=>null);
           const lyric=lyricJson?.data?.lyric||'';
           if(lyric)track.lrc=lyric;
@@ -1321,6 +1320,8 @@
         }
       })();
       await Promise.allSettled([coverPromise,lyricPromise]);
+      // 歌词和封面都落定后再标记就绪，否则播放路径会提前返回、歌词渲染成空。
+      track.detailsLoaded=true;
     }
 
     function normalizeMusicMatchText(value){
