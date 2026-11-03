@@ -563,7 +563,7 @@ async function searchNetease(keyword, limit, env) {
   const providers = neteaseProviderUrls(env);
   for (const base of providers) {
     try {
-      const endpoint = new URL(`${base}/`);
+      const endpoint = new URL(base);
       endpoint.search = new URLSearchParams({ type: "search", id: keyword, limit: String(limit), server: "netease" });
       const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
       const rows = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
@@ -580,7 +580,7 @@ function validNeteaseId(value) {
 }
 
 async function resolveNeteaseProvider(base, id, signal = null) {
-  const endpoint = new URL(`${base}/`);
+  const endpoint = new URL(base);
   endpoint.search = new URLSearchParams({ server: "netease", type: "url", id: clean(id), br: "320" });
   const response = await request(endpoint.href, { redirect: "manual" }, API_TIMEOUT_MS, signal);
   const redirect = response.headers.get("location");
@@ -654,7 +654,7 @@ export async function resolveNeteaseUrl(id, env, signal = null) {
 async function proxyNeteaseLyric(id, env) {
   for (const base of neteaseProviderUrls(env)) {
     try {
-      const endpoint = new URL(`${base}/`);
+      const endpoint = new URL(base);
       endpoint.search = new URLSearchParams({ server: "netease", type: "lrc", id: clean(id) });
       const response = await request(endpoint.href, {}, API_TIMEOUT_MS);
       if (!response.ok) {
