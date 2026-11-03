@@ -84,6 +84,7 @@
         toastBilibiliFallback:"QQ 音乐不可用，已切换哔哩哔哩音频",
         toastQQVipBilibili:"会员歌曲，已切换哔哩哔哩音频",
         toastNeteaseFallback:"QQ 音乐暂无可用音源，已切换网易云音频",
+        toastNeteaseFallbackError:"QQ 与网易云都没有可播放的版本，请稍后再试",
         downloadTitle:"下载当前歌曲",
         aboutTitle:"关于本站",
         privacyTitle:"隐私政策",
@@ -1461,7 +1462,7 @@
     async function fetchNeteaseFallback(track){
       const query=[track.title,track.artist].filter(Boolean).join(' ').trim();
       if(!query)throw new Error('Netease fallback query is empty');
-      const response=await fetchWithTimeout(`/api/music?action=netease_search&q=${encodeURIComponent(query)}&limit=10`,{},10000);
+      const response=await fetchWithTimeout(`/api/music?action=netease_search&q=${encodeURIComponent(query)}&limit=10`,{},15000);
       const json=await response.json().catch(()=>null);
       const rows=Array.isArray(json?.data)?json.data:[];
       const best=rows
@@ -1526,6 +1527,7 @@
               return;
             }catch(neteaseError){
               console.warn('Netease fallback unavailable',neteaseError);
+              track._neteaseFallbackError=neteaseError?.message||'netease fallback failed';
               throw error;
             }
           }
@@ -1863,7 +1865,9 @@
       }catch(e){
         if(requestToken!==playbackRequestToken)return;
         console.error(e);
-        showToast(track._bilibiliFallbackError?t('toastBilibiliFallbackError'):t('toastPlayError'));
+        showToast(track._neteaseFallbackError
+          ?t('toastNeteaseFallbackError')
+          :track._bilibiliFallbackError?t('toastBilibiliFallbackError'):t('toastPlayError'));
         dom.playerStatus.textContent=t('playerStatusIdle');
       }
 

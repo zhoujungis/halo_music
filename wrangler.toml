@@ -15,7 +15,7 @@ RESEND_SENDER_NAME = "HALO Music"
 # Use comma-separated URLs; each search/proxy operation tries the next one
 # when an upstream times out or returns an invalid response.
 QQ_SOURCE_URLS = "https://music.duanjinglin.com/api"
-NETEASE_SOURCE_URLS = "https://music.duanjinglin.com/api"
+NETEASE_SOURCE_URLS = "https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
 
 # Registration secrets. Do not commit real values: put them in .dev.vars for
 # local development and in the Pages dashboard (or `wrangler pages secret put`)
