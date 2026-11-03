@@ -94,6 +94,7 @@
         toastDownloadStarted:"已开始下载",
         toastDownloadStartedRemaining:"已开始下载，今日该平台剩余 {remaining} 首",
         toastLocalTrack:"这首歌已经在本地下载目录里，正在播放本地文件",
+        toastLocalFallback:"本地文件无法播放，已切回在线音源",
         toastLyricStyleSwitched:"已切换歌词炫酷效果。",
         toastPlaylistCreated:"歌单创建成功。",
         toastPlaylistDeleted:"歌单已删除。",
@@ -1433,7 +1434,34 @@
       return best.item;
     }
 
-    let localTrackBlobUrl='';
+    // 本地文件 blob 按歌曲缓存；解析下一首时不能回收正在播放的那个。
+    const localBlobUrls=new Map();
+
+    function rememberLocalBlob(uid,url){
+      const previous=localBlobUrls.get(uid);
+      if(previous&&previous!==url)URL.revokeObjectURL(previous);
+      localBlobUrls.set(uid,url);
+      if(localBlobUrls.size>4){
+        for(const [key,value] of localBlobUrls){
+          if(key===uid)continue;
+          URL.revokeObjectURL(value);
+          localBlobUrls.delete(key);
+          break;
+        }
+      }
+    }
+
+    function sniffAudioType(buffer,name){
+      const bytes=new Uint8Array(buffer.slice(0,12));
+      const ascii=(start,length)=>String.fromCharCode(...bytes.slice(start,start+length));
+      if(ascii(0,4)==='fLaC')return 'audio/flac';
+      if(ascii(0,4)==='OggS')return 'audio/ogg';
+      if(ascii(0,3)==='ID3')return 'audio/mpeg';
+      if(bytes[0]===0xff&&(bytes[1]&0xe0)===0xe0)return 'audio/mpeg';
+      if(ascii(4,4)==='ftyp')return 'audio/mp4';
+      if(ascii(0,4)==='RIFF')return 'audio/wav';
+      return String(name||'').toLowerCase().endsWith('.flac')?'audio/flac':'audio/mpeg';
+    }
 
     // 桌面端：播放前先在默认下载目录里找同名歌曲，找到就直接用本地文件。
     async function resolveLocalAudio(track){
@@ -1446,15 +1474,11 @@
         if(!found?.path)return;
         const buffer=await window.haloDesktop.readLocalTrack(found.path);
         if(!buffer)return;
-        const lower=String(found.name||'').toLowerCase();
-        const type=lower.endsWith('.flac')?'audio/flac'
-          :lower.endsWith('.m4a')?'audio/mp4'
-          :lower.endsWith('.ogg')?'audio/ogg'
-          :lower.endsWith('.wav')?'audio/wav'
-          :'audio/mpeg';
-        if(localTrackBlobUrl)URL.revokeObjectURL(localTrackBlobUrl);
-        localTrackBlobUrl=URL.createObjectURL(new Blob([buffer],{type}));
-        track.localAudio=localTrackBlobUrl;
+        const type=sniffAudioType(buffer,found.name);
+        const blobUrl=URL.createObjectURL(new Blob([buffer],{type}));
+        rememberLocalBlob(track.uid,blobUrl);
+        track.localAudio=blobUrl;
+        track.localFileName=found.name;
       }catch(error){
         console.warn('local track lookup failed',error);
       }
@@ -3657,6 +3681,25 @@
       dom.audio.addEventListener('error',()=>{
         const track=state.currentTrack;
         if(!track)return;
+        // 0) 本地文件播不了就丢掉本地路径，回退在线音源。
+        if(track.localAudio){
+          const local=track.localAudio;
+          track.localAudio='';
+          track.audioUrl='';
+          track.audioCandidates=[];
+          track.detailsLoaded=false;
+          track._refreshTries=0;
+          try{URL.revokeObjectURL(local);}catch(error){}
+          showToast(t('toastLocalFallback'));
+          ensureTrackDetails(track,{forceRefresh:true}).then(()=>{
+            if(track.audioUrl)playTrack(track,state.playContext,{detailsReady:true});
+            else showToast(t('toastPlayError'));
+          }).catch(()=>{
+            showToast(t('toastPlayError'));
+            dom.playerStatus.textContent=t('playerStatusIdle');
+          });
+          return;
+        }
         // 1) 先切换同曲的其它已校验候选线路（服务器返回的多条音源）。
         const candidates=track.audioCandidates||[];
         const next=candidates[audioCandidateIndex+1];
