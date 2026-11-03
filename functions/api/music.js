@@ -1191,6 +1191,84 @@ function normalizedMatchText(value) {
   return clean(value).toLowerCase().replace(/[\s\-_/.,!?，。！？：:()（）[\]【】]/g, "");
 }
 
+// 从网易云取纯文本歌词（Meting 接口可能返回 JSON 或裸 LRC）。
+async function neteaseLyricText(id, env) {
+  for (const base of neteaseProviderUrls(env)) {
+    try {
+      const endpoint = new URL(base);
+      endpoint.search = new URLSearchParams({ server: "netease", type: "lrc", id: clean(id) });
+      const response = await request(endpoint.href, {}, API_TIMEOUT_MS);
+      if (!response.ok) {
+        response.body?.cancel();
+        continue;
+      }
+      const text = (await response.text()).trim();
+      if (!text) continue;
+      try {
+        const parsed = JSON.parse(text);
+        const lyric = typeof parsed === "string" ? parsed : (parsed?.lyric || parsed?.data?.lyric || "");
+        if (lyric) return lyric;
+      } catch {
+        if (text.includes("[")) return text;
+      }
+    } catch {}
+  }
+  return "";
+}
+
+// JOOX 偶尔不返回歌词：用歌名 + 歌手在 QQ / 网易云再找一次。
+async function lookupLyric(keyword, title, artist, duration, env) {
+  const targetTitle = title || keyword;
+  const term = [targetTitle, artist].filter(Boolean).join(" ").trim();
+  if (!term) return "";
+  try {
+    const songs = await searchQQOfficial(term, 10);
+    const best = songs
+      .map((song) => ({ song, score: scoreSongMatch(targetTitle, artist, duration, song.name, song.artist, song.duration) }))
+      .filter((entry) => entry.score >= 8 && entry.song.mid)
+      .sort((a, b) => b.score - a.score)[0];
+    if (best) {
+      const lyric = normalizeTimedLyric(await qqOfficialLyric(best.song.mid));
+      if (lyric) return lyric;
+    }
+  } catch (error) {
+    console.warn("lyric lookup via QQ failed", error);
+  }
+  try {
+    const rows = await searchNetease(term, 5, env);
+    const best = rows
+      .map((row) => ({ row, score: scoreSongMatch(targetTitle, artist, duration, row?.title, row?.author, 0) }))
+      .filter((entry) => entry.score >= 8 && entry.row?.url)
+      .sort((a, b) => b.score - a.score)[0];
+    const id = /(?:[?&]id=)(\d+)/.exec(String(best?.row?.url || ""))?.[1];
+    if (id) {
+      const lyric = normalizeTimedLyric(await neteaseLyricText(id, env));
+      if (lyric) return lyric;
+    }
+  } catch (error) {
+    console.warn("lyric lookup via Netease failed", error);
+  }
+  return "";
+}
+
+// 同名歌曲的跨平台匹配：标题 / 歌手优先，繁体与简体对不上时用时长兜底。
+export function scoreSongMatch(targetTitle, targetArtist, targetDuration, candidateTitle, candidateArtist, candidateDuration) {
+  const title = normalizedMatchText(targetTitle);
+  const artist = normalizedMatchText(targetArtist);
+  const itemTitle = normalizedMatchText(candidateTitle);
+  const itemArtist = normalizedMatchText(candidateArtist);
+  let score = 0;
+  if (itemTitle && title) {
+    if (itemTitle === title) score += 10;
+    else if (itemTitle.includes(title) || title.includes(itemTitle)) score += 6;
+  }
+  if (itemArtist && artist && (itemArtist === artist || itemArtist.includes(artist) || artist.includes(itemArtist))) score += 5;
+  const expected = Math.max(0, Number(targetDuration) || 0);
+  const actual = Math.max(0, Number(candidateDuration) || 0);
+  if (score < 10 && expected && actual && Math.abs(expected - actual) <= 5) score += 8;
+  return score;
+}
+
 function matchesIdentity(expected, actual) {
   const title = normalizedMatchText(expected?.title);
   const artist = normalizedMatchText(expected?.artist);
@@ -1422,29 +1500,11 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const term = [title, artist].filter(Boolean).join(" ");
       if (!term) return json({ code: 200, data: { cover: "" } });
 
-      const targetTitle = normalizedMatchText(title);
-      const targetArtist = normalizedMatchText(artist);
-      // JOOX 返回繁体、QQ/网易云是简体，标题和歌手经常对不上。
-      // 时长是最稳的跨字形锚点：同一首歌两者相差通常在 5 秒内。
-      const matches = (candidateTitle, candidateArtist, candidateDuration) => {
-        const itemTitle = normalizedMatchText(candidateTitle);
-        const itemArtist = normalizedMatchText(candidateArtist);
-        let score = 0;
-        if (itemTitle && targetTitle) {
-          if (itemTitle === targetTitle) score += 10;
-          else if (itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle)) score += 6;
-        }
-        if (itemArtist && targetArtist && (itemArtist === targetArtist || itemArtist.includes(targetArtist) || targetArtist.includes(itemArtist))) score += 5;
-        const itemDuration = Math.max(0, Number(candidateDuration) || 0);
-        if (score < 10 && duration && itemDuration && Math.abs(duration - itemDuration) <= 5) score += 8;
-        return score;
-      };
-
       let cover = "";
       try {
         const songs = await searchQQOfficial(term, 10);
         const best = songs
-          .map((song) => ({ song, score: matches(song.name, song.artist, song.duration) }))
+          .map((song) => ({ song, score: scoreSongMatch(title, artist, duration, song.name, song.artist, song.duration) }))
           .filter((entry) => entry.score >= 8 && entry.song.cover)
           .sort((a, b) => b.score - a.score)[0];
         cover = best?.song?.cover || "";
@@ -1455,7 +1515,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
         try {
           const rows = await searchNetease(term, 5, env);
           const best = rows
-            .map((row) => ({ row, score: matches(row?.title, row?.author) }))
+            .map((row) => ({ row, score: scoreSongMatch(title, artist, duration, row?.title, row?.author, 0) }))
             .filter((entry) => entry.score >= 8 && entry.row?.pic)
             .sort((a, b) => b.score - a.score)[0];
           cover = clean(best?.row?.pic);
@@ -1482,7 +1542,17 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const detail = await jooxRequest(env, keyword, index);
       const data = detail?.data || {};
       if (action === "joox_lyric") {
-        return json({ code: 200, data: { lyric: normalizeTimedLyric(data["歌词内容"] || "") } });
+        let lyric = normalizeTimedLyric(data["歌词内容"] || "");
+        if (!lyric) {
+          lyric = await lookupLyric(
+            keyword,
+            clean(url.searchParams.get("title")),
+            clean(url.searchParams.get("artist")),
+            Math.max(0, Number(url.searchParams.get("duration")) || 0),
+            env,
+          );
+        }
+        return json({ code: 200, data: { lyric } });
       }
       const stream = pickJooxStream(data["播放链接"]);
       if (!stream) throw new Error("JOOX 没有可播放的音质");

@@ -1280,6 +1280,9 @@
       const params=new URLSearchParams({action:'joox_audio',q:keyword,n:String(index)});
       const audioUrl=`/api/music?${params}`;
       const lyricParams=new URLSearchParams({action:'joox_lyric',q:keyword,n:String(index)});
+      if(track.title)lyricParams.set('title',track.title);
+      if(track.artist)lyricParams.set('artist',track.artist);
+      if(track.duration)lyricParams.set('duration',String(track.duration));
       Object.assign(track,{
         audioUrl,
         audioCandidates:[audioUrl],
