@@ -338,14 +338,16 @@ function joinArtists(value) {
 }
 
 // Bilibili answers 412 to datacenter egress without a browser-ish cookie jar.
-// A fresh buvid3 is enough for the public web APIs.
-const BILIBILI_BUVID3 = `${crypto.randomUUID().toUpperCase()}infoc`;
+// A fresh buvid3 is enough for the public web APIs. It has to be created inside
+// a request: Workers forbid generating random values in the global scope.
+let bilibiliBuvid3 = "";
 
 function bilibiliHeaders(referer, extra = {}) {
+  if (!bilibiliBuvid3) bilibiliBuvid3 = `${crypto.randomUUID().toUpperCase()}infoc`;
   return {
     referer,
     origin: "https://www.bilibili.com",
-    cookie: `buvid3=${BILIBILI_BUVID3}; b_nut=${Math.floor(Date.now() / 1000)}`,
+    cookie: `buvid3=${bilibiliBuvid3}; b_nut=${Math.floor(Date.now() / 1000)}`,
     ...extra,
   };
 }
