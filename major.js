@@ -83,6 +83,7 @@
         toastPlayError:"播放失败，请稍后再试。",
         toastBilibiliFallback:"QQ 音乐不可用，已切换哔哩哔哩音频",
         toastQQVipBilibili:"会员歌曲，已切换哔哩哔哩音频",
+        toastNeteaseFallback:"QQ 音乐暂无可用音源，已切换网易云音频",
         downloadTitle:"下载当前歌曲",
         aboutTitle:"关于本站",
         privacyTitle:"隐私政策",
@@ -1434,6 +1435,63 @@
 
     let audioCandidateIndex=0;
 
+    function scoreNeteaseMatch(track,item){
+      const targetTitle=normalizeMusicMatchText(track.title);
+      const targetArtist=normalizeMusicMatchText(track.artist);
+      const title=normalizeMusicMatchText(item?.title);
+      const artist=normalizeMusicMatchText(item?.author);
+      let score=0;
+      if(title===targetTitle)score+=100;
+      else if(title&&targetTitle&&(title.includes(targetTitle)||targetTitle.includes(title)))score+=45;
+      if(artist===targetArtist)score+=50;
+      else if(artist&&targetArtist&&(artist.includes(targetArtist)||targetArtist.includes(artist)))score+=24;
+      return score;
+    }
+
+    // 只在歌手也能对上时才用网易云版本兜底，避免把原唱换成同名翻唱。
+    function neteaseArtistMatches(track,item){
+      const target=normalizeMusicMatchText(track.artist);
+      const artist=normalizeMusicMatchText(item?.author);
+      if(!target||!artist)return false;
+      return artist===target||artist.includes(target)||target.includes(artist);
+    }
+
+    // QQ 音源解析失败时，用同一首歌的网易云版本兜底。
+    // 第三方 QQ 取流接口经常只返回 403，而网易云的公开接口通常可用。
+    async function fetchNeteaseFallback(track){
+      const query=[track.title,track.artist].filter(Boolean).join(' ').trim();
+      if(!query)throw new Error('Netease fallback query is empty');
+      const response=await fetchWithTimeout(`/api/music?action=netease_search&q=${encodeURIComponent(query)}&limit=10`,{},10000);
+      const json=await response.json().catch(()=>null);
+      const rows=Array.isArray(json?.data)?json.data:[];
+      const best=rows
+        .filter(item=>item&&item.url&&neteaseArtistMatches(track,item))
+        .map(item=>({item,score:scoreNeteaseMatch(track,item)}))
+        .sort((a,b)=>b.score-a.score)[0];
+      if(!best||best.score<40)throw new Error('Netease fallback match failed');
+      const id=/(?:[?&]id=)(\d+)/.exec(String(best.item.url))?.[1]||'';
+      if(!id)throw new Error('Netease fallback id missing');
+      const audioUrl=`/api/music?action=netease_audio&id=${id}`;
+      Object.assign(track,{
+        audioUrl,
+        audioCandidates:[audioUrl],
+        playbackSource:'netease',
+        lrcUrl:`/api/music?action=netease_lyric&id=${id}`,
+        lrc:null,
+        detailsLoaded:true
+      });
+      showToast(t('toastNeteaseFallback'));
+      try{
+        const lyricResponse=await fetchWithTimeout(track.lrcUrl,{},10000);
+        const lyricJson=await lyricResponse.json().catch(()=>null);
+        const lyric=lyricJson?.data?.lyric||'';
+        if(lyric)track.lrc=lyric;
+      }catch(error){
+        console.warn('Netease fallback lyric unavailable',error);
+      }
+      return best.item;
+    }
+
     async function ensureTrackDetails(track, options={}){
       if(!options.forceRefresh && track.detailsLoaded && track.audioUrl && (track.lrc || !track.lrcUrl)) return;
       if(!options.silent)dom.playerStatus.textContent=t('playerStatusLoading');
@@ -1447,7 +1505,6 @@
               await fetchBilibiliFallback(track);
               return;
             }catch(fallbackError){
-              // 哔哩哔哩也没匹配到音频时，仍退回 QQ 音源解析做最后尝试。
               console.warn('VIP track Bilibili fallback unavailable',fallbackError);
               track._qqVipFallback=false;
             }
@@ -1455,12 +1512,20 @@
           try{
             await fetchQQDetails(track,options);
           }catch(error){
-            if(track.source!=='qq'||track._bilibiliFallbackTried)throw error;
+            if(track.source!=='qq')throw error;
+            if(!track._bilibiliFallbackTried){
+              try{
+                await fetchBilibiliFallback(track);
+                return;
+              }catch(fallbackError){
+                console.warn('Bilibili fallback unavailable',fallbackError);
+              }
+            }
             try{
-              await fetchBilibiliFallback(track);
+              await fetchNeteaseFallback(track);
               return;
-            }catch(fallbackError){
-              console.warn('Bilibili fallback unavailable',fallbackError);
+            }catch(neteaseError){
+              console.warn('Netease fallback unavailable',neteaseError);
               throw error;
             }
           }
