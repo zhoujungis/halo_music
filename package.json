@@ -6,8 +6,10 @@
   "description": "HALO Music desktop client",
   "author": "HALO Music",
   "scripts": {
-    "dev": "wrangler pages dev .",
-    "deploy": "wrangler pages deploy .",
+    "build:html": "node scripts/build-html.mjs",
+    "dev": "npm run build:html && wrangler pages dev .",
+    "deploy": "npm run build:html && wrangler pages deploy .",
+    "pretest": "npm run build:html",
     "test": "node --test tests/*.test.js",
     "desktop:dev": "electron .",
     "desktop:dist": "npm run desktop:electron",
@@ -41,6 +43,7 @@
     "files": [
       "electron/**/*",
       "index.html",
+      "manifest.json",
       "major.js",
       "styles.css",
       "admin/**/*",

@@ -422,6 +422,17 @@ footer {
   line-height: 1;
 }
 
+#download-btn { display: inline-flex; align-items: center; justify-content: center; }
+#download-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
 .btn:disabled,
 .btn[disabled] {
   cursor: not-allowed;
@@ -1886,6 +1897,57 @@ footer {
   overflow-wrap: anywhere;
 }
 .client-download-arrow { color: var(--accent); font-size: 18px; }
+
+/* iOS "Add to Home Screen" guide inside the download modal */
+#client-download-generic[hidden],
+.ios-install-guide[hidden],
+.ios-guide-tip[hidden] { display: none !important; }
+.ios-guide-illustration {
+  margin: 14px 0 0;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.ios-guide-illustration svg { display: block; width: 100%; height: auto; }
+.ios-guide-steps {
+  display: grid;
+  gap: 11px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: ios-guide-step;
+}
+.ios-guide-steps li { position: relative; padding-left: 30px; counter-increment: ios-guide-step; }
+.ios-guide-steps li::before {
+  content: counter(ios-guide-step);
+  position: absolute;
+  top: 1px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+}
+.ios-guide-steps b { display: block; font-size: 13px; font-weight: 600; }
+.ios-guide-steps span { display: block; margin-top: 2px; color: var(--text-dim); font-size: 11.5px; line-height: 1.5; }
+.ios-guide-tip {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text-sub);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+.ios-guide-tip-warn { border-color: var(--line); background: var(--surface-2); color: var(--text-dim); }
 
 .import-providers {
   display: flex;
@@ -3472,3 +3534,65 @@ html[data-theme="dark"] .search-batch-select-all:checked {
   stroke-linejoin: round;
   stroke-width: 1.7;
 }
+
+/* Standalone PWA launched from the iOS Home Screen: the webview extends under
+   the status bar (apple-mobile-web-app-status-bar-style=black-translucent), so
+   inset the shell instead of letting the header slide under the notch. */
+@media (display-mode: standalone) {
+  .app {
+    height: calc(100dvh - env(safe-area-inset-top));
+    margin-top: env(safe-area-inset-top);
+  }
+  #bg-canvas { top: env(safe-area-inset-top); }
+}
+
+/* ------------------------------------------------ footer info links */
+.footer-links { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.footer-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-line);
+  text-underline-offset: 2px;
+  transition: color var(--t);
+}
+.footer-link:hover,
+.footer-link:focus-visible { color: var(--accent); }
+.footer-sep { opacity: .45; }
+.footer-disclaimer { display: block; margin-top: 4px; }
+
+/* The workspace layout hides the footer because the panels fill the viewport.
+   Legal links still need to be reachable, so keep a single compact line. */
+@media (min-width: 761px) {
+  footer { display: block; padding: 4px 12px 8px; }
+}
+
+/* Mobile hides the footer for layout reasons; keep the info links reachable
+   but drop the long disclaimer line, which lives in the disclaimer modal. */
+@media (max-width: 760px) {
+  footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 12px 8px;
+  }
+  footer .footer-disclaimer { display: none; }
+  .footer-links { gap: 5px; }
+}
+
+/* ------------------------------------------------ info modals */
+.info-modal .info-body { display: grid; gap: 12px; margin-top: 4px; }
+.info-modal .info-body h3 { margin: 2px 0 0; color: var(--text); font-size: 13px; font-weight: 700; }
+.info-modal .info-body p,
+.info-modal .info-body li { margin: 0; color: var(--text-sub); font-size: 12.5px; line-height: 1.68; }
+.info-modal .info-body ul { display: grid; gap: 6px; margin: 0; padding-left: 18px; }
+.info-modal .info-body li::marker { color: var(--accent); }
+.info-modal .info-body a { color: var(--accent); text-underline-offset: 2px; }
+.info-modal .info-body code { color: var(--text); font-family: var(--font-num); font-size: 11.5px; }
+.info-modal .info-footnote { color: var(--text-dim); font-size: 11.5px; }
+.info-modal .modal-title-icon { font-weight: 700; }

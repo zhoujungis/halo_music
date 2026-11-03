@@ -1,0 +1,36 @@
+      <!-- 左：搜索 -->
+      <section class="panel search-panel ripple-target">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="icon">⌕</span>
+            <span data-i18n="searchTitle">歌曲搜索</span>
+          </div>
+        </div>
+        <div class="search-panel-content">
+          <div class="search-row ripple-target">
+            <span class="search-prefix" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span>
+            <input id="search-input" class="input" type="text"
+                   placeholder="输入歌名 / 歌手，回车搜索…" />
+            <button id="search-btn" class="btn ripple-target" data-i18n="searchButton">搜索</button>
+          </div>
+
+          <div class="search-stats">
+            <span id="search-status" data-i18n="searchStatusIdle">基于推荐算法，猜你想搜“周杰伦”</span>
+            <button id="search-select-toggle" class="search-select-toggle ripple-target" type="button" aria-pressed="false">选择</button>
+            <div id="search-batch-toolbar" class="search-batch-toolbar">
+              <div class="search-batch-actions">
+                <label class="search-batch-select-all-wrap">
+                  <input id="search-batch-select-all" class="search-batch-select-all" type="checkbox" data-i18n-title="searchBatchSelectAll" title="全选" aria-label="全选" />
+                  <span data-i18n="searchBatchSelectAll">全选</span>
+                </label>
+                <button id="search-batch-queue" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="queueAdd" title="加入播放列表" aria-label="加入播放列表">☷</button>
+                <button id="search-batch-favorite" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchFavorite" title="加入收藏" aria-label="加入收藏">♥</button>
+                <button id="search-batch-playlist" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="searchBatchPlaylist" title="加入歌单" aria-label="加入歌单">＋</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="search-mini-list" class="search-results-mini"></div>
+        </div>
+      </section>
+

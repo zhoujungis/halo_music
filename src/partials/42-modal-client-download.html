@@ -1,0 +1,137 @@
+
+  <div id="client-download-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal client-download-modal" role="dialog" aria-modal="true" aria-labelledby="client-download-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap"><div class="modal-title-icon">↓</div><span id="client-download-title" data-i18n="clientDownloadTitle">下载客户端</span></div>
+        <button id="client-download-close" class="modal-close-btn" type="button" data-i18n-title="clientDownloadClose" aria-label="关闭下载客户端" title="关闭下载客户端">×</button>
+      </div>
+
+      <div id="client-download-generic">
+        <p class="modal-desc" data-i18n="clientDownloadDesc">下载 HALO Music 桌面端或安卓客户端。</p>
+        <p class="client-download-label">Windows</p>
+        <div class="client-download-list">
+          <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.exe" target="_blank" rel="noopener noreferrer">
+            <span class="client-download-copy"><strong>Windows 安装包</strong><code>.exe · NSIS</code></span>
+            <span class="client-download-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.msi" target="_blank" rel="noopener noreferrer">
+            <span class="client-download-copy"><strong>Windows MSI</strong><code>.msi</code></span>
+            <span class="client-download-arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <p class="client-download-label">Android</p>
+        <div class="client-download-list">
+          <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music.apk" target="_blank" rel="noopener noreferrer">
+            <span class="client-download-copy"><strong>安卓客户端</strong><code>.apk</code></span>
+            <span class="client-download-arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </div>
+
+      <section id="ios-install-guide" class="ios-install-guide" hidden>
+        <p class="modal-desc" data-i18n="iosGuideDesc">iPhone 不需要安装包：把本站添加到主屏幕，就能像 App 一样全屏使用。</p>
+        <p id="ios-already-installed" class="ios-guide-tip" data-i18n="iosAlreadyInstalled" hidden>你已经把 HALO Music 添加到主屏幕了，直接从桌面图标打开即可。</p>
+        <p id="ios-not-safari-tip" class="ios-guide-tip ios-guide-tip-warn" data-i18n="iosNotSafariTip" hidden>当前不是 Safari：请点右上角「…」选择「在 Safari 中打开」，再按下面的步骤添加。</p>
+
+        <figure class="ios-guide-illustration">
+          <svg viewBox="0 0 360 216" role="img" aria-labelledby="ios-guide-svg-title">
+            <title id="ios-guide-svg-title">在 Safari 点分享按钮，选择“添加到主屏幕”，图标就会出现在主屏幕上</title>
+
+            <g>
+              <rect x="14" y="12" width="88" height="176" rx="16" fill="var(--surface-1)" stroke="currentColor" stroke-opacity=".22" />
+              <rect x="20" y="24" width="76" height="152" rx="10" fill="none" stroke="currentColor" stroke-opacity=".1" />
+              <rect x="24" y="28" width="68" height="14" rx="7" fill="currentColor" opacity=".06" />
+              <rect x="30" y="52" width="56" height="7" rx="3.5" fill="currentColor" opacity=".16" />
+              <rect x="30" y="64" width="40" height="7" rx="3.5" fill="currentColor" opacity=".1" />
+              <rect x="30" y="84" width="56" height="26" rx="7" fill="currentColor" opacity=".06" />
+              <rect x="30" y="118" width="56" height="26" rx="7" fill="currentColor" opacity=".06" />
+              <rect x="20" y="150" width="76" height="26" rx="9" fill="currentColor" opacity=".04" />
+              <g stroke="currentColor" stroke-opacity=".3" stroke-width="2" stroke-linecap="round">
+                <path d="M32 166h9" />
+                <path d="M47 166h1.5" />
+                <path d="M53 166h1.5" />
+              </g>
+              <circle cx="80" cy="163" r="11" fill="var(--accent)" fill-opacity=".18" />
+              <circle cx="80" cy="163" r="11" fill="none" stroke="var(--accent)" stroke-opacity=".55" />
+              <g stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                <path d="M80 157.5v8" />
+                <path d="m76.6 160.9 3.4-3.4 3.4 3.4" />
+                <path d="M74.6 163.4v3.6h10.8v-3.6" />
+              </g>
+              <circle cx="80" cy="144" r="8" fill="var(--accent)" />
+              <text x="80" y="147" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent-ink)">1</text>
+            </g>
+
+            <g stroke="currentColor" stroke-opacity=".3" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M108 100h15" />
+              <path d="m119 96 4 4-4 4" />
+            </g>
+
+            <g>
+              <rect x="132" y="26" width="104" height="148" rx="13" fill="var(--surface-1)" stroke="currentColor" stroke-opacity=".22" />
+              <rect x="142" y="36" width="84" height="8" rx="4" fill="currentColor" opacity=".1" />
+              <text x="142" y="58" font-size="7.5" fill="currentColor" fill-opacity=".5">分享</text>
+              <rect x="142" y="66" width="84" height="20" rx="6" fill="currentColor" opacity=".05" />
+              <rect x="142" y="90" width="84" height="20" rx="6" fill="var(--accent)" fill-opacity=".16" stroke="var(--accent)" stroke-opacity=".55" />
+              <rect x="142" y="114" width="84" height="20" rx="6" fill="currentColor" opacity=".05" />
+              <g fill="none" stroke="currentColor" stroke-opacity=".4" stroke-width="1.3">
+                <rect x="149" y="72" width="8" height="8" rx="2" />
+                <rect x="149.5" y="114.5" width="7" height="7" rx="1.5" />
+              </g>
+              <g stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-linecap="round">
+                <rect x="149" y="95" width="10" height="10" rx="2.5" />
+                <path d="M154 97.5v5" />
+                <path d="M151.5 100h5" />
+              </g>
+              <text x="165" y="79" font-size="7" fill="currentColor" fill-opacity=".65">拷贝链接</text>
+              <text x="165" y="103" font-size="7" font-weight="700" fill="currentColor">添加到主屏幕</text>
+              <text x="165" y="127" font-size="7" fill="currentColor" fill-opacity=".65">加入书签</text>
+              <circle cx="236" cy="100" r="8" fill="var(--accent)" />
+              <text x="236" y="103" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent-ink)">2</text>
+            </g>
+
+            <g stroke="currentColor" stroke-opacity=".3" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M244 100h15" />
+              <path d="m255 96 4 4-4 4" />
+            </g>
+
+            <g>
+              <rect x="258" y="12" width="88" height="176" rx="16" fill="var(--surface-1)" stroke="currentColor" stroke-opacity=".22" />
+              <circle cx="302" cy="26" r="3" fill="currentColor" opacity=".18" />
+              <rect x="268" y="40" width="18" height="18" rx="5" fill="var(--accent)" />
+              <text x="277" y="53" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent-ink)">H</text>
+              <rect x="292" y="40" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="316" y="40" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <text x="277" y="70" text-anchor="middle" font-size="6" fill="currentColor" fill-opacity=".7">Halo音乐</text>
+              <rect x="268" y="80" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="292" y="80" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="316" y="80" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="268" y="120" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="292" y="120" width="18" height="18" rx="5" fill="currentColor" opacity=".12" />
+              <rect x="262" y="160" width="80" height="24" rx="9" fill="currentColor" opacity=".05" />
+              <circle cx="280" cy="172" r="6" fill="currentColor" opacity=".18" />
+              <circle cx="302" cy="172" r="6" fill="currentColor" opacity=".18" />
+              <circle cx="324" cy="172" r="6" fill="currentColor" opacity=".18" />
+              <circle cx="337" cy="20" r="8" fill="var(--accent)" />
+              <text x="337" y="23" text-anchor="middle" font-size="9" font-weight="700" fill="var(--accent-ink)">3</text>
+            </g>
+          </svg>
+        </figure>
+
+        <ol class="ios-guide-steps">
+          <li>
+            <b data-i18n="iosStep1Title">点底部工具栏的「分享」</b>
+            <span data-i18n="iosStep1Desc">就是那个方框加向上箭头的按钮。</span>
+          </li>
+          <li>
+            <b data-i18n="iosStep2Title">在菜单里选「添加到主屏幕」</b>
+            <span data-i18n="iosStep2Desc">菜单可能需要往下滑一点才能看到。</span>
+          </li>
+          <li>
+            <b data-i18n="iosStep3Title">点右上角「添加」</b>
+            <span data-i18n="iosStep3Desc">桌面就会出现 Halo音乐 图标，点开是全屏的。</span>
+          </li>
+        </ol>
+      </section>
+    </div>
+  </div>

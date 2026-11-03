@@ -82,6 +82,17 @@
         toastSearchError:"搜索时发生了一点小错误，请稍后再试。",
         toastPlayError:"播放失败，请稍后再试。",
         toastBilibiliFallback:"QQ 音乐不可用，已切换哔哩哔哩音频",
+        toastQQVipBilibili:"会员歌曲，已切换哔哩哔哩音频",
+        downloadTitle:"下载当前歌曲",
+        aboutTitle:"关于本站",
+        privacyTitle:"隐私政策",
+        disclaimerTitle:"免责声明",
+        infoClose:"关闭",
+        toastDownloadLogin:"登录后才能下载歌曲",
+        toastDownloadQuota:"今日该平台下载额度已用完",
+        toastDownloadError:"下载失败，请稍后再试",
+        toastDownloadStarted:"已开始下载",
+        toastDownloadStartedRemaining:"已开始下载，今日该平台剩余 {remaining} 首",
         toastBilibiliFallbackError:"哔哩哔哩兜底失败，请稍后再试",
         toastLyricStyleSwitched:"已切换歌词炫酷效果。",
         toastPlaylistCreated:"歌单创建成功。",
@@ -107,7 +118,19 @@
         modalNewPlaylistTitle:"新建歌单",
         modalNewPlaylistDesc:"给你的歌单取一个可爱的名字吧～",
         modalConfirm:"确定",
-        modalCancel:"取消"
+        modalCancel:"取消",
+        clientDownloadTitle:"下载客户端",
+        clientDownloadClose:"关闭下载客户端",
+        clientDownloadDesc:"下载 HALO Music 桌面端或安卓客户端。",
+        iosGuideDesc:"iPhone 不需要安装包：把本站添加到主屏幕，就能像 App 一样全屏使用。",
+        iosAlreadyInstalled:"你已经把 HALO Music 添加到主屏幕了，直接从桌面图标打开即可。",
+        iosNotSafariTip:"当前不是 Safari：请点右上角「…」选择「在 Safari 中打开」，再按下面的步骤添加。",
+        iosStep1Title:"点底部工具栏的「分享」",
+        iosStep1Desc:"就是那个方框加向上箭头的按钮。",
+        iosStep2Title:"在菜单里选「添加到主屏幕」",
+        iosStep2Desc:"菜单可能需要往下滑一点才能看到。",
+        iosStep3Title:"点右上角「添加」",
+        iosStep3Desc:"桌面就会出现 Halo音乐 图标，点开是全屏的。"
       }
     };
 
@@ -1292,6 +1315,14 @@
       });
     }
 
+    // QQ 搜索结果里的 pay 标记来自官方 pay_play 字段或第三方源的 vip 字段。
+    // 命中后不再尝试 QQ 音源解析：VIP 歌曲官方不会下发 purl，探测只会白白耗时。
+    function isQQPaidTrack(track){
+      if(!track||track.source!=='qq')return false;
+      const flag=String(track.pay||track.qqQualityText||'').trim();
+      return Boolean(flag)&&!/^(0|false|no|none|null|undefined)$/i.test(flag);
+    }
+
     async function fetchBilibiliFallback(track){
       if(!track||track.source!=='qq')throw new Error('Bilibili fallback is only available for QQ tracks');
       if(track._bilibiliFallbackTried)throw new Error('Bilibili fallback already attempted');
@@ -1349,7 +1380,7 @@
                 console.warn('QQ lyric fallback unavailable',error);
               }
             }
-            showToast(t('toastBilibiliFallback'));
+            showToast(t(track._qqVipFallback?'toastQQVipBilibili':'toastBilibiliFallback'));
             return candidate;
           }catch(error){
             if(controller.signal.aborted)throw error;
@@ -1410,6 +1441,17 @@
         if(track.source==='netease') await fetchNeteaseDetails(track);
         else if(track.source==='qishui') await fetchQishuiDetails(track);
         else {
+          if(!track._bilibiliFallbackTried&&isQQPaidTrack(track)){
+            track._qqVipFallback=true;
+            try{
+              await fetchBilibiliFallback(track);
+              return;
+            }catch(fallbackError){
+              // 哔哩哔哩也没匹配到音频时，仍退回 QQ 音源解析做最后尝试。
+              console.warn('VIP track Bilibili fallback unavailable',fallbackError);
+              track._qqVipFallback=false;
+            }
+          }
           try{
             await fetchQQDetails(track,options);
           }catch(error){
@@ -1426,6 +1468,73 @@
       }catch(e){
         console.warn(track.source+' 详情解析失败',e);
         throw e;
+      }
+    }
+
+    // ===================== 下载 =====================
+
+    function filenameFromContentDisposition(value){
+      const encoded=/filename\*=UTF-8''([^;]+)/i.exec(value||'');
+      if(encoded){
+        try{return decodeURIComponent(encoded[1]);}catch(e){}
+      }
+      const plain=/filename="?([^";]+)"?/i.exec(value||'');
+      return plain?plain[1].trim():'';
+    }
+
+    function saveBlobToFile(blob,filename){
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement('a');
+      anchor.href=url;
+      anchor.download=filename;
+      anchor.rel='noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),4000);
+    }
+
+    // 配额由服务端按 账号 + 平台 + 北京时间自然日 校验，前端只负责提示结果。
+    async function downloadCurrentTrack(){
+      const track=state.currentTrack;
+      if(!track){showToast(t('toastNoCurrentTrack'));return;}
+      if(!state.isAuthenticated){showToast(t('toastDownloadLogin'));openLoginModal();return;}
+      if(dom.downloadBtn?.disabled)return;
+      if(dom.downloadBtn)dom.downloadBtn.disabled=true;
+      try{
+        if(!track.audioUrl)await ensureTrackDetails(track,{silent:true});
+        if(!track.audioUrl){showToast(t('toastPlayError'));return;}
+        const url=new URL(track.audioUrl,window.location.href);
+        url.searchParams.set('download','1');
+        url.searchParams.set(
+          'download_name',
+          [track.artist,track.title].filter(Boolean).join(' - ')||'halo-music'
+        );
+        const response=await fetch(url.href,{credentials:'same-origin',cache:'no-store'});
+        const contentType=(response.headers.get('content-type')||'').toLowerCase();
+        if(!response.ok||contentType.includes('application/json')){
+          const payload=await response.json().catch(()=>({}));
+          if(response.status===401){
+            showToast(t('toastDownloadLogin'));
+            openLoginModal();
+          }else if(response.status===429){
+            showToast(payload.error||t('toastDownloadQuota'));
+          }else{
+            showToast(payload.error||t('toastDownloadError'));
+          }
+          return;
+        }
+        const filename=filenameFromContentDisposition(response.headers.get('content-disposition'))||'halo-music.mp3';
+        saveBlobToFile(await response.blob(),filename);
+        const remaining=response.headers.get('x-halo-download-remaining');
+        showToast(remaining===null
+          ?t('toastDownloadStarted')
+          :t('toastDownloadStartedRemaining').replace('{remaining}',remaining));
+      }catch(error){
+        console.warn('Download failed',error);
+        showToast(t('toastDownloadError'));
+      }finally{
+        if(dom.downloadBtn)dom.downloadBtn.disabled=false;
       }
     }
 
@@ -2157,6 +2266,20 @@
       if(/\bwv\b/i.test(userAgent)||/; wv\)/i.test(userAgent))return true;
       if(!/(Chrome|CriOS|Firefox|FxiOS|EdgA|OPR|SamsungBrowser)\//i.test(userAgent))return true;
       return /Version\/\d+\.\d+/i.test(userAgent);
+    }
+
+    function isIOSDevice(){
+      if(window.haloDesktop)return false;
+      if(/iPad|iPhone|iPod/.test(navigator.userAgent||''))return true;
+      return navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+    }
+
+    function isStandaloneApp(){
+      return navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+    }
+
+    function isIOSSafari(){
+      return !/CriOS|FxiOS|EdgiOS|OPiOS|MicroMessenger|QQ\//.test(navigator.userAgent||'');
     }
 
     function closeAndroidUpdateModal(){
@@ -3061,6 +3184,7 @@
       dom.nextBtn=$('next-btn');
       dom.favBtn=$('fav-btn');
       dom.saveToPlaylistBtn=$('save-to-playlist-btn');
+      dom.downloadBtn=$('download-btn');
       dom.audio=$('audio');
       dom.currentTime=$('current-time');
       dom.totalTime=$('total-time');
@@ -3111,6 +3235,19 @@
       dom.clientDownloadButton=$('client-download-nav-button');
       dom.clientDownloadModal=$('client-download-modal');
       dom.clientDownloadClose=$('client-download-close');
+      dom.clientDownloadGeneric=$('client-download-generic');
+      dom.iosInstallGuide=$('ios-install-guide');
+      dom.iosNotSafariTip=$('ios-not-safari-tip');
+      dom.iosAlreadyInstalled=$('ios-already-installed');
+      dom.aboutLink=$('about-link');
+      dom.aboutModal=$('about-modal');
+      dom.aboutClose=$('about-close');
+      dom.privacyLink=$('privacy-link');
+      dom.privacyModal=$('privacy-modal');
+      dom.privacyClose=$('privacy-close');
+      dom.disclaimerLink=$('disclaimer-link');
+      dom.disclaimerModal=$('disclaimer-modal');
+      dom.disclaimerClose=$('disclaimer-close');
       dom.workspaceModal=$('workspace-modal');
       dom.workspaceContent=$('workspace-content');
       dom.workspaceTitle=$('workspace-title');
@@ -3250,6 +3387,13 @@
     }
 
     function openClientDownloadModal(){
+      const ios=isIOSDevice();
+      if(dom.clientDownloadGeneric)dom.clientDownloadGeneric.hidden=ios;
+      if(dom.iosInstallGuide)dom.iosInstallGuide.hidden=!ios;
+      if(ios){
+        if(dom.iosNotSafariTip)dom.iosNotSafariTip.hidden=isIOSSafari();
+        if(dom.iosAlreadyInstalled)dom.iosAlreadyInstalled.hidden=!isStandaloneApp();
+      }
       dom.clientDownloadModal.classList.add('show');
       dom.clientDownloadModal.setAttribute('aria-hidden','false');
     }
@@ -3257,6 +3401,18 @@
     function closeClientDownloadModal(){
       dom.clientDownloadModal.classList.remove('show');
       dom.clientDownloadModal.setAttribute('aria-hidden','true');
+    }
+
+    function openInfoModal(modal){
+      if(!modal)return;
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+    }
+
+    function closeInfoModal(modal){
+      if(!modal)return;
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
     }
 
     function setDesktopView(view){
@@ -3413,6 +3569,7 @@
       dom.nextBtn.addEventListener('click',()=>playNext('next'));
       dom.favBtn.addEventListener('click',toggleFavoriteCurrent);
       dom.saveToPlaylistBtn.addEventListener('click',openSavePlaylistModal);
+      dom.downloadBtn?.addEventListener('click',downloadCurrentTrack);
 
       dom.volumeSlider.addEventListener('input',()=>{
         dom.audio.volume=parseFloat(dom.volumeSlider.value);
@@ -3560,6 +3717,16 @@
       dom.clientDownloadButton.addEventListener('click',openClientDownloadModal);
       dom.clientDownloadClose.addEventListener('click',closeClientDownloadModal);
       dom.clientDownloadModal.addEventListener('click',e=>{if(e.target===dom.clientDownloadModal)closeClientDownloadModal();});
+
+      [
+        [dom.aboutLink,dom.aboutModal,dom.aboutClose],
+        [dom.privacyLink,dom.privacyModal,dom.privacyClose],
+        [dom.disclaimerLink,dom.disclaimerModal,dom.disclaimerClose]
+      ].forEach(([link,modal,close])=>{
+        link?.addEventListener('click',()=>openInfoModal(modal));
+        close?.addEventListener('click',()=>closeInfoModal(modal));
+        modal?.addEventListener('click',e=>{if(e.target===modal)closeInfoModal(modal);});
+      });
       dom.workspaceCloseBtn.addEventListener('click',closeWorkspace);
       dom.workspaceModal.addEventListener('click',e=>{if(e.target===dom.workspaceModal)closeWorkspace();});
 

@@ -43,6 +43,7 @@ jobs:
         run: |
           NEXT="${{ steps.plan.outputs.next }}"
           node scripts/bump-version.mjs "$NEXT"
+          node scripts/build-html.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if ! git diff --quiet; then

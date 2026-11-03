@@ -29,13 +29,6 @@ fs.writeFileSync(
   wrangler.replace(/(HALO_MUSIC_VERSION\s*=\s*")[^"]*(")/, `$1${version}$2`),
 );
 
-const htmlPath = "index.html";
-const html = fs.readFileSync(htmlPath, "utf8");
-fs.writeFileSync(
-  htmlPath,
-  html.replace(/(<meta name="app-version" content=")[^"]*(")/, `$1${version}$2`),
-);
-
 const gradlePath = "android/app/build.gradle";
 const gradle = fs.readFileSync(gradlePath, "utf8");
 fs.writeFileSync(

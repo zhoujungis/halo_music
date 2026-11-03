@@ -1,0 +1,87 @@
+
+  <div id="about-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap"><div class="modal-title-icon">H</div><span id="about-title" data-i18n="aboutTitle">关于本站</span></div>
+        <button id="about-close" class="modal-close-btn" type="button" data-i18n-title="infoClose" aria-label="关闭" title="关闭">×</button>
+      </div>
+      <div class="info-body">
+        <p>HALO Music 是一个音乐搜索与在线播放的演示项目：聚合 QQ 音乐、网易云音乐、汽水音乐和哔哩哔哩的公开数据，提供搜索、歌词、收藏、歌单与听歌统计。</p>
+        <h3>主要功能</h3>
+        <ul>
+          <li>多平台聚合搜索与在线播放，歌词逐行滚动</li>
+          <li>收藏、自建歌单，导入或导出平台歌单</li>
+          <li>听歌总结；支持 Windows、Android 客户端，iPhone 可添加到主屏幕全屏使用</li>
+        </ul>
+        <h3>技术说明</h3>
+        <p>前端是纯静态页面，接口由 Cloudflare Pages Functions 提供，账号与音乐数据存放在 Cloudflare D1。iPhone 上不需要安装包，通过 Safari「添加到主屏幕」即可获得全屏体验。</p>
+        <h3>版本与反馈</h3>
+        <p>当前版本 v{{APP_VERSION}}。问题与建议请提交到 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>。</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="privacy-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap"><div class="modal-title-icon">§</div><span id="privacy-title" data-i18n="privacyTitle">隐私政策</span></div>
+        <button id="privacy-close" class="modal-close-btn" type="button" data-i18n-title="infoClose" aria-label="关闭" title="关闭">×</button>
+      </div>
+      <div class="info-body">
+        <p class="info-footnote">随 v{{APP_VERSION}} 更新。这份说明描述的是 Halo Music 当前实际的数据处理方式。</p>
+        <h3>1. 我们收集什么</h3>
+        <ul>
+          <li><b>账号信息</b>：邮箱、用户名，以及密码的单向哈希（PBKDF2-SHA256，10 万次迭代加随机盐，不保存明文密码）；可选的显示名与头像图片地址。</li>
+          <li><b>Google 登录</b>：接收 Google 提供的账号标识、已验证邮箱、昵称与头像地址，不接触你的 Google 密码。</li>
+          <li><b>音乐库</b>：收藏的歌曲与自建歌单，以 JSON 形式整体保存。</li>
+          <li><b>听歌记录</b>：曲目标识、歌名、歌手与播放时间，用于生成「听歌总结」。</li>
+          <li><b>注册 IP 哈希</b>：注册时把客户端 IP 与服务器密钥做 SHA-256 哈希后保存，用于限制每个网络只能注册一个账号；不保存原始 IP。</li>
+          <li><b>邮箱验证码</b>：只保存验证码哈希、请求 IP 与过期时间，10 分钟后失效。</li>
+          <li><b>缓存</b>：搜索关键词与音源解析结果的短时缓存，匿名访问也会产生。</li>
+        </ul>
+        <h3>2. 浏览器本地存储</h3>
+        <p>主题偏好、歌单与播放队列的本地副本保存在 localStorage。登录态使用 HttpOnly Cookie <code>hm_token</code>（Secure、SameSite=Lax，30 天有效），页面脚本无法读取其内容。</p>
+        <h3>3. 第三方服务</h3>
+        <ul>
+          <li>Cloudflare：页面托管、接口运行与数据库存储。</li>
+          <li>Resend：发送注册验证码邮件。</li>
+          <li>Google：OAuth 登录。</li>
+          <li>QQ 音乐、网易云音乐、汽水音乐、哔哩哔哩及其公开解析接口：搜索与播放；搜索关键词会发送给对应平台。</li>
+        </ul>
+        <p>本站没有广告，也没有接入第三方统计或行为追踪脚本。</p>
+        <h3>4. 数据用途</h3>
+        <p>上述数据仅用于登录、同步收藏与歌单、展示听歌总结、检索与播放内容，不用于广告投放或用户画像。</p>
+        <h3>5. 保留与删除</h3>
+        <p>账号数据保留到你主动注销。在「我的信息」中永久注销后，账号、收藏、歌单、听歌记录与会话会被删除，且无法恢复。</p>
+        <h3>6. 安全</h3>
+        <p>全站使用 HTTPS，会话 Cookie 设置了 HttpOnly、Secure 与 SameSite，密码只保存哈希。但任何互联网服务都无法保证绝对安全，请不要复用其他网站的重要密码。</p>
+        <h3>7. 未成年人</h3>
+        <p>本项目为学习演示，不面向 14 岁以下儿童，也不会刻意收集其个人信息。</p>
+        <h3>8. 变更与联系</h3>
+        <p>政策如有变更会直接更新在本页；有疑问请通过 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 联系。</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="disclaimer-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap"><div class="modal-title-icon">!</div><span id="disclaimer-title" data-i18n="disclaimerTitle">免责声明</span></div>
+        <button id="disclaimer-close" class="modal-close-btn" type="button" data-i18n-title="infoClose" aria-label="关闭" title="关闭">×</button>
+      </div>
+      <div class="info-body">
+        <h3>版权归属</h3>
+        <p>本站不存储、不制作任何音频文件，只展示第三方平台公开的检索结果并代理其播放地址。音乐、封面与歌词的版权归各平台及原作者所有。</p>
+        <h3>服务性质</h3>
+        <p>本站是学习与演示项目，不提供付费服务，也不保证接口长期可用。上游平台调整策略时，部分歌曲可能无法播放或下载。</p>
+        <h3>第三方内容</h3>
+        <p>搜索结果与音源来自第三方，本站无法完全控制其准确性与合法性。若相关内容侵犯了你的权益，请通过 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 联系，核实后会及时移除。</p>
+        <h3>使用责任</h3>
+        <p>请勿将本站用于商业用途或任何违反当地法律法规的场景，因使用本站产生的后果由使用者自行承担。</p>
+        <h3>客户端与外部链接</h3>
+        <p>桌面端与安卓客户端按「现状」提供，下载链接指向对应的 GitHub Release，请自行评估安装风险。</p>
+        <h3>账号安全</h3>
+        <p>本站账号仅用于演示功能，请勿使用与其他重要服务相同的密码。</p>
+      </div>
+    </div>
+  </div>

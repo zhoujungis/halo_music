@@ -1,4 +1,4 @@
-import { clientIp } from "./_auth.js";
+import { authenticatedUsername, clientIp } from "./_auth.js";
 
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36";
 const API_TIMEOUT_MS = 5_500;
@@ -7,6 +7,98 @@ const BILI_SEARCH_TIMEOUT_MS = 9_000;
 const MUSIC_RATE_WINDOW_MS = 10 * 60 * 1000;
 const MUSIC_RATE_LIMIT = 240;
 const musicRateBuckets = new Map();
+
+// 每个账号在每个平台每天可下载的歌曲数，按北京时间自然日重置。
+export const DOWNLOAD_DAILY_LIMIT = 10;
+const BEIJING_OFFSET_MS = 8 * 3600 * 1000;
+
+export function downloadDayKey(now = Date.now()) {
+  return new Date(now + BEIJING_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+async function downloadRemaining(env, username, platform, day) {
+  try {
+    const row = await env.DB.prepare(
+      "SELECT count FROM music_downloads WHERE username = ? AND platform = ? AND day = ?",
+    ).bind(username, platform, day).first();
+    return Math.max(0, DOWNLOAD_DAILY_LIMIT - Number(row?.count || 0));
+  } catch {
+    return 0;
+  }
+}
+
+async function releaseDownload(env, username, platform, day) {
+  await env.DB.prepare(
+    "UPDATE music_downloads SET count = CASE WHEN count > 0 THEN count - 1 ELSE 0 END WHERE username = ? AND platform = ? AND day = ?",
+  ).bind(username, platform, day).run().catch(() => {});
+}
+
+// 返回 null 表示这是一次普通播放请求；返回 Response 表示下载请求已被拒绝。
+export async function beginDownload(requestObject, env, platform) {
+  const url = new URL(requestObject.url);
+  if (url.searchParams.get("download") !== "1") return null;
+  if (!env?.DB) return json({ error: "下载服务未初始化" }, 503);
+
+  const username = await authenticatedUsername(requestObject, env);
+  if (!username) return json({ error: "登录后才能下载歌曲" }, 401);
+
+  const day = downloadDayKey();
+  let changes = 0;
+  try {
+    // 条件自增在一条语句里完成，并发下载不会突破上限。
+    const result = await env.DB.prepare(
+      `INSERT INTO music_downloads (username, platform, day, count, updated_at)
+       VALUES (?, ?, ?, 1, ?)
+       ON CONFLICT(username, platform, day) DO UPDATE SET
+         count = music_downloads.count + 1,
+         updated_at = excluded.updated_at
+       WHERE music_downloads.count < ?`,
+    ).bind(username, platform, day, Date.now(), DOWNLOAD_DAILY_LIMIT).run();
+    changes = Number(result?.meta?.changes || 0);
+  } catch (error) {
+    console.error("Download quota reserve failed", error);
+    return json({ error: "下载服务未初始化" }, 503);
+  }
+
+  if (!changes) {
+    return json(
+      { error: "今日该平台下载额度已用完", remaining: 0, limit: DOWNLOAD_DAILY_LIMIT },
+      429,
+    );
+  }
+  return { username, platform, day, remaining: await downloadRemaining(env, username, platform, day) };
+}
+
+export function downloadFilename(response, rawName) {
+  const base = clean(rawName)
+    .replace(/[\\/:*?"<>|\r\n\t]+/g, "_")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[_\s.]+$/, "")
+    .slice(0, 120);
+  const type = (response.headers.get("content-type") || "").toLowerCase();
+  const extension = type.includes("flac") ? ".flac"
+    : type.includes("ogg") ? ".ogg"
+    : type.includes("mp4") || type.includes("m4a") || type.includes("aac") ? ".m4a"
+    : type.includes("wav") ? ".wav"
+    : ".mp3";
+  const stem = base.replace(/\.(mp3|m4a|aac|flac|ogg|wav|opus)$/i, "");
+  return `${stem || "halo-music"}${extension}`;
+}
+
+function finishDownload(response, download, requestObject) {
+  const url = new URL(requestObject.url);
+  const filename = downloadFilename(response, url.searchParams.get("download_name"));
+  const headers = new Headers(response.headers);
+  headers.set(
+    "content-disposition",
+    `attachment; filename="halo-music"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  );
+  headers.set("cache-control", "no-store");
+  headers.set("x-halo-download-remaining", String(download.remaining));
+  headers.set("x-halo-download-limit", String(DOWNLOAD_DAILY_LIMIT));
+  return new Response(response.body, { status: response.status, headers });
+}
 
 function allowMusicRequest(ip) {
   const now = Date.now();
@@ -1218,14 +1310,22 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
     if (action === "netease_audio") {
       const id = clean(url.searchParams.get("id"));
       if (!validNeteaseId(id)) return json({ error: "网易云歌曲 ID 无效" }, 400);
-      const streamUrl = await resolveNeteaseUrl(id, env);
-      const range = requestObject.headers.get("range") || "bytes=0-";
-      const upstream = await request(streamUrl, { headers: { range, referer: "https://music.163.com/" } }, AUDIO_TIMEOUT_MS);
-      if (!isAudioResponse(upstream)) {
-        upstream.body?.cancel();
-        throw new Error(`Netease stream unavailable (${upstream.status})`);
+      const download = await beginDownload(requestObject, env, "netease");
+      if (download instanceof Response) return download;
+      try {
+        const streamUrl = await resolveNeteaseUrl(id, env);
+        const range = requestObject.headers.get("range") || "bytes=0-";
+        const upstream = await request(streamUrl, { headers: { range, referer: "https://music.163.com/" } }, AUDIO_TIMEOUT_MS);
+        if (!isAudioResponse(upstream)) {
+          upstream.body?.cancel();
+          throw new Error(`Netease stream unavailable (${upstream.status})`);
+        }
+        const audio = audioResponse(upstream, "netease");
+        return download ? finishDownload(audio, download, requestObject) : audio;
+      } catch (error) {
+        if (download) await releaseDownload(env, download.username, "netease", download.day);
+        throw error;
       }
-      return audioResponse(upstream, "netease");
     }
 
     if (action === "netease_lyric") {
@@ -1263,13 +1363,21 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       if ((bvid && !validBiliVideoId(bvid)) || (!bvid && !validBiliAid(aid))) {
         return json({ error: "Bilibili 视频 ID 无效" }, 400);
       }
-      return await proxyBilibiliAudio(
-        bvid || "",
-        bvid ? "" : aid,
-        duration,
-        url.searchParams.get("page"),
-        requestObject,
-      );
+      const download = await beginDownload(requestObject, env, "bilibili");
+      if (download instanceof Response) return download;
+      try {
+        const audio = await proxyBilibiliAudio(
+          bvid || "",
+          bvid ? "" : aid,
+          duration,
+          url.searchParams.get("page"),
+          requestObject,
+        );
+        return download ? finishDownload(audio, download, requestObject) : audio;
+      } catch (error) {
+        if (download) await releaseDownload(env, download.username, "bilibili", download.day);
+        throw error;
+      }
     }
 
     // Keep lyrics independent from the QQ audio resolver. QQ audio may be
@@ -1287,12 +1395,20 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const mediaMid = clean(url.searchParams.get("media_mid"));
       const audioCacheKey = qqAudioCacheKey(mid);
       if (action === "qq_audio") {
-        await compatibleQQCacheGet(audioCacheKey, mediaMid, env);
-        const qqCandidates = async () => {
-          const candidates = await qqAudioCandidates(mid, keyword, mediaMid, null, { env });
-          return candidates;
-        };
-        return await proxyLockedAudio(audioCacheKey, qqCandidates, lockedSource, requestObject, duration, lockedContainer, lockedBytes, env, targetIdentity);
+        const download = await beginDownload(requestObject, env, "qq");
+        if (download instanceof Response) return download;
+        try {
+          await compatibleQQCacheGet(audioCacheKey, mediaMid, env);
+          const qqCandidates = async () => {
+            const candidates = await qqAudioCandidates(mid, keyword, mediaMid, null, { env });
+            return candidates;
+          };
+          const audio = await proxyLockedAudio(audioCacheKey, qqCandidates, lockedSource, requestObject, duration, lockedContainer, lockedBytes, env, targetIdentity);
+          return download ? finishDownload(audio, download, requestObject) : audio;
+        } catch (error) {
+          if (download) await releaseDownload(env, download.username, "qq", download.day);
+          throw error;
+        }
       }
       return await withDetailDeadline(async (signal) => {
         // 缓存命中时跳过全部音源上游解析，避免重复等待；歌词独立获取。

@@ -16,6 +16,7 @@ debug.log
 electron/
 build/
 scripts/
+src/
 android/
 /release/
 /release/**

@@ -1,8 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  DOWNLOAD_DAILY_LIMIT,
   biliDurationSeconds,
   detectAudioContainer,
+  downloadDayKey,
+  downloadFilename,
   normalizeBiliSearchResults,
   normalizeQQOfficial,
   normalizeTimedLyric,
@@ -53,4 +56,23 @@ test("resolves Meting redirect URLs and tries the next provider", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("download quota resets on the Beijing calendar day", () => {
+  assert.equal(DOWNLOAD_DAILY_LIMIT, 10);
+  // 2026-04-11T15:59:59Z is 23:59:59 in UTC+8.
+  assert.equal(downloadDayKey(Date.parse("2026-04-11T15:59:59Z")), "2026-04-11");
+  // One second later it is already the next day in Beijing.
+  assert.equal(downloadDayKey(Date.parse("2026-04-11T16:00:00Z")), "2026-04-12");
+});
+
+test("download filenames are sanitized and get an extension from the content type", () => {
+  const mp3 = new Response("", { headers: { "content-type": "audio/mpeg" } });
+  assert.equal(downloadFilename(mp3, '周杰伦 - 晴天 / live:"demo"'), "周杰伦 - 晴天 _ live_demo.mp3");
+
+  const flac = new Response("", { headers: { "content-type": "audio/flac" } });
+  assert.equal(downloadFilename(flac, "album.flac"), "album.flac");
+
+  const unknown = new Response("", {});
+  assert.equal(downloadFilename(unknown, "   "), "halo-music.mp3");
 });

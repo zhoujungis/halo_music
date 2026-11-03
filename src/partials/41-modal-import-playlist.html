@@ -1,0 +1,26 @@
+  <!-- 歌单链接导入弹窗 -->
+  <div id="import-playlist-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal import-modal ripple-target" role="dialog" aria-modal="true" aria-labelledby="import-playlist-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-title-icon">⇩</div>
+          <span id="import-playlist-title" data-i18n="modalImportPlaylistTitle">导入平台歌单</span>
+        </div>
+        <button id="import-playlist-close" class="modal-close-btn" type="button" aria-label="关闭">×</button>
+      </div>
+      <p class="modal-desc" data-i18n="modalImportPlaylistDesc">粘贴歌单分享文本或链接，系统会自动识别平台并导入歌曲。</p>
+      <div class="import-providers" aria-label="支持的平台">
+        <span class="import-provider"><i class="source-dot netease"></i><b data-i18n="providerNeteaseFull">网易云音乐</b></span>
+        <span class="import-provider"><i class="source-dot qishui"></i><b data-i18n="providerQishuiFull">汽水音乐</b></span>
+        <span class="import-provider"><i class="source-dot qq"></i><b data-i18n="providerQQFull">QQ 音乐</b></span>
+      </div>
+      <textarea id="import-playlist-url" maxlength="2000" data-i18n-placeholder="importPlaylistPlaceholder" placeholder="粘贴分享文本或歌单链接…"></textarea>
+      <p id="import-playlist-note" class="import-modal-note" data-i18n="importPlaylistNote">仅支持公开歌单；大型 QQ 歌单最多导入前 1200 首。</p>
+      <div class="modal-actions">
+        <button id="import-playlist-file-btn" class="btn btn-ghost import-file-btn ripple-target" type="button" data-i18n="importPlaylistFile">从 JSON 文件导入</button>
+        <button id="import-playlist-cancel" class="btn btn-ghost ripple-target" type="button" data-i18n="modalCancel">取消</button>
+        <button id="import-playlist-confirm" class="btn btn-secondary ripple-target" type="button" data-i18n="importPlaylistConfirm">开始导入</button>
+      </div>
+    </div>
+  </div>
+
