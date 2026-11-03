@@ -1295,6 +1295,7 @@
         if(memo){track.cover=memo;return;}
         try{
           const coverParams=new URLSearchParams({action:'cover_lookup',title:track.title||'',artist:track.artist||''});
+          if(track.duration)coverParams.set('duration',String(track.duration));
           const coverResponse=await fetchWithTimeout(`/api/music?${coverParams}`,{},8000);
           const coverJson=await coverResponse.json().catch(()=>null);
           const cover=coverJson?.data?.cover||'';

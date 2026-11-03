@@ -1418,19 +1418,25 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
     if (action === "cover_lookup") {
       const title = clean(url.searchParams.get("title"));
       const artist = clean(url.searchParams.get("artist"));
+      const duration = Math.max(0, Number(url.searchParams.get("duration")) || 0);
       const term = [title, artist].filter(Boolean).join(" ");
       if (!term) return json({ code: 200, data: { cover: "" } });
 
       const targetTitle = normalizedMatchText(title);
       const targetArtist = normalizedMatchText(artist);
-      const matches = (candidateTitle, candidateArtist) => {
+      // JOOX 返回繁体、QQ/网易云是简体，标题和歌手经常对不上。
+      // 时长是最稳的跨字形锚点：同一首歌两者相差通常在 5 秒内。
+      const matches = (candidateTitle, candidateArtist, candidateDuration) => {
         const itemTitle = normalizedMatchText(candidateTitle);
         const itemArtist = normalizedMatchText(candidateArtist);
-        if (!itemTitle || !targetTitle) return 0;
         let score = 0;
-        if (itemTitle === targetTitle) score += 10;
-        else if (itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle)) score += 6;
+        if (itemTitle && targetTitle) {
+          if (itemTitle === targetTitle) score += 10;
+          else if (itemTitle.includes(targetTitle) || targetTitle.includes(itemTitle)) score += 6;
+        }
         if (itemArtist && targetArtist && (itemArtist === targetArtist || itemArtist.includes(targetArtist) || targetArtist.includes(itemArtist))) score += 5;
+        const itemDuration = Math.max(0, Number(candidateDuration) || 0);
+        if (score < 10 && duration && itemDuration && Math.abs(duration - itemDuration) <= 5) score += 8;
         return score;
       };
 
@@ -1438,8 +1444,8 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       try {
         const songs = await searchQQOfficial(term, 10);
         const best = songs
-          .map((song) => ({ song, score: matches(song.name, song.artist) }))
-          .filter((entry) => entry.score >= 10 && entry.song.cover)
+          .map((song) => ({ song, score: matches(song.name, song.artist, song.duration) }))
+          .filter((entry) => entry.score >= 8 && entry.song.cover)
           .sort((a, b) => b.score - a.score)[0];
         cover = best?.song?.cover || "";
       } catch (error) {
@@ -1450,7 +1456,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           const rows = await searchNetease(term, 5, env);
           const best = rows
             .map((row) => ({ row, score: matches(row?.title, row?.author) }))
-            .filter((entry) => entry.score >= 10 && entry.row?.pic)
+            .filter((entry) => entry.score >= 8 && entry.row?.pic)
             .sort((a, b) => b.score - a.score)[0];
           cover = clean(best?.row?.pic);
         } catch (error) {
