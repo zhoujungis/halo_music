@@ -408,8 +408,8 @@ export function normalizeJooxSong(item, index = 0) {
 // 音质从高到低挑一个浏览器能直接播放的格式。
 export function pickJooxStream(links) {
   const choices = [
-    ["OGG 320", "ogg"],
     ["MP3 320", "mpeg"],
+    ["OGG 320", "ogg"],
     ["AAC 192", "mp4"],
     ["OGG 192", "ogg"],
     ["MP3 128", "mpeg"],
