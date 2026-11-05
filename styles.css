@@ -3937,3 +3937,9 @@ html[data-theme="dark"] .search-batch-select-all:checked {
 .mobile-playlist-card .playlist-card-art { width: 38px; height: 38px; border-radius: var(--r-xs); }
 .mobile-playlist-card .playlist-card-copy strong { font-size: 13.5px; font-weight: 650; }
 .mobile-playlist-card .playlist-card-desc { font-size: 10.5px; }
+
+/* ------------------------------------------------ client download meta */
+.client-download-meta { margin: 2px 0 4px; color: var(--text-dim); font-size: 11.5px; }
+.client-download-note { margin: 0; color: var(--text-dim); font-size: 11.5px; line-height: 1.6; }
+.client-download-notes { display: grid; gap: 4px; margin: 0; padding-left: 16px; color: var(--text-sub); font-size: 12px; line-height: 1.5; }
+.client-download-notes li::marker { color: var(--accent); }

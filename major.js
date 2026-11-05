@@ -27,6 +27,8 @@
         playerStatusLoading:"加载音源中…",
         playerStatusPlaying:"播放中",
         playerStatusPaused:"已暂停",
+        playerStatusBuffering:"缓冲中…",
+        playerStatusError:"播放失败",
         lyricsEmpty:"暂无歌词，试着播放一首支持歌词的歌曲。",
         playlistTitle:"播放列表",
         tabResults:"正在播放",
@@ -583,19 +585,7 @@
       updatePlaylistInfoLabel();
     }
 
-    // ========== 旧的质量映射函数，暂时保留（不再使用 API 的 quality 字段） ==========
-    // ========== 新增：统一根据音频链接后缀判断音质 ==========
-    function inferQualityFromUrl(url){
-      if(!url) return {tag:null,label:''};
-      let base = url.split('?')[0].toLowerCase();
-      const m = base.match(/\.([a-z0-9]+)$/);
-      const ext = m ? m[1] : '';
-      const losslessExts = ['flac','wav','ape','alac','aiff'];
-      if (losslessExts.includes(ext)) {
-        return {tag:'lossless', label:'LOSSLESS'};
-      }
-      return {tag:'normal', label:'STANDARD'};
-    }
+    // 音质标签只展示上游明确标注的结果；无法确认时不显示，避免误导性宣传。
 
     // ===================== 歌单缓存 / 导出 =====================
 
@@ -1290,11 +1280,7 @@
         if(!track.lrcUrl)track.lrcUrl=`/api/music?action=netease_lyric&id=${encodeURIComponent(track.songid)}`;
       }
 
-      if(track.audioUrl){
-        const q=inferQualityFromUrl(track.audioUrl);
-        track.quality=q.tag;
-        track.qualityLabel=q.label;
-      }
+
 
       if(!track.lrc && track.lrcUrl){
         try{
@@ -2132,7 +2118,7 @@
       }
       if(consecutivePlayFailures>MAX_CONSECUTIVE_PLAY_FAILURES)consecutivePlayFailures=0;
       showToast(message||t('toastPlayError'));
-      dom.playerStatus.textContent=t('playerStatusIdle');
+      dom.playerStatus.textContent=t('playerStatusError');
     }
 
     function updateMediaSession(track){
@@ -4017,6 +4003,11 @@
       dom.clientDownloadModal=$('client-download-modal');
       dom.clientDownloadClose=$('client-download-close');
       dom.clientDownloadGeneric=$('client-download-generic');
+      dom.clientDownloadMeta=$('client-download-meta');
+      dom.clientDownloadNotes=$('client-download-notes');
+      dom.clientDownloadExeSize=$('client-download-exe-size');
+      dom.clientDownloadMsiSize=$('client-download-msi-size');
+      dom.clientDownloadApkSize=$('client-download-apk-size');
       dom.iosInstallGuide=$('ios-install-guide');
       dom.iosNotSafariTip=$('ios-not-safari-tip');
       dom.iosAlreadyInstalled=$('ios-already-installed');
@@ -4168,6 +4159,59 @@
       dom.workspaceModal.setAttribute('aria-hidden','true');
     }
 
+    // GitHub Release 信息：版本、发布时间、安装包大小与更新日志。
+    let clientReleaseCache={at:0,data:null};
+    function formatFileSize(bytes){
+      const value=Number(bytes)||0;
+      if(value<=0)return '';
+      return value>=1024*1024?`${(value/1048576).toFixed(1)} MB`:`${Math.round(value/1024)} KB`;
+    }
+    function applyClientReleaseInfo(release){
+      if(!dom.clientDownloadMeta)return;
+      const name=String(release?.tag_name||release?.name||'').replace(/^v/,'');
+      const published=release?.published_at?new Date(release.published_at).toLocaleDateString('zh-CN'):'';
+      dom.clientDownloadMeta.textContent=name?`最新版本 v${name}${published?` · ${published} 发布`:''}`:'版本信息暂时不可用，下载链接依然有效。';
+      const assets=Array.isArray(release?.assets)?release.assets:[];
+      const sizeOf=(suffix)=>{
+        const asset=assets.find(item=>String(item.name||'').toLowerCase().endsWith(suffix));
+        return asset?formatFileSize(asset.size):'';
+      };
+      const exe=sizeOf('setup-x64.exe');
+      const msi=sizeOf('setup-x64.msi');
+      const apk=sizeOf('halo-music.apk');
+      if(dom.clientDownloadExeSize&&exe)dom.clientDownloadExeSize.textContent=`.exe · NSIS · ${exe}`;
+      if(dom.clientDownloadMsiSize&&msi)dom.clientDownloadMsiSize.textContent=`.msi · ${msi}`;
+      if(dom.clientDownloadApkSize&&apk)dom.clientDownloadApkSize.textContent=`.apk · ${apk}`;
+      if(!dom.clientDownloadNotes)return;
+      dom.clientDownloadNotes.replaceChildren();
+      const lines=String(release?.body||'')
+        .split(/\r?\n/)
+        .map(line=>line.replace(/^[-*]\s*/,'').trim())
+        .filter(line=>line&&!line.startsWith('#'))
+        .slice(0,6);
+      (lines.length?lines:['本次更新内容请查看 GitHub Release']).forEach(line=>{
+        const li=document.createElement('li');
+        li.textContent=line.slice(0,120);
+        dom.clientDownloadNotes.appendChild(li);
+      });
+    }
+    async function loadClientReleaseInfo(){
+      if(clientReleaseCache.data&&Date.now()-clientReleaseCache.at<10*60*1000){
+        applyClientReleaseInfo(clientReleaseCache.data);
+        return;
+      }
+      try{
+        const response=await fetch('https://api.github.com/repos/zhoujungis/halo_music/releases/latest',{headers:{Accept:'application/vnd.github+json'}});
+        if(!response.ok)throw new Error(`release info ${response.status}`);
+        const data=await response.json();
+        clientReleaseCache={at:Date.now(),data};
+        applyClientReleaseInfo(data);
+      }catch(error){
+        console.warn('client release info unavailable',error);
+        if(dom.clientDownloadMeta)dom.clientDownloadMeta.textContent='版本信息暂时获取失败，下载链接仍然可以正常使用。';
+      }
+    }
+
     function openClientDownloadModal(){
       const ios=isIOSDevice();
       if(dom.clientDownloadGeneric)dom.clientDownloadGeneric.hidden=ios;
@@ -4178,6 +4222,7 @@
       }
       dom.clientDownloadModal.classList.add('show');
       dom.clientDownloadModal.setAttribute('aria-hidden','false');
+      loadClientReleaseInfo();
     }
 
     function closeClientDownloadModal(){
@@ -4398,6 +4443,17 @@
         audioLevel = 0;
         updateMediaSession(state.currentTrack);
         pushNativePlaybackState(true);
+      });
+      dom.audio.addEventListener('waiting',()=>{
+        if(!state.isPlaying)return;
+        dom.playerStatus.textContent=t('playerStatusBuffering');
+      });
+      dom.audio.addEventListener('playing',()=>{
+        if(!state.isPlaying)return;
+        dom.playerStatus.textContent=t('playerStatusPlaying');
+      });
+      dom.audio.addEventListener('canplay',()=>{
+        if(state.isPlaying)dom.playerStatus.textContent=t('playerStatusPlaying');
       });
       dom.audio.addEventListener('ended',()=>{
         audioLevel = 0;

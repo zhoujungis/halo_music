@@ -179,6 +179,8 @@ jobs:
           merge-multiple: true
       - name: List release assets
         run: ls -lh artifacts
+      - name: Generate SHA256 checksums
+        run: sha256sum artifacts/*.exe artifacts/*.msi artifacts/*.apk > artifacts/SHA256SUMS.txt; cat artifacts/SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
@@ -193,3 +195,4 @@ jobs:
             artifacts/*.apk
             artifacts/*.yml
             artifacts/*.blockmap
+            artifacts/SHA256SUMS.txt

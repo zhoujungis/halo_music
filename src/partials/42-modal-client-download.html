@@ -8,24 +8,32 @@
 
       <div id="client-download-generic">
         <p class="modal-desc" data-i18n="clientDownloadDesc">下载 HALO Music 桌面端或安卓客户端。</p>
+        <p id="client-download-meta" class="client-download-meta">正在获取最新版本信息…</p>
         <p class="client-download-label">Windows</p>
         <div class="client-download-list">
           <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.exe" target="_blank" rel="noopener noreferrer">
-            <span class="client-download-copy"><strong>Windows 安装包</strong><code>.exe · NSIS</code></span>
+            <span class="client-download-copy"><strong>Windows 安装包</strong><code id="client-download-exe-size">.exe · NSIS</code></span>
             <span class="client-download-arrow" aria-hidden="true">↗</span>
           </a>
           <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.msi" target="_blank" rel="noopener noreferrer">
-            <span class="client-download-copy"><strong>Windows MSI</strong><code>.msi</code></span>
+            <span class="client-download-copy"><strong>Windows MSI</strong><code id="client-download-msi-size">.msi</code></span>
             <span class="client-download-arrow" aria-hidden="true">↗</span>
           </a>
         </div>
         <p class="client-download-label">Android</p>
         <div class="client-download-list">
           <a class="client-download-option" href="https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music.apk" target="_blank" rel="noopener noreferrer">
-            <span class="client-download-copy"><strong>安卓客户端</strong><code>.apk</code></span>
+            <span class="client-download-copy"><strong>安卓客户端</strong><code id="client-download-apk-size">.apk</code></span>
             <span class="client-download-arrow" aria-hidden="true">↗</span>
           </a>
         </div>
+        <p class="client-download-label">系统要求</p>
+        <p class="client-download-note">Windows 10 及以上（64 位）· Android 6.0 及以上。macOS / Linux 暂未提供安装包，可直接使用网页版。</p>
+        <p class="client-download-label">本次更新</p>
+        <ul id="client-download-notes" class="client-download-notes"><li>正在获取更新日志…</li></ul>
+        <p class="client-download-note">更新日志与校验文件来自 GitHub Release：
+          <a href="https://github.com/zhoujungis/halo_music/releases/latest/download/SHA256SUMS.txt" target="_blank" rel="noopener noreferrer">SHA256 校验文件</a>
+        </p>
       </div>
 
       <section id="ios-install-guide" class="ios-install-guide" hidden>
