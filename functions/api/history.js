@@ -39,17 +39,17 @@ export async function onRequestGet({ request, env }) {
     env.DB.prepare(
       `SELECT track_uid, title, artist, MAX(cover) AS cover, COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds
        FROM music_play_history WHERE username = ?
-       GROUP BY track_uid ORDER BY plays DESC, MAX(played_at) DESC LIMIT 5`,
+       GROUP BY track_uid ORDER BY plays DESC, MAX(played_at) DESC LIMIT 10`,
     ).bind(username).all(),
     env.DB.prepare(
       `SELECT artist, COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds
        FROM music_play_history WHERE username = ? AND artist != ''
-       GROUP BY artist ORDER BY plays DESC LIMIT 5`,
+       GROUP BY artist ORDER BY plays DESC LIMIT 10`,
     ).bind(username).all(),
     env.DB.prepare(
       `SELECT album, artist, MAX(cover) AS cover, COUNT(*) AS plays
        FROM music_play_history WHERE username = ? AND album != ''
-       GROUP BY album ORDER BY plays DESC LIMIT 5`,
+       GROUP BY album ORDER BY plays DESC LIMIT 10`,
     ).bind(username).all(),
     env.DB.prepare(
       `SELECT date(played_at / 1000, 'unixepoch', '+8 hours') AS day,

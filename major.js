@@ -4033,12 +4033,7 @@
         target.appendChild(lists);
       }
 
-      if(summary.lastPlayed){
-        const recent=document.createElement('p');
-        recent.className='account-muted';
-        recent.textContent=`最近播放：${summary.lastPlayed.title} · ${summary.lastPlayed.artist||'未知歌手'}`;
-        target.appendChild(recent);
-      }
+
     }
 
     async function loadAccountProfile(){
