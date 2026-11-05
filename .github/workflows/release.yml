@@ -150,12 +150,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.sha }}
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-      - name: List release assets
-        run: ls -lh artifacts
+      # 先部署再下载安装包：artifacts 里的 exe 超过 Pages 25MiB 单文件上限，
+      # 必须在干净的工作区里上传。
       - name: Ensure D1 columns (idempotent)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -176,7 +172,13 @@ jobs:
             echo "CLOUDFLARE_API_TOKEN is not configured; skipping Pages deploy."
             exit 0
           fi
-          npx --yes wrangler@4 pages deploy . --project-name halo-music --branch main
+          npx --yes wrangler@4 pages deploy . --project-name halo-music --branch main --commit-dirty=true
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: List release assets
+        run: ls -lh artifacts
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
