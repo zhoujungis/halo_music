@@ -32,7 +32,7 @@ export async function onRequestGet({ request, env }) {
   const discoveryStart = now - 30 * DAY_MS;
   const monthStart = beijingMonthStart(now);
 
-  const [totals, topTracks, topArtists, topAlbums, daily, hours, month, discoveries, lastPlayed] = await Promise.all([
+  const [totals, topTracks, topArtists, daily, hours, month, discoveries, lastPlayed] = await Promise.all([
     env.DB.prepare(
       "SELECT COUNT(*) AS plays, COUNT(DISTINCT track_uid) AS unique_tracks, COALESCE(SUM(duration), 0) AS total_seconds FROM music_play_history WHERE username = ?",
     ).bind(username).first(),
@@ -45,11 +45,6 @@ export async function onRequestGet({ request, env }) {
       `SELECT artist, COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds
        FROM music_play_history WHERE username = ? AND artist != ''
        GROUP BY artist ORDER BY plays DESC LIMIT 10`,
-    ).bind(username).all(),
-    env.DB.prepare(
-      `SELECT album, artist, MAX(cover) AS cover, COUNT(*) AS plays
-       FROM music_play_history WHERE username = ? AND album != ''
-       GROUP BY album ORDER BY plays DESC LIMIT 10`,
     ).bind(username).all(),
     env.DB.prepare(
       `SELECT date(played_at / 1000, 'unixepoch', '+8 hours') AS day,
@@ -85,7 +80,6 @@ export async function onRequestGet({ request, env }) {
       totalSeconds: Number(totals?.total_seconds || 0),
       topTracks: topTracks?.results || [],
       topArtists: topArtists?.results || [],
-      topAlbums: topAlbums?.results || [],
       daily: daily?.results || [],
       hours: hours?.results || [],
       month: {

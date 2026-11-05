@@ -3982,7 +3982,7 @@ html[data-theme="dark"] .search-batch-select-all:checked {
 .insights-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .insights-chart { display: grid; gap: 8px; min-width: 0; }
 .insights-chart .insights-section-title { margin: 0; }
-.insights-lists { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.insights-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .insights-list-card { display: grid; gap: 8px; min-width: 0; }
 .insights-list-card .insights-section-title { margin: 0; }
 .insights-bars { display: grid; gap: 6px; }

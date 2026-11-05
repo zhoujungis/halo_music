@@ -4023,13 +4023,11 @@
 
       const artists=mergeRankedRows(summary.topArtists||[],item=>normalizeMusicMatchText(item.artist)).slice(0,5);
       const tracks=mergeRankedRows(summary.topTracks||[],item=>`${normalizeMusicMatchText(item.title)}|${normalizeMusicMatchText(item.artist)}`).slice(0,5);
-      const albums=mergeRankedRows(summary.topAlbums||[],item=>`${normalizeMusicMatchText(item.album)}|${normalizeMusicMatchText(item.artist)}`).slice(0,5);
-      if(artists.length||tracks.length||albums.length){
+      if(artists.length||tracks.length){
         const lists=document.createElement('div');
         lists.className='insights-lists';
         renderInsightsList(lists,'最常听歌手',artists,{initialKey:'artist',describe:item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
         renderInsightsList(lists,'最常听歌曲',tracks,{coverKey:'cover',describe:item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
-        renderInsightsList(lists,'最常听专辑',albums,{coverKey:'cover',describe:item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
         target.appendChild(lists);
       }
 
