@@ -2836,7 +2836,7 @@
       const name=document.createElement('strong');
       name.textContent=`${chart.label}榜`;
       const sub=document.createElement('span');
-      sub.textContent='每半小时更新';
+      sub.textContent='每日 02:00 更新';
       head.append(name,sub);
       column.appendChild(head);
 
@@ -3854,8 +3854,9 @@
     function formatListeningTime(seconds){
       const total=Math.max(0,Math.round(Number(seconds)||0));
       if(total<60)return total?`${total} 秒`:'—';
-      const hours=Math.floor(total/3600);
-      const minutes=Math.round((total%3600)/60);
+      const totalMinutes=Math.round(total/60);
+      const hours=Math.floor(totalMinutes/60);
+      const minutes=totalMinutes%60;
       if(hours>0)return minutes?`${hours} 小时 ${minutes} 分钟`:`${hours} 小时`;
       return `${minutes} 分钟`;
     }
@@ -3873,7 +3874,7 @@
         const track=document.createElement('span');
         track.className='insights-bar-track';
         const fill=document.createElement('i');
-        fill.style.width=`${Math.max(4,Math.round(((Number(entry.value)||0)/max)*100))}%`;
+        fill.style.width=`${Math.max(6,Math.round(((Number(entry.value)||0)/max)*100))}%`;
         track.appendChild(fill);
         const value=document.createElement('span');
         value.className='insights-bar-value';
@@ -3886,6 +3887,8 @@
 
     function renderInsightsList(container,title,items,describe){
       if(!items||!items.length)return;
+      const card=document.createElement('div');
+      card.className='insights-list-card';
       const heading=document.createElement('h4');
       heading.className='insights-section-title';
       heading.textContent=title;
@@ -3900,7 +3903,24 @@
         li.append(rank,copy);
         list.appendChild(li);
       });
-      container.append(heading,list);
+      card.append(heading,list);
+      container.appendChild(card);
+    }
+
+    // 同一歌手/专辑常有繁简两种写法（周杰伦/周杰倫），展示前按归一化名称合并。
+    function mergeRankedRows(rows,keyFn){
+      const map=new Map();
+      (rows||[]).forEach(row=>{
+        const key=keyFn(row)||`${row.title||''}|${row.artist||''}`;
+        const existing=map.get(key);
+        if(existing){
+          existing.plays=Number(existing.plays||0)+Number(row.plays||0);
+          existing.seconds=Number(existing.seconds||0)+Number(row.seconds||0);
+        }else{
+          map.set(key,{...row,plays:Number(row.plays||0),seconds:Number(row.seconds||0)});
+        }
+      });
+      return [...map.values()].sort((a,b)=>b.plays-a.plays);
     }
 
     function renderAccountSummary(summary={}){
@@ -3910,7 +3930,7 @@
       if(!plays){
         const empty=document.createElement('p');
         empty.className='account-muted';
-        empty.textContent='开始播放歌曲后，这里会生成你的听歌总结。';
+        empty.textContent='开始播放歌曲后，这里会生成你的听歌分析。';
         target.appendChild(empty);
         return;
       }
@@ -3941,41 +3961,59 @@
       }
 
       const daily=Array.isArray(summary.daily)?summary.daily:[];
-      if(daily.length){
-        const heading=document.createElement('h4');
-        heading.className='insights-section-title';
-        heading.textContent='最近 7 天';
-        target.appendChild(heading);
-        const byDay=new Map(daily.map(row=>[String(row.day),row]));
-        const weekLabels=['日','一','二','三','四','五','六'];
-        const entries=[];
-        for(let offset=6;offset>=0;offset-=1){
-          const date=new Date(Date.now()-offset*86400000+8*3600000);
-          const key=date.toISOString().slice(0,10);
-          const row=byDay.get(key);
-          entries.push({label:`周${weekLabels[date.getUTCDay()]}`,value:Number(row?.plays||0),text:String(Number(row?.plays||0))});
-        }
-        renderInsightsBars(target,entries);
-      }
-
       const hours=Array.isArray(summary.hours)?summary.hours:[];
-      if(hours.length){
-        const heading=document.createElement('h4');
-        heading.className='insights-section-title';
-        heading.textContent='听歌时段';
-        target.appendChild(heading);
-        const buckets=[['凌晨',0],['早晨',4],['上午',8],['下午',12],['傍晚',16],['深夜',20]];
-        const counts=new Array(6).fill(0);
-        hours.forEach(row=>{
-          const hour=Number(row.hour)||0;
-          counts[Math.min(5,Math.floor(hour/4))]+=Number(row.plays)||0;
-        });
-        renderInsightsBars(target,buckets.map(([label],index)=>({label,value:counts[index],text:String(counts[index])})));
+      if(daily.length||hours.length){
+        const charts=document.createElement('div');
+        charts.className='insights-charts';
+        if(daily.length){
+          const chart=document.createElement('div');
+          chart.className='insights-chart';
+          const heading=document.createElement('h4');
+          heading.className='insights-section-title';
+          heading.textContent='最近 7 天';
+          chart.appendChild(heading);
+          const byDay=new Map(daily.map(row=>[String(row.day),row]));
+          const weekLabels=['日','一','二','三','四','五','六'];
+          const entries=[];
+          for(let offset=6;offset>=0;offset-=1){
+            const date=new Date(Date.now()-offset*86400000+8*3600000);
+            const key=date.toISOString().slice(0,10);
+            const row=byDay.get(key);
+            entries.push({label:`周${weekLabels[date.getUTCDay()]}`,value:Number(row?.plays||0),text:String(Number(row?.plays||0))});
+          }
+          renderInsightsBars(chart,entries);
+          charts.appendChild(chart);
+        }
+        if(hours.length){
+          const chart=document.createElement('div');
+          chart.className='insights-chart';
+          const heading=document.createElement('h4');
+          heading.className='insights-section-title';
+          heading.textContent='听歌时段';
+          chart.appendChild(heading);
+          const buckets=['凌晨','早晨','上午','下午','傍晚','深夜'];
+          const counts=new Array(6).fill(0);
+          hours.forEach(row=>{
+            const hour=Number(row.hour)||0;
+            counts[Math.min(5,Math.floor(hour/4))]+=Number(row.plays)||0;
+          });
+          renderInsightsBars(chart,buckets.map((label,index)=>({label,value:counts[index],text:String(counts[index])})));
+          charts.appendChild(chart);
+        }
+        target.appendChild(charts);
       }
 
-      renderInsightsList(target,'最常听歌手',summary.topArtists||[],item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
-      renderInsightsList(target,'最常听歌曲',summary.topTracks||[],item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
-      renderInsightsList(target,'最常听专辑',summary.topAlbums||[],item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+      const artists=mergeRankedRows(summary.topArtists||[],item=>normalizeMusicMatchText(item.artist)).slice(0,5);
+      const tracks=mergeRankedRows(summary.topTracks||[],item=>`${normalizeMusicMatchText(item.title)}|${normalizeMusicMatchText(item.artist)}`).slice(0,5);
+      const albums=mergeRankedRows(summary.topAlbums||[],item=>`${normalizeMusicMatchText(item.album)}|${normalizeMusicMatchText(item.artist)}`).slice(0,5);
+      if(artists.length||tracks.length||albums.length){
+        const lists=document.createElement('div');
+        lists.className='insights-lists';
+        renderInsightsList(lists,'最常听歌手',artists,item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+        renderInsightsList(lists,'最常听歌曲',tracks,item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+        renderInsightsList(lists,'最常听专辑',albums,item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+        target.appendChild(lists);
+      }
 
       if(summary.lastPlayed){
         const recent=document.createElement('p');
