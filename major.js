@@ -198,6 +198,7 @@
     ];
     let recommendCache = { tracks: [], basis: '', at: 0 };
     let recommendLoading = false;
+    let recommendFailed = false;
     const GUEST_AVATAR_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-7 2-7 4.5V21h14v-2.5c0-2.5-3-4.5-7-4.5Z" fill="currentColor"/></svg>';
     const SUN_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>';
     const MOON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>';
@@ -2872,7 +2873,7 @@
       }else{
         const status=document.createElement('div');
         status.className='discovery-toplist-status'+(toplistFailed[chart.key]?' is-error':' is-loading');
-        status.textContent=toplistFailed[chart.key]?'暂时拿不到，稍后再试':'正在获取…';
+        status.textContent=toplistFailed[chart.key]?'榜单每日 02:00 更新，稍后再来看看':'正在获取…';
         list.appendChild(status);
         if(!toplistFailed[chart.key])loadToplist(chart.key);
       }
@@ -2894,8 +2895,12 @@
             basis:String(data?.basis||''),
             at:Date.now()
           };
+          recommendFailed=false;
+        }else{
+          recommendFailed=true;
         }
       }catch(error){
+        recommendFailed=true;
         console.warn('load recommendations failed',error);
       }finally{
         recommendLoading=false;
@@ -3004,10 +3009,10 @@
         return section;
       }
       const status=document.createElement('div');
-      status.className='discovery-toplist-status is-loading';
-      status.textContent='正在准备推荐…';
+      status.className='discovery-toplist-status'+(recommendFailed?' is-error':' is-loading');
+      status.textContent=recommendFailed?'推荐每日更新，稍后再来看看':'正在准备推荐…';
       section.appendChild(status);
-      if(!recommendLoading)loadRecommendations();
+      if(!recommendLoading&&!recommendFailed)loadRecommendations();
       return section;
     }
 
@@ -3846,26 +3851,140 @@
       if(!response.ok)throw new Error(data.error||'请求失败，请稍后重试');
       return data;
     }
+    function formatListeningTime(seconds){
+      const total=Math.max(0,Math.round(Number(seconds)||0));
+      if(total<60)return total?`${total} 秒`:'—';
+      const hours=Math.floor(total/3600);
+      const minutes=Math.round((total%3600)/60);
+      if(hours>0)return minutes?`${hours} 小时 ${minutes} 分钟`:`${hours} 小时`;
+      return `${minutes} 分钟`;
+    }
+
+    function renderInsightsBars(container,entries){
+      const max=Math.max(1,...entries.map(entry=>Number(entry.value)||0));
+      const bars=document.createElement('div');
+      bars.className='insights-bars';
+      entries.forEach(entry=>{
+        const row=document.createElement('div');
+        row.className='insights-bar-row';
+        const label=document.createElement('span');
+        label.className='insights-bar-label';
+        label.textContent=entry.label;
+        const track=document.createElement('span');
+        track.className='insights-bar-track';
+        const fill=document.createElement('i');
+        fill.style.width=`${Math.max(4,Math.round(((Number(entry.value)||0)/max)*100))}%`;
+        track.appendChild(fill);
+        const value=document.createElement('span');
+        value.className='insights-bar-value';
+        value.textContent=entry.text||String(entry.value||0);
+        row.append(label,track,value);
+        bars.appendChild(row);
+      });
+      container.appendChild(bars);
+    }
+
+    function renderInsightsList(container,title,items,describe){
+      if(!items||!items.length)return;
+      const heading=document.createElement('h4');
+      heading.className='insights-section-title';
+      heading.textContent=title;
+      const list=document.createElement('ol');
+      list.className='insights-list';
+      items.forEach((item,index)=>{
+        const li=document.createElement('li');
+        const rank=document.createElement('b');
+        rank.textContent=String(index+1);
+        const copy=document.createElement('span');
+        copy.textContent=describe(item);
+        li.append(rank,copy);
+        list.appendChild(li);
+      });
+      container.append(heading,list);
+    }
+
     function renderAccountSummary(summary={}){
       const target=dom.listeningSummary;
       target.replaceChildren();
+      const plays=Number(summary.plays||0);
+      if(!plays){
+        const empty=document.createElement('p');
+        empty.className='account-muted';
+        empty.textContent='开始播放歌曲后，这里会生成你的听歌总结。';
+        target.appendChild(empty);
+        return;
+      }
       const stats=document.createElement('div');
-      stats.className='listening-summary-stats';
-      [[summary.plays||0,'次播放'],[summary.uniqueTracks||0,'首歌曲']].forEach(([value,label])=>{
-        const item=document.createElement('div');item.className='listening-stat';
-        const strong=document.createElement('strong');strong.textContent=Number(value).toLocaleString();
-        const small=document.createElement('span');small.textContent=label;
-        item.append(strong,small);stats.appendChild(item);
+      stats.className='listening-summary-stats insights-stats';
+      [
+        [Number(plays).toLocaleString(),'次播放'],
+        [formatListeningTime(summary.totalSeconds),'总时长'],
+        [Number(summary.uniqueTracks||0).toLocaleString(),'首歌曲'],
+        [Number(summary.month?.plays||0).toLocaleString(),'本月播放'],
+      ].forEach(([value,label])=>{
+        const item=document.createElement('div');
+        item.className='listening-stat insights-stat';
+        const strong=document.createElement('strong');
+        strong.textContent=value;
+        const small=document.createElement('span');
+        small.textContent=label;
+        item.append(strong,small);
+        stats.appendChild(item);
       });
       target.appendChild(stats);
-      const heading=document.createElement('h4');heading.textContent='最常听';target.appendChild(heading);
-      const top=Array.isArray(summary.topTracks)?summary.topTracks:[];
-      if(!top.length){const empty=document.createElement('p');empty.className='account-muted';empty.textContent='开始播放歌曲后，这里会显示你的听歌总结。';target.appendChild(empty);return;}
-      const list=document.createElement('ol');list.className='listening-top-tracks';
-      top.forEach(track=>{const item=document.createElement('li');const title=document.createElement('strong');title.textContent=track.title||'未知歌曲';const detail=document.createElement('span');detail.textContent=`${track.artist||'未知歌手'} · ${track.plays||0} 次`;item.append(title,detail);list.appendChild(item);});
-      target.appendChild(list);
-      if(summary.lastPlayed){const recent=document.createElement('p');recent.className='account-muted';recent.textContent=`最近播放：${summary.lastPlayed.title} · ${summary.lastPlayed.artist||'未知歌手'}`;target.appendChild(recent);}
+
+      if(Number(summary.discoveries||0)>0){
+        const discoveries=document.createElement('p');
+        discoveries.className='insights-discovery';
+        discoveries.textContent=`近 30 天新发现 ${Number(summary.discoveries)} 首歌`;
+        target.appendChild(discoveries);
+      }
+
+      const daily=Array.isArray(summary.daily)?summary.daily:[];
+      if(daily.length){
+        const heading=document.createElement('h4');
+        heading.className='insights-section-title';
+        heading.textContent='最近 7 天';
+        target.appendChild(heading);
+        const byDay=new Map(daily.map(row=>[String(row.day),row]));
+        const weekLabels=['日','一','二','三','四','五','六'];
+        const entries=[];
+        for(let offset=6;offset>=0;offset-=1){
+          const date=new Date(Date.now()-offset*86400000+8*3600000);
+          const key=date.toISOString().slice(0,10);
+          const row=byDay.get(key);
+          entries.push({label:`周${weekLabels[date.getUTCDay()]}`,value:Number(row?.plays||0),text:String(Number(row?.plays||0))});
+        }
+        renderInsightsBars(target,entries);
+      }
+
+      const hours=Array.isArray(summary.hours)?summary.hours:[];
+      if(hours.length){
+        const heading=document.createElement('h4');
+        heading.className='insights-section-title';
+        heading.textContent='听歌时段';
+        target.appendChild(heading);
+        const buckets=[['凌晨',0],['早晨',4],['上午',8],['下午',12],['傍晚',16],['深夜',20]];
+        const counts=new Array(6).fill(0);
+        hours.forEach(row=>{
+          const hour=Number(row.hour)||0;
+          counts[Math.min(5,Math.floor(hour/4))]+=Number(row.plays)||0;
+        });
+        renderInsightsBars(target,buckets.map(([label],index)=>({label,value:counts[index],text:String(counts[index])})));
+      }
+
+      renderInsightsList(target,'最常听歌手',summary.topArtists||[],item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+      renderInsightsList(target,'最常听歌曲',summary.topTracks||[],item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+      renderInsightsList(target,'最常听专辑',summary.topAlbums||[],item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+
+      if(summary.lastPlayed){
+        const recent=document.createElement('p');
+        recent.className='account-muted';
+        recent.textContent=`最近播放：${summary.lastPlayed.title} · ${summary.lastPlayed.artist||'未知歌手'}`;
+        target.appendChild(recent);
+      }
     }
+
     async function loadAccountProfile(){
       if(!state.isAuthenticated){openLoginModal();return;}
       dom.accountProfileView.hidden=false;
@@ -3919,7 +4038,9 @@
     }
     function recordPlayedTrack(track){
       if(!state.isAuthenticated||!track?.uid)return;
-      fetch('/api/history',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:track.uid,title:track.title,artist:track.artist||'',source:track.source||'',cover:track.cover||''})}).catch(()=>{});
+      const audioDuration=Number(dom.audio.duration);
+      const duration=Math.round(isFinite(audioDuration)&&audioDuration>0?audioDuration:(Number(track.duration)||0));
+      fetch('/api/history',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:track.uid,title:track.title,artist:track.artist||'',source:track.source||'',cover:track.cover||'',album:track.album||'',duration})}).catch(()=>{});
     }
 
     // ===================== DOM / 事件绑定 =====================

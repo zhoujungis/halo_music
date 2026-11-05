@@ -66,10 +66,19 @@ CREATE TABLE IF NOT EXISTS music_play_history (
   artist TEXT NOT NULL DEFAULT '',
   source TEXT NOT NULL DEFAULT '',
   cover TEXT NOT NULL DEFAULT '',
+  duration INTEGER NOT NULL DEFAULT 0,
+  album TEXT NOT NULL DEFAULT '',
   played_at INTEGER NOT NULL,
   FOREIGN KEY (username) REFERENCES "user"(username) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_music_history_user_time ON music_play_history(username, played_at DESC);
+
+-- 榜单每日快照（CI 定时抓取，接口只读）
+CREATE TABLE IF NOT EXISTS toplist_cache (
+  chart TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS registration_ips (
   ip_hash TEXT PRIMARY KEY,

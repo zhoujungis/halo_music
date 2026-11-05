@@ -163,6 +163,9 @@ jobs:
           fi
           npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN source TEXT NOT NULL DEFAULT ''" || true
           npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN cover TEXT NOT NULL DEFAULT ''" || true
+          npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN duration INTEGER NOT NULL DEFAULT 0" || true
+          npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN album TEXT NOT NULL DEFAULT ''" || true
+          npx --yes wrangler@4 d1 execute halo-music-db --remote --command "CREATE TABLE IF NOT EXISTS toplist_cache (chart TEXT PRIMARY KEY, payload_json TEXT NOT NULL, updated_at INTEGER NOT NULL)" || true
       - name: Deploy Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

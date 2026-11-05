@@ -643,103 +643,8 @@ const NETEASE_TOPLIST_CHARTS = {
   new: { id: "3779629", name: "新歌榜" },
   rise: { id: "19723756", name: "飙升榜" },
 };
-const TOPLIST_CACHE_MS = 30 * 60 * 1000;
-
-function extractNeteaseIdFromUrl(rawUrl) {
-  if (!rawUrl) return "";
-  try {
-    return new URL(rawUrl, "https://music.163.com").searchParams.get("id") || "";
-  } catch {
-    const match = String(rawUrl).match(/[?&]id=(\d+)/);
-    return match ? match[1] : "";
-  }
-}
-
-function normalizeNeteaseToplistRows(rows, limit) {
-  const out = [];
-  for (const row of Array.isArray(rows) ? rows : []) {
-    if (!row || !row.name) continue;
-    const id = validNeteaseId(row.id) ? clean(row.id) : extractNeteaseIdFromUrl(row.url);
-    if (!validNeteaseId(id)) continue;
-    out.push({
-      id,
-      title: String(row.name).slice(0, 200),
-      artist: Array.isArray(row.artist)
-        ? row.artist.filter(Boolean).map(String).join(" / ").slice(0, 300)
-        : String(row.artist || "").slice(0, 300),
-      cover: String(row.pic || row.cover || row.coverUrl || "").slice(0, 1000),
-    });
-    if (out.length >= limit) break;
-  }
-  return out;
-}
-
-// Meting 供应商返回的封面是代理地址（多一次跳转、还压着供应商）。
-// 榜单缓存时顺手解析成 126 图床直链，浏览器直接拉图，快一个量级。
-async function resolveDirectCover(cover) {
-  const url = String(cover || "").trim();
-  if (!url || /music\.126\.net/.test(url)) return url;
-  try {
-    const response = await request(url, { redirect: "follow" }, API_TIMEOUT_MS);
-    response.body?.cancel();
-    if (response.url && /music\.126\.net/.test(response.url)) return response.url;
-  } catch (error) {
-    // 解析失败保留代理地址，浏览器多一跳而已。
-  }
-  return url;
-}
-
-async function resolveDirectCovers(rows) {
-  await Promise.all((rows || []).map(async (row) => {
-    row.cover = await resolveDirectCover(row.cover);
-  }));
-  return rows;
-}
-
-async function fetchNeteaseToplist(chartId, limit, env) {
-  for (const base of neteaseProviderUrls(env)) {
-    try {
-      const endpoint = new URL(base);
-      endpoint.search = new URLSearchParams({ type: "playlist", id: chartId, server: "netease" });
-      const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
-      const rows = normalizeNeteaseToplistRows(Array.isArray(data) ? data : data?.data, limit);
-      if (rows.length) return await resolveDirectCovers(rows);
-    } catch (error) {
-      console.warn("Netease toplist provider unavailable", error);
-    }
-  }
-  try {
-    const data = await readJson(await request(
-      `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(chartId)}`,
-      { headers: { referer: "https://music.163.com/" } },
-      API_TIMEOUT_MS,
-    ));
-    const tracks = Array.isArray(data?.result?.tracks) ? data.result.tracks : [];
-    const rows = tracks.slice(0, limit).map((track) => ({
-      id: clean(track?.id),
-      title: String(track?.name || "").slice(0, 200),
-      artist: Array.isArray(track?.artists)
-        ? track.artists.map((item) => item?.name).filter(Boolean).join(" / ").slice(0, 300)
-        : "",
-      cover: String(track?.album?.picUrl || "").slice(0, 1000),
-    })).filter((row) => validNeteaseId(row.id) && row.title);
-    if (rows.length) return rows;
-  } catch (error) {
-    console.warn("Netease direct toplist unavailable", error);
-  }
-  return [];
-}
-
-async function neteaseToplist(chartKey, limit, env) {
-  const chart = NETEASE_TOPLIST_CHARTS[chartKey];
-  if (!chart) return null;
-  const cacheKey = `toplist:netease:${chart.id}:${limit}`;
-  const cached = await searchCacheGet(cacheKey, env);
-  if (cached) return { name: chart.name, tracks: cached };
-  const tracks = await fetchNeteaseToplist(chart.id, limit, env);
-  if (tracks.length) await searchCacheSet(cacheKey, tracks, TOPLIST_CACHE_MS, env);
-  return { name: chart.name, tracks };
-}
+// 榜单数据由 CI 每天凌晨抓取写入 D1（见 scripts/refresh-toplists.mjs），
+// 接口只读数据库，不再在请求路径上调上游。
 
 function validNeteaseId(value) {
   return /^\d{1,20}$/.test(clean(value));
@@ -1571,10 +1476,25 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
 
     if (action === "netease_toplist") {
       const chartKey = clean(url.searchParams.get("chart")) || "hot";
+      const chart = NETEASE_TOPLIST_CHARTS[chartKey];
+      if (!chart) return json({ error: "未知榜单" }, 400);
       const toplistLimit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 10));
-      const data = await neteaseToplist(chartKey, toplistLimit, env);
-      if (!data) return json({ error: "未知榜单" }, 400);
-      return json({ code: 200, data });
+      let tracks = [];
+      let updatedAt = null;
+      if (env?.DB) {
+        try {
+          const row = await env.DB.prepare(
+            "SELECT payload_json, updated_at FROM toplist_cache WHERE chart = ?",
+          ).bind(chartKey).first();
+          if (row) {
+            tracks = JSON.parse(row.payload_json) || [];
+            updatedAt = Number(row.updated_at) || null;
+          }
+        } catch (error) {
+          console.warn("toplist read failed", error);
+        }
+      }
+      return json({ code: 200, data: { name: chart.name, tracks: tracks.slice(0, toplistLimit), updatedAt } });
     }
 
     if (action === "netease_audio") {
