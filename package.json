@@ -1,6 +1,6 @@
 {
   "name": "halo-music",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "private": true,
   "type": "module",
   "description": "HALO Music desktop client",
