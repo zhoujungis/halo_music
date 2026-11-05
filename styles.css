@@ -4064,3 +4064,17 @@ html[data-theme="dark"] .search-batch-select-all:checked {
 .insights-list li:nth-child(1) .insights-row-copy { color: var(--text); font-weight: 600; }
 .insights-stat:first-child { background: linear-gradient(180deg, var(--accent-soft), var(--surface-1) 72%); }
 .insights-chart .insights-bar-row { grid-template-columns: 34px 1fr 28px; }
+
+/* ------------------------------------------------ noscript intro */
+.noscript-intro {
+  max-width: 720px;
+  margin: 24px auto;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  color: var(--text-sub);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.noscript-intro h2 { margin: 0 0 6px; color: var(--text); font-size: 16px; }

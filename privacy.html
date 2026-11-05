@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>隐私政策 - Halo Music</title>
+  <meta name="description" content="Halo Music 隐私政策：说明我们收集哪些数据、如何使用与保留、第三方服务以及你的权利。" />
+  <link rel="canonical" href="https://music.zhoujun.dev/privacy.html" />
+  <link rel="stylesheet" href="/content.css" />
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/"><span class="mark">H</span>Halo Music</a>
+    <nav>
+      <a href="/">播放器</a>
+      <a href="/charts">榜单</a>
+      <a href="/guide.html">使用指南</a>
+      <a href="/about.html">关于</a>
+    </nav>
+  </header>
+  <main>
+    <h1>隐私政策</h1>
+    <p>本政策说明 Halo Music 当前实际的数据处理方式。继续使用本站即表示你理解以下内容。</p>
+
+    <h2>1. 我们收集什么</h2>
+    <ul>
+      <li><b>账号信息</b>：邮箱、用户名，以及密码的单向哈希（PBKDF2-SHA256，10 万次迭代加随机盐，不保存明文密码）；可选的显示名与头像图片地址。</li>
+      <li><b>Google 登录</b>：接收 Google 提供的账号标识、已验证邮箱、昵称与头像地址，不接触你的 Google 密码。</li>
+      <li><b>音乐库</b>：收藏的歌曲与自建歌单，以 JSON 形式整体保存。</li>
+      <li><b>听歌记录</b>：曲目标识、歌名、歌手、时长与播放时间，仅用于向你展示听歌分析，不用于广告投放或用户画像。</li>
+      <li><b>邮箱验证码</b>：只保存验证码哈希与过期时间。验证码 10 分钟后失效；发送频控用的 IP 哈希 24 小时后清理，仅用于限制请求频率。</li>
+      <li><b>缓存</b>：搜索关键词缓存约 45 秒，音源解析结果最长 365 天（用于加速播放与避免重复解析），匿名访问也会产生。</li>
+    </ul>
+
+    <h2>2. 浏览器本地存储</h2>
+    <p>主题偏好、歌单与播放队列的本地副本保存在 localStorage。登录态使用 HttpOnly Cookie <code>hm_token</code>（Secure、SameSite=Lax，30 天有效），页面脚本无法读取其内容。</p>
+
+    <h2>3. 第三方服务</h2>
+    <ul>
+      <li>Cloudflare：页面托管、接口运行与数据库存储。</li>
+      <li>Resend：发送注册验证码邮件。</li>
+      <li>Google：OAuth 登录。</li>
+      <li>Google AdSense：在本站展示广告，可能使用 Cookie 或类似技术记录你访问本站及其他网站的情况，用于展示个性化广告。你可以在 <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google 广告设置</a> 中管理或关闭个性化广告。</li>
+      <li>各音乐平台及其公开解析接口：搜索与播放；搜索关键词会发送给对应平台。</li>
+    </ul>
+
+    <h2>4. 数据用途</h2>
+    <p>上述数据仅用于登录、同步收藏与歌单、向你展示听歌分析、以及检索与播放内容。听歌记录只服务于你自己可见的统计功能，不用于广告投放、推荐营销或用户画像。</p>
+
+    <h2>5. 保留、导出与删除</h2>
+    <p>账号数据保留到你主动注销。注销后账号、收藏、歌单、听歌记录与会话会被删除，且无法恢复；底层备份副本可能在一段时间内仍保留历史快照，到期后自动清除。如需导出自己的收藏、歌单与听歌记录，可通过 <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a> 提出请求。</p>
+
+    <h2>6. 安全</h2>
+    <p>全站使用 HTTPS，会话 Cookie 设置了 HttpOnly、Secure 与 SameSite，密码只保存哈希。任何互联网服务都无法保证绝对安全，请不要复用其他网站的重要密码。</p>
+
+    <h2>7. 未成年人</h2>
+    <p>本站不面向 14 岁以下儿童，也不会刻意收集其个人信息。</p>
+
+    <h2>8. 变更与联系</h2>
+    <p>政策如有变更会直接更新在本页；有疑问请通过 <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a> 联系。</p>
+  </main>
+  <footer class="site">
+    <p>Halo Music · <a href="/about.html">关于本站</a> · <a href="/guide.html">使用指南</a> · <a href="/terms.html">服务条款</a> · <a href="/disclaimer.html">免责声明</a></p>
+  </footer>
+</body>
+</html>
