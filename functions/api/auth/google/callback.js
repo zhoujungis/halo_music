@@ -1,10 +1,8 @@
 import {
-  clientIp,
   createPasswordSalt,
   createSession,
   hashPassword,
   normalizeEmail,
-  registrationIpHash,
   sessionCookie,
   usernameFromEmail,
 } from "../../_auth.js";
@@ -126,33 +124,21 @@ export async function onRequestGet({ request, env }) {
         WHERE username = ?
       `).bind(googleSub, avatarUrl, displayName || account.username, account.username).run();
     } else {
-      const ipHash = await registrationIpHash(clientIp(request), env);
-      const ipUsed = await env.DB.prepare("SELECT username FROM registration_ips WHERE ip_hash = ?")
-        .bind(ipHash).first();
-      if (ipUsed) return fail("google_ip_used");
-
       const username = await uniqueUsername(env, email);
       const salt = createPasswordSalt();
       const passwordHash = await hashPassword(crypto.randomUUID(), salt);
       const now = Date.now();
 
-      let results;
       try {
-        results = await env.DB.batch([
-          env.DB.prepare(
-            "INSERT INTO registration_ips (ip_hash, username, created_at) VALUES (?, ?, ?) ON CONFLICT(ip_hash) DO NOTHING",
-          ).bind(ipHash, username, now),
-          env.DB.prepare(`
-            INSERT INTO "user" (username, email, display_name, avatar_url, google_sub, password_hash, password_salt, created_at, last_login_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).bind(username, email, displayName || username, avatarUrl, googleSub, passwordHash, salt, now, now),
-        ]);
+        await env.DB.prepare(`
+          INSERT INTO "user" (username, email, display_name, avatar_url, google_sub, password_hash, password_salt, created_at, last_login_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(username, email, displayName || username, avatarUrl, googleSub, passwordHash, salt, now, now).run();
       } catch (error) {
         console.error("Google account creation failed", error);
         return fail("google_failed");
       }
 
-      if (!Number(results?.[0]?.meta?.changes || 0)) return fail("google_ip_used");
       account = { username };
     }
 

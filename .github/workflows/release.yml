@@ -61,8 +61,22 @@ jobs:
           git tag -fa "v$NEXT" -m "HALO Music $NEXT" "$SHA"
           git push origin "refs/tags/v$NEXT" --force
 
-  windows:
+  test:
     needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  windows:
+    needs: [prepare, test]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +103,7 @@ jobs:
             release/*.blockmap
 
   android:
-    needs: prepare
+    needs: [prepare, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,7 +144,7 @@ jobs:
           path: artifacts/*.apk
 
   release:
-    needs: [prepare, windows, android]
+    needs: [prepare, test, windows, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,6 +156,17 @@ jobs:
           merge-multiple: true
       - name: List release assets
         run: ls -lh artifacts
+      - name: Ensure D1 columns (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '184aee957761f720ea0b9b737bdb68be' }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN is not configured; skipping D1 column migration."
+            exit 0
+          fi
+          npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN source TEXT NOT NULL DEFAULT ''" || true
+          npx --yes wrangler@4 d1 execute halo-music-db --remote --command "ALTER TABLE music_play_history ADD COLUMN cover TEXT NOT NULL DEFAULT ''" || true
       - name: Deploy Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

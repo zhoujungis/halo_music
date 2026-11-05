@@ -1,5 +1,4 @@
 import {
-  clientIp,
   createPasswordSalt,
   createSession,
   hashPassword,
@@ -7,7 +6,6 @@ import {
   isValidUsername,
   json,
   normalizeEmail,
-  registrationIpHash,
   sessionCookie,
 } from "./_auth.js";
 import { verificationCodeHash } from "./_email.js";
@@ -66,22 +64,11 @@ export async function onRequestPost({ request, env }) {
       .bind(username).first();
     if (usernameTaken) return duplicateResponse("该用户名已被使用");
 
-    const ipHash = await registrationIpHash(clientIp(request), env);
-    const ipUsed = await env.DB.prepare("SELECT username FROM registration_ips WHERE ip_hash = ?")
-      .bind(ipHash).first();
-    if (ipUsed) {
-      return json({ error: "当前网络已注册过账号，每个 IP 仅可注册一个账号" }, 403);
-    }
-
     const salt = createPasswordSalt();
     const passwordHash = await hashPassword(password, salt);
 
-    let results;
     try {
-      results = await env.DB.batch([
-        env.DB.prepare(
-          "INSERT INTO registration_ips (ip_hash, username, created_at) VALUES (?, ?, ?) ON CONFLICT(ip_hash) DO NOTHING",
-        ).bind(ipHash, username, now),
+      await env.DB.batch([
         env.DB.prepare(`
           INSERT INTO "user" (username, email, display_name, avatar_url, password_hash, password_salt, created_at, last_login_at)
           VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
@@ -95,10 +82,6 @@ export async function onRequestPost({ request, env }) {
       if (/UNIQUE constraint failed: user\.email/i.test(message)) return duplicateResponse("该邮箱已注册，请直接登录");
       if (/UNIQUE constraint failed: user\.username/i.test(message)) return duplicateResponse("该用户名已被使用");
       return json({ error: "注册失败，请稍后重试" }, 503);
-    }
-
-    if (!Number(results?.[0]?.meta?.changes || 0)) {
-      return json({ error: "当前网络已注册过账号，每个 IP 仅可注册一个账号" }, 403);
     }
 
     let token;

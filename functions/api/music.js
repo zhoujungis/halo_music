@@ -373,14 +373,14 @@ function qqAudioCacheKey(mid) {
   return `qq:${mid}`;
 }
 
-// JOOX（腾讯旗下，港台/东南亚曲库）通过 Meting 兼容接口取数据。
+// QQ源（腾讯旗下，港台/东南亚曲库）通过 Meting 兼容接口取数据。
 // 搜索返回歌曲列表，取流要再带结果序号 n 请求一次详情拿播放链接。
 // 地址与 token 都由 Cloudflare 环境变量提供，不在代码里写死。
 function jooxEndpoint(env) {
   const base = String(env?.JOOX_API_URL || "").trim();
   const token = String(env?.JOOX_TOKEN || "").trim();
   if (!base || !token) {
-    throw Object.assign(new Error("JOOX 接口未配置（JOOX_API_URL / JOOX_TOKEN）"), { status: 503 });
+    throw Object.assign(new Error("QQ源 接口未配置（JOOX_API_URL / JOOX_TOKEN）"), { status: 503 });
   }
   return { base, token };
 }
@@ -634,6 +634,111 @@ async function searchNetease(keyword, limit, env) {
     }
   }
   return [];
+}
+
+// 云音乐公开榜单：热歌/新歌/飙升都是公开歌单。优先走 Meting 供应商的
+// type=playlist；供应商不可用时直连 music.163.com 的歌单详情接口兜底。
+const NETEASE_TOPLIST_CHARTS = {
+  hot: { id: "3778678", name: "热歌榜" },
+  new: { id: "3779629", name: "新歌榜" },
+  rise: { id: "19723756", name: "飙升榜" },
+};
+const TOPLIST_CACHE_MS = 30 * 60 * 1000;
+
+function extractNeteaseIdFromUrl(rawUrl) {
+  if (!rawUrl) return "";
+  try {
+    return new URL(rawUrl, "https://music.163.com").searchParams.get("id") || "";
+  } catch {
+    const match = String(rawUrl).match(/[?&]id=(\d+)/);
+    return match ? match[1] : "";
+  }
+}
+
+function normalizeNeteaseToplistRows(rows, limit) {
+  const out = [];
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row || !row.name) continue;
+    const id = validNeteaseId(row.id) ? clean(row.id) : extractNeteaseIdFromUrl(row.url);
+    if (!validNeteaseId(id)) continue;
+    out.push({
+      id,
+      title: String(row.name).slice(0, 200),
+      artist: Array.isArray(row.artist)
+        ? row.artist.filter(Boolean).map(String).join(" / ").slice(0, 300)
+        : String(row.artist || "").slice(0, 300),
+      cover: String(row.pic || row.cover || row.coverUrl || "").slice(0, 1000),
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+// Meting 供应商返回的封面是代理地址（多一次跳转、还压着供应商）。
+// 榜单缓存时顺手解析成 126 图床直链，浏览器直接拉图，快一个量级。
+async function resolveDirectCover(cover) {
+  const url = String(cover || "").trim();
+  if (!url || /music\.126\.net/.test(url)) return url;
+  try {
+    const response = await request(url, { redirect: "follow" }, API_TIMEOUT_MS);
+    response.body?.cancel();
+    if (response.url && /music\.126\.net/.test(response.url)) return response.url;
+  } catch (error) {
+    // 解析失败保留代理地址，浏览器多一跳而已。
+  }
+  return url;
+}
+
+async function resolveDirectCovers(rows) {
+  await Promise.all((rows || []).map(async (row) => {
+    row.cover = await resolveDirectCover(row.cover);
+  }));
+  return rows;
+}
+
+async function fetchNeteaseToplist(chartId, limit, env) {
+  for (const base of neteaseProviderUrls(env)) {
+    try {
+      const endpoint = new URL(base);
+      endpoint.search = new URLSearchParams({ type: "playlist", id: chartId, server: "netease" });
+      const data = await readJson(await request(endpoint.href, {}, API_TIMEOUT_MS));
+      const rows = normalizeNeteaseToplistRows(Array.isArray(data) ? data : data?.data, limit);
+      if (rows.length) return await resolveDirectCovers(rows);
+    } catch (error) {
+      console.warn("Netease toplist provider unavailable", error);
+    }
+  }
+  try {
+    const data = await readJson(await request(
+      `https://music.163.com/api/playlist/detail?id=${encodeURIComponent(chartId)}`,
+      { headers: { referer: "https://music.163.com/" } },
+      API_TIMEOUT_MS,
+    ));
+    const tracks = Array.isArray(data?.result?.tracks) ? data.result.tracks : [];
+    const rows = tracks.slice(0, limit).map((track) => ({
+      id: clean(track?.id),
+      title: String(track?.name || "").slice(0, 200),
+      artist: Array.isArray(track?.artists)
+        ? track.artists.map((item) => item?.name).filter(Boolean).join(" / ").slice(0, 300)
+        : "",
+      cover: String(track?.album?.picUrl || "").slice(0, 1000),
+    })).filter((row) => validNeteaseId(row.id) && row.title);
+    if (rows.length) return rows;
+  } catch (error) {
+    console.warn("Netease direct toplist unavailable", error);
+  }
+  return [];
+}
+
+async function neteaseToplist(chartKey, limit, env) {
+  const chart = NETEASE_TOPLIST_CHARTS[chartKey];
+  if (!chart) return null;
+  const cacheKey = `toplist:netease:${chart.id}:${limit}`;
+  const cached = await searchCacheGet(cacheKey, env);
+  if (cached) return { name: chart.name, tracks: cached };
+  const tracks = await fetchNeteaseToplist(chart.id, limit, env);
+  if (tracks.length) await searchCacheSet(cacheKey, tracks, TOPLIST_CACHE_MS, env);
+  return { name: chart.name, tracks };
 }
 
 function validNeteaseId(value) {
@@ -1216,7 +1321,7 @@ async function neteaseLyricText(id, env) {
   return "";
 }
 
-// JOOX 偶尔不返回歌词：用歌名 + 歌手在 QQ / 网易云再找一次。
+// QQ源 偶尔不返回歌词：用歌名 + 歌手在 QQ / 网易云再找一次。
 async function lookupLyric(keyword, title, artist, duration, env) {
   const targetTitle = title || keyword;
   const term = [targetTitle, artist].filter(Boolean).join(" ").trim();
@@ -1464,6 +1569,14 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       return json({ code: 200, data });
     }
 
+    if (action === "netease_toplist") {
+      const chartKey = clean(url.searchParams.get("chart")) || "hot";
+      const toplistLimit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 10));
+      const data = await neteaseToplist(chartKey, toplistLimit, env);
+      if (!data) return json({ error: "未知榜单" }, 400);
+      return json({ code: 200, data });
+    }
+
     if (action === "netease_audio") {
       const id = clean(url.searchParams.get("id"));
       if (!validNeteaseId(id)) return json({ error: "网易云歌曲 ID 无效" }, 400);
@@ -1491,7 +1604,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       return await proxyNeteaseLyric(id, env);
     }
 
-    // JOOX 接口不带封面。用歌名 + 歌手在 QQ / 网易云公开搜索里找同一首，
+    // QQ源 接口不带封面。用歌名 + 歌手在 QQ / 网易云公开搜索里找同一首，
     // 复用它们返回的封面地址（QQ 的 y.gtimg.cn 图片可以直接加载）。
     if (action === "cover_lookup") {
       const title = clean(url.searchParams.get("title"));
@@ -1555,10 +1668,10 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
         return json({ code: 200, data: { lyric } });
       }
       const stream = pickJooxStream(data["播放链接"]);
-      if (!stream) throw new Error("JOOX 没有可播放的音质");
+      if (!stream) throw new Error("QQ源 没有可播放的音质");
       const download = await beginDownload(requestObject, env, "joox");
       if (download instanceof Response) return download;
-      // 播放直接跳转到 JOOX CDN：走 Worker 代理时首字节约 3s、吞吐不到 1.5MB/s，
+      // 播放直接跳转到 QQ源 CDN：走 Worker 代理时首字节约 3s、吞吐不到 1.5MB/s，
       // 浏览器起播会明显卡顿。下载仍走代理，保证配额与附件头生效。
       if (!download) {
         return new Response(null, {
@@ -1573,7 +1686,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
         }, AUDIO_TIMEOUT_MS);
         if (!isAudioResponse(upstream)) {
           upstream.body?.cancel();
-          throw new Error(`JOOX stream unavailable (${upstream.status})`);
+          throw new Error(`QQ源 stream unavailable (${upstream.status})`);
         }
         const audio = audioResponse(upstream, "joox", stream.container);
         return finishDownload(audio, download, requestObject);

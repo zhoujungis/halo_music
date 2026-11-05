@@ -68,12 +68,6 @@ export async function onRequestPost({ request, env }) {
       .bind(email).first();
     if (account) return json({ error: "该邮箱已注册，请直接登录" }, 409);
 
-    const ipUsed = await env.DB.prepare("SELECT username FROM registration_ips WHERE ip_hash = ?")
-      .bind(ipHash).first();
-    if (ipUsed) {
-      return json({ error: "当前网络已注册过账号，每个 IP 仅可注册一个账号" }, 403);
-    }
-
     const existing = await env.DB.prepare(
       "SELECT created_at FROM email_verification_codes WHERE email = ? AND purpose = 'register'",
     ).bind(email).first();

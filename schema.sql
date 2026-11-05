@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS music_play_history (
   track_uid TEXT NOT NULL,
   title TEXT NOT NULL,
   artist TEXT NOT NULL DEFAULT '',
+  source TEXT NOT NULL DEFAULT '',
+  cover TEXT NOT NULL DEFAULT '',
   played_at INTEGER NOT NULL,
   FOREIGN KEY (username) REFERENCES "user"(username) ON DELETE CASCADE
 );

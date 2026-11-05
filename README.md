@@ -264,9 +264,9 @@ flowchart LR
 | `music_sessions` | `token`, `username`, `expires_at` | 30 天登录会话 |
 | `music_libraries` | `username`, `library_json`, `updated_at` | 用户收藏和自建歌单 JSON |
 | `email_verification_codes` | `email`, `purpose`, `code_hash`, `request_ip`, `expires_at`, `attempts` | 一次性邮箱验证码（只存哈希） |
-| `registration_ips` | `ip_hash`, `username`, `created_at` | 单 IP 单账号限制 |
+| `registration_ips` | `ip_hash`, `username`, `created_at` | （已弃用）历史注册 IP 记录，新注册不再检查 |
 | `auth_rate_limits` | `key`, `window_started_at`, `count` | 验证码发送频率限制 |
-| `music_play_history` | `username`, `track_uid`, `title`, `played_at` | 听歌历史与总结 |
+| `music_play_history` | `username`, `track_uid`, `title`, `artist`, `source`, `cover`, `played_at` | 听歌历史、听歌总结与最近播放 |
 | `music_cache` | `key`, `value_json`, `expires_at` | 音频/详情共享缓存 |
 | `search_cache` | `key`, `value_json`, `expires_at` | 搜索结果短期缓存 |
 
@@ -293,9 +293,9 @@ flowchart LR
 
 - 邮箱注册先请求 `/api/email-code`，服务端通过 Resend 发送 6 位验证码；验证码 10 分钟有效、最多尝试 5 次，数据库只保存 `SHA-256(email:code)`。
 - 同一邮箱 60 秒内不可重复发送，滚动 1 小时内最多 5 次；同一来源 IP 每小时最多 10 次。
-- `registration_ips` 以哈希形式记录首次注册 IP，邮箱注册和 Google 首次建号都会检查，确保一个 IP 只能创建一个账号。注销账号时会释放该记录。
+- 注册不再限制同一网络（IP）的账号数量；校园网、公司网下的多位用户可以各自注册。防滥用依赖邮箱验证码及其频控。
 - Google 登录使用服务端 OAuth 2.0 授权码流程，`state` 通过短期 HttpOnly Cookie 校验；只接受 Google 标记为已验证的邮箱。
-- Google 邮箱与已有邮箱账号一致时会自动关联；Google 新用户会生成唯一用户名，并同样受单 IP 限制。
+- Google 邮箱与已有邮箱账号一致时会自动关联；Google 新用户会生成唯一用户名。
 
 ### Electron 安全边界
 
@@ -382,8 +382,8 @@ database_id = "替换为你的 D1 database_id"
 
 ```toml
 [vars]
-QQ_SOURCE_URLS = "https://your-qq-source.example/search,https://your-qq-backup.example/search"
-NETEASE_SOURCE_URLS = "https://musicapi.qijieya.cn/meting,https://your-netease-backup.example/meting"
+# 网易云取流源：逗号分隔，按顺序尝试
+NETEASE_SOURCE_URLS = "https://your-netease-source.example/meting,https://your-netease-backup.example/meting"
 ```
 
 注册相关变量属于密钥，不要提交到仓库。生产环境请在 Pages 控制台设置，或使用：
@@ -537,7 +537,7 @@ npx electron . --url=https://music.zhoujun.dev
 
 ### 为什么收藏和歌单需要登录？
 
-搜索、浏览和播放是公开能力；收藏、歌单和个人信息需要登录。打开登录弹窗后可以使用邮箱验证码注册、Google 账号登录，或使用已有账号密码登录。每个 IP 只能注册一个账号；如果当前网络已注册过，请直接登录原账号。
+搜索、浏览和播放是公开能力；收藏、歌单和个人信息需要登录。打开登录弹窗后可以使用邮箱验证码注册、Google 账号登录，或使用已有账号密码登录。注册需要邮箱验证码，并有频控防滥用；同一网络（如校园网、公司网）下的多位用户可以各自注册账号。
 
 ### 为什么收藏刷新后还在，但另一台设备没有？
 

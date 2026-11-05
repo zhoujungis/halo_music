@@ -6,15 +6,19 @@ pages_build_output_dir = "."
 # Username allowlist for the read-only /admin dashboard.
 ADMIN_USERNAME = "admin"
 # Keep this value in sync with package.json for deployments.
-HALO_MUSIC_VERSION = "2.0.23"
+HALO_MUSIC_VERSION = "2.2.1"
 # Verified Resend sender for Halo Music. RESEND_API_KEY is a secret and must be
 # set with `wrangler pages secret put RESEND_API_KEY`.
 RESEND_FROM = "no-reply@music.zhoujun.dev"
 RESEND_SENDER_NAME = "HALO Music"
 # Music source configuration. The "QQ Music" entry in the UI is backed by
 # JOOX now, so only the Netease and JOOX endpoints are used.
+# Provider order matters for Netease: the first provider that answers wins.
+# 2026-11-05 probe: qijieya is back up and serves FULL streams (12MB for a song
+# the previous first provider gave as a 30s preview); musicapi.qijieya is still
+# dead (521) and stays removed.
 # Values here are deployment configuration, not hardcoded in Functions.
-NETEASE_SOURCE_URLS = "https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
+NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
 JOOX_API_URL = "https://apicx.asia/api/joox_music"
 JOOX_TOKEN = "f84ao9lMF_q7husBWRfgUw"
 

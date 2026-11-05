@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Halo音乐</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2.0.23" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2.0.23" />
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2.0.23" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2.2.1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2.2.1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2.2.1" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f7f7f2" />
   <meta name="referrer" content="no-referrer" />
@@ -16,8 +16,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Halo音乐" />
   <script>try{var _t=localStorage.getItem('halo-music-theme')||'light';document.documentElement.dataset.theme=_t;var _m=document.querySelector('meta[name="theme-color"]');if(_m)_m.setAttribute('content',_t==='light'?'#f7f7f2':'#18201c');}catch(e){}</script>
-  <meta name="app-version" content="2.0.23" />
-  <link rel="stylesheet" href="styles.css?v=2.0.23" />
+  <meta name="app-version" content="2.2.1" />
+  <link rel="stylesheet" href="styles.css?v=2.2.1" />
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
@@ -26,7 +26,7 @@
     <header class="ripple-target">
       <div class="logo-area">
         <div class="brand-mark ripple-target">
-          <img src="favicon.svg?v=2.0.23" alt="HALO Music" class="brand-mark-img">
+          <img src="favicon.svg?v=2.2.1" alt="HALO Music" class="brand-mark-img">
         </div>
         <div class="title-text">
           <h1 data-i18n="appTitle">Halo音乐</h1>
@@ -35,6 +35,7 @@
       <div class="header-controls">
         <nav class="desktop-nav" aria-label="主导航">
           <button type="button" data-desktop-view="search">发现</button>
+          <button type="button" data-desktop-view="toplist">榜单</button>
           <button type="button" data-desktop-view="lyrics" aria-current="page">正在播放</button>
           <button type="button" data-desktop-view="queue">播放队列</button>
           <button type="button" data-desktop-view="me">我的音乐</button>
@@ -55,12 +56,6 @@
     <main class="layout">
       <!-- 左：搜索 -->
       <section class="panel search-panel ripple-target">
-        <div class="panel-header">
-          <div class="panel-title">
-            <span class="icon">⌕</span>
-            <span data-i18n="searchTitle">歌曲搜索</span>
-          </div>
-        </div>
         <div class="search-panel-content">
           <div class="search-row ripple-target">
             <span class="search-prefix" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span>
@@ -91,13 +86,6 @@
 
       <!-- 中：播放器 -->
       <section class="panel player-panel ripple-target">
-        <div class="panel-header">
-          <div class="panel-title">
-            <span class="icon">🎧</span>
-            <span data-i18n="playerTitle">正在播放</span>
-          </div>
-        </div>
-
         <div class="player-top">
           <div class="cover-wrapper" role="button" tabindex="0" aria-label="Play or pause">
             <img id="cover-img" src="" alt="cover" />
@@ -164,13 +152,16 @@
         <audio id="audio" preload="auto" aria-hidden="true"></audio>
       </section>
 
+      <!-- 榜单 -->
+      <section class="panel toplist-panel">
+        <div class="toplist-panel-content">
+          <div id="toplist-page" class="toplist-page"></div>
+        </div>
+      </section>
       <!-- 右：播放列表 -->
       <section class="panel playlist-panel ripple-target">
         <div class="panel-header">
-          <div class="panel-title">
-            <button id="mobile-playlist-back" class="mobile-playlist-back" type="button" title="返回歌单" aria-label="返回歌单">←</button>
-            <span data-i18n="playlistTitle">播放列表</span>
-          </div>
+          <button id="mobile-playlist-back" class="mobile-playlist-back" type="button" title="返回歌单" aria-label="返回歌单">←</button>
           <button id="mobile-playlist-delete" class="mobile-playlist-delete" type="button" title="删除歌单" aria-label="删除歌单">×</button>
           <div class="playlist-tabs ripple-target">
             <div class="playlist-tab active" data-tab="results" data-i18n="tabResults">正在播放</div>
@@ -199,6 +190,7 @@
             <div id="playlist-select-row" class="playlist-select-row" style="display:none;">
               <div class="playlist-file-actions">
                 <button id="delete-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="deletePlaylist">删除歌单</button>
+                <button id="edit-playlist-btn" class="btn btn-ghost ripple-target">编辑歌单</button>
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
@@ -245,6 +237,9 @@
       <button type="button" data-mobile-view="search" aria-current="page">
         <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span><small>搜索</small>
       </button>
+      <button type="button" data-mobile-view="toplist">
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 20v-8M12 20V5M19 20v-5"/></svg></span><small>榜单</small>
+      </button>
       <button type="button" data-mobile-view="lyrics">
         <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/></svg></span><small>正在播放</small>
       </button>
@@ -280,6 +275,7 @@
       </div>
       <p class="modal-desc" data-i18n="modalNewPlaylistDesc">给你的歌单取一个可爱的名字吧～</p>
       <input id="playlist-name-input" type="text" placeholder="例如：通勤歌单 / 宝可梦歌单" />
+      <input id="playlist-desc-input" type="text" maxlength="200" placeholder="一句话介绍这张歌单（可选）" />
       <div class="modal-actions">
         <button id="playlist-cancel-btn" class="btn btn-ghost ripple-target" data-i18n="modalCancel">取消</button>
         <button id="playlist-confirm-btn" class="btn btn-secondary ripple-target" data-i18n="modalConfirm">确定</button>
@@ -550,7 +546,7 @@
         <p id="register-error" class="auth-error" role="alert" hidden></p>
         <div class="login-actions"><button id="register-submit" class="btn ripple-target" type="submit">创建账号</button></div>
       </form>
-      <p class="login-notice">验证码由 Resend 发送，10 分钟内有效；每个 IP 仅可注册一个账号。</p>
+      <p class="login-notice">验证码由 Resend 发送，10 分钟内有效。</p>
     </div>
   </div>
 
@@ -596,7 +592,7 @@
         <h3>技术说明</h3>
         <p>前端是纯静态页面，接口由 Cloudflare Pages Functions 提供，账号与音乐数据存放在 Cloudflare D1。iPhone 上不需要安装包，通过 Safari「添加到主屏幕」即可获得全屏体验。</p>
         <h3>版本与反馈</h3>
-        <p>当前版本 v2.0.23。问题与建议请提交到 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>。</p>
+        <p>当前版本 v2.2.1。问题与建议请提交到 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>。</p>
       </div>
     </div>
   </div>
@@ -608,7 +604,7 @@
         <button id="privacy-close" class="modal-close-btn" type="button" data-i18n-title="infoClose" aria-label="关闭" title="关闭">×</button>
       </div>
       <div class="info-body">
-        <p class="info-footnote">随 v2.0.23 更新。这份说明描述的是 Halo Music 当前实际的数据处理方式。</p>
+        <p class="info-footnote">随 v2.2.1 更新。这份说明描述的是 Halo Music 当前实际的数据处理方式。</p>
         <h3>1. 我们收集什么</h3>
         <ul>
           <li><b>账号信息</b>：邮箱、用户名，以及密码的单向哈希（PBKDF2-SHA256，10 万次迭代加随机盐，不保存明文密码）；可选的显示名与头像图片地址。</li>
@@ -667,6 +663,6 @@
   </div>
   <div id="toast"></div>
 
-  <script src="major.js?v=2.0.23"></script>
+  <script src="major.js?v=2.2.1"></script>
 </body>
 </html>

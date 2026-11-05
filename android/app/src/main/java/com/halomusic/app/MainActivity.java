@@ -2,23 +2,33 @@ package com.halomusic.app;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import java.lang.ref.WeakReference;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
   private static final String APP_URL = "https://music.zhoujun.dev";
   private static final int FILE_CHOOSER_REQUEST = 1001;
+  private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
+
+  /** PlaybackService 通过它把通知栏/耳机的播放指令回注到页面。 */
+  static WeakReference<WebView> ACTIVE_WEBVIEW = new WeakReference<>(null);
 
   private WebView webView;
   private ValueCallback<Uri[]> filePathCallback;
+  private boolean notificationPermissionRequested;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +43,8 @@ public class MainActivity extends Activity {
     settings.setMediaPlaybackRequiresUserGesture(false);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setSupportMultipleWindows(false);
+
+    webView.addJavascriptInterface(new HaloNativeBridge(), "haloNative");
 
     webView.setWebViewClient(new WebViewClient() {
       @Override
@@ -64,6 +76,7 @@ public class MainActivity extends Activity {
 
     setContentView(webView);
     webView.loadUrl(APP_URL);
+    ACTIVE_WEBVIEW = new WeakReference<>(webView);
   }
 
   private boolean openExternalIfNeeded(Uri uri) {
@@ -129,24 +142,51 @@ public class MainActivity extends Activity {
     super.onBackPressed();
   }
 
-  @Override
-  protected void onPause() {
-    if (webView != null) webView.onPause();
-    super.onPause();
-  }
-
-  @Override
-  protected void onResume() {
-    super.onResume();
-    if (webView != null) webView.onResume();
-  }
+  // 注意：不要重写 onPause() 调 webView.onPause()。那会连同音频一起挂起，
+  // 是过去「切后台就停播」的直接原因；后台播放由 PlaybackService 前台服务保障。
 
   @Override
   protected void onDestroy() {
+    ACTIVE_WEBVIEW = new WeakReference<>(null);
     if (webView != null) {
       webView.destroy();
       webView = null;
     }
     super.onDestroy();
+  }
+
+  private void ensureNotificationPermission() {
+    if (Build.VERSION.SDK_INT < 33 || notificationPermissionRequested) return;
+    notificationPermissionRequested = true;
+    if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+      requestPermissions(new String[] { "android.permission.POST_NOTIFICATIONS" }, REQUEST_NOTIFICATION_PERMISSION);
+    }
+  }
+
+  /** 页面通过 window.haloNative.playbackState(json) 上报播放状态。 */
+  private class HaloNativeBridge {
+    @JavascriptInterface
+    public void playbackState(String payload) {
+      boolean playing = false;
+      String title = "", artist = "", album = "", cover = "";
+      double position = 0, duration = 0;
+      try {
+        JSONObject data = new JSONObject(payload == null ? "{}" : payload);
+        playing = data.optBoolean("playing", false);
+        title = data.optString("title", "");
+        artist = data.optString("artist", "");
+        album = data.optString("album", "");
+        cover = data.optString("cover", "");
+        position = data.optDouble("position", 0);
+        duration = data.optDouble("duration", 0);
+      } catch (Exception ignored) {
+        // 解析失败按空状态处理，不影响网页播放本身。
+      }
+      PlaybackService.updateWebState(playing, title, artist, album, cover, position, duration);
+      if (playing) {
+        runOnUiThread(MainActivity.this::ensureNotificationPermission);
+        PlaybackService.ensureStarted(MainActivity.this);
+      }
+    }
   }
 }
