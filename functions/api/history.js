@@ -37,7 +37,7 @@ export async function onRequestGet({ request, env }) {
       "SELECT COUNT(*) AS plays, COUNT(DISTINCT track_uid) AS unique_tracks, COALESCE(SUM(duration), 0) AS total_seconds FROM music_play_history WHERE username = ?",
     ).bind(username).first(),
     env.DB.prepare(
-      `SELECT track_uid, title, artist, COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds
+      `SELECT track_uid, title, artist, MAX(cover) AS cover, COUNT(*) AS plays, COALESCE(SUM(duration), 0) AS seconds
        FROM music_play_history WHERE username = ?
        GROUP BY track_uid ORDER BY plays DESC, MAX(played_at) DESC LIMIT 5`,
     ).bind(username).all(),
@@ -47,7 +47,7 @@ export async function onRequestGet({ request, env }) {
        GROUP BY artist ORDER BY plays DESC LIMIT 5`,
     ).bind(username).all(),
     env.DB.prepare(
-      `SELECT album, artist, COUNT(*) AS plays
+      `SELECT album, artist, MAX(cover) AS cover, COUNT(*) AS plays
        FROM music_play_history WHERE username = ? AND album != ''
        GROUP BY album ORDER BY plays DESC LIMIT 5`,
     ).bind(username).all(),

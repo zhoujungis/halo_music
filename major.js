@@ -3861,6 +3861,23 @@
       return `${minutes} 分钟`;
     }
 
+    // 同一歌手/专辑常有繁简两种写法（周杰伦/周杰倫），展示前按归一化名称合并。
+    function mergeRankedRows(rows,keyFn){
+      const map=new Map();
+      (rows||[]).forEach(row=>{
+        const key=keyFn(row)||`${row.title||''}|${row.artist||''}`;
+        const existing=map.get(key);
+        if(existing){
+          existing.plays=Number(existing.plays||0)+Number(row.plays||0);
+          existing.seconds=Number(existing.seconds||0)+Number(row.seconds||0);
+          if(!existing.cover&&row.cover)existing.cover=row.cover;
+        }else{
+          map.set(key,{...row,plays:Number(row.plays||0),seconds:Number(row.seconds||0)});
+        }
+      });
+      return [...map.values()].sort((a,b)=>b.plays-a.plays);
+    }
+
     function renderInsightsBars(container,entries){
       const max=Math.max(1,...entries.map(entry=>Number(entry.value)||0));
       const bars=document.createElement('div');
@@ -3885,7 +3902,7 @@
       container.appendChild(bars);
     }
 
-    function renderInsightsList(container,title,items,describe){
+    function renderInsightsList(container,title,items,options={}){
       if(!items||!items.length)return;
       const card=document.createElement('div');
       card.className='insights-list-card';
@@ -3898,29 +3915,30 @@
         const li=document.createElement('li');
         const rank=document.createElement('b');
         rank.textContent=String(index+1);
+        li.appendChild(rank);
+        const cover=options.coverKey?coverUrlFor(item[options.coverKey],80):'';
+        if(cover){
+          const img=document.createElement('img');
+          img.className='insights-row-cover';
+          img.src=cover;
+          img.alt='';
+          img.referrerPolicy='no-referrer';
+          img.loading='lazy';
+          li.appendChild(img);
+        }else if(options.initialKey){
+          const initial=document.createElement('span');
+          initial.className='insights-row-initial';
+          initial.textContent=String(item[options.initialKey]||'?').slice(0,1);
+          li.appendChild(initial);
+        }
         const copy=document.createElement('span');
-        copy.textContent=describe(item);
-        li.append(rank,copy);
+        copy.className='insights-row-copy';
+        copy.textContent=options.describe?options.describe(item):'';
+        li.appendChild(copy);
         list.appendChild(li);
       });
       card.append(heading,list);
       container.appendChild(card);
-    }
-
-    // 同一歌手/专辑常有繁简两种写法（周杰伦/周杰倫），展示前按归一化名称合并。
-    function mergeRankedRows(rows,keyFn){
-      const map=new Map();
-      (rows||[]).forEach(row=>{
-        const key=keyFn(row)||`${row.title||''}|${row.artist||''}`;
-        const existing=map.get(key);
-        if(existing){
-          existing.plays=Number(existing.plays||0)+Number(row.plays||0);
-          existing.seconds=Number(existing.seconds||0)+Number(row.seconds||0);
-        }else{
-          map.set(key,{...row,plays:Number(row.plays||0),seconds:Number(row.seconds||0)});
-        }
-      });
-      return [...map.values()].sort((a,b)=>b.plays-a.plays);
     }
 
     function renderAccountSummary(summary={}){
@@ -4009,9 +4027,9 @@
       if(artists.length||tracks.length||albums.length){
         const lists=document.createElement('div');
         lists.className='insights-lists';
-        renderInsightsList(lists,'最常听歌手',artists,item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
-        renderInsightsList(lists,'最常听歌曲',tracks,item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
-        renderInsightsList(lists,'最常听专辑',albums,item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`);
+        renderInsightsList(lists,'最常听歌手',artists,{initialKey:'artist',describe:item=>`${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
+        renderInsightsList(lists,'最常听歌曲',tracks,{coverKey:'cover',describe:item=>`${item.title||'未知歌曲'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
+        renderInsightsList(lists,'最常听专辑',albums,{coverKey:'cover',describe:item=>`${item.album||'未知专辑'} · ${item.artist||'未知歌手'} · ${Number(item.plays||0)} 次`});
         target.appendChild(lists);
       }
 
@@ -4031,7 +4049,7 @@
       dom.accountProfileName.textContent=state.profileName||'我的信息';
       try{
         const [{profile},{summary}]=await Promise.all([accountRequest('/api/profile'),accountRequest('/api/history')]);
-        dom.accountProfileId.textContent=`账号：${profile.username}`;
+        dom.accountProfileId.textContent=`账号：${profile.username} · 收藏 ${state.favorites.length} · 歌单 ${state.playlists.length}`;
         dom.accountDisplayName.value=profile.display_name||profile.username;
         dom.accountAvatarUrl.value=profile.avatar_url||'';
         dom.accountProfileName.textContent=profile.display_name||profile.username;
