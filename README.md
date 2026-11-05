@@ -12,7 +12,7 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 - 客户端下载：[Windows .exe](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.exe) · [Windows .msi](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.msi) · [Android .apk](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music.apk)
 - GitHub：<https://github.com/zhoujungis/halo_music>
 
-> 本项目用于学习、研究和演示。音乐内容、音频地址及相关版权归对应平台和原作者所有，请遵守当地法律、上游平台服务条款与版权政策。
+> 本项目用于学习、研究和演示。音乐内容、音频地址及相关版权归对应平台所有，请遵守当地法律、上游平台服务条款与版权政策。
 
 ## 目录
 
