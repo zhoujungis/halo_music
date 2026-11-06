@@ -434,6 +434,26 @@ async function jooxRequest(env, keyword, index = 0, signal = null) {
   return readJson(response);
 }
 
+// Meting 的图片接口会 302 到网易云直链；转成直链后客户端才能按尺寸缩放
+// （300px 原图可能有 200KB+，缩小后只有几十 KB）。
+async function normalizeCoverUrl(cover) {
+  const url = String(cover || "").trim();
+  if (!url) return "";
+  if (!/type=pic/i.test(url) || /music\.126\.net/i.test(url)) return url;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const response = await fetch(url, { redirect: "manual", signal: controller.signal });
+    clearTimeout(timer);
+    const location = response.headers.get("location") || "";
+    const match = /(https?:\/\/[^"'\s]*music\.126\.net\/[^"'\s]+)/.exec(location);
+    if (match) return `${match[1].split("?")[0]}?param=300y300`;
+  } catch (error) {
+    console.warn("cover normalize failed", error);
+  }
+  return url;
+}
+
 function qqCacheMatchesMedia(cached, expectedMediaMid) {
   const expected = clean(expectedMediaMid);
   if (!expected) return true;
@@ -1543,7 +1563,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const term = [title, artist].filter(Boolean).join(" ");
       if (!term) return json({ code: 200, data: { cover: "" } });
 
-      const cacheKey = `cover:v2:${title}|${artist}`;
+      const cacheKey = `cover:v3:${title}|${artist}`;
       const cached = await cacheGet(cacheKey, env);
       if (cached?.cover) {
         return new Response(JSON.stringify({ code: 200, data: { cover: cached.cover } }), {
@@ -1577,6 +1597,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           console.warn("cover lookup via Netease failed", error);
         }
       }
+      cover = await normalizeCoverUrl(cover);
       if (cover) {
         try { await cacheSet(cacheKey, { cover }, 7 * 86400000, env); } catch (error) {}
       }

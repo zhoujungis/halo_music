@@ -2765,6 +2765,11 @@
           return `/${target}x${target}bb.${ext}`;
         });
       }
+      if(size&&/y\.gtimg\.cn/.test(url)){
+        // QQ 图床只提供固定的几档尺寸，取最接近的。
+        const target=Number(size)>=300?300:Number(size)>=150?150:90;
+        return url.replace(/T002R\d+x\d+M/,`T002R${target}x${target}M`);
+      }
       if(size&&/thumb\.wikimedia\.org/.test(url)){
         const target=Math.min(Math.max(Number(size)*2,120),330);
         return url.replace(/\/(\d+)px-/,`/${target}px-`);
@@ -2992,7 +2997,7 @@
         card.className='discovery-podium-card ripple-target';
         const art=document.createElement('span');
         art.className='discovery-podium-art';
-        const cover=coverUrlFor(t.cover,160);
+        const cover=coverUrlFor(t.cover,120);
         if(cover){
           const img=document.createElement('img');
           img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.decoding='async';
@@ -3090,7 +3095,7 @@
         card.className='discovery-artist-card ripple-target';
         const avatar=document.createElement('span');
         avatar.className='discovery-artist-avatar';
-        const cover=coverUrlFor(artist.avatar,120);
+        const cover=coverUrlFor(artist.avatar,96);
         if(cover){
           const img=document.createElement('img');
           img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.loading='lazy';img.decoding='async';
