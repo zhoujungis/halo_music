@@ -2752,13 +2752,22 @@
     }
 
     // 网易图床返回 http:// 地址，https 页面会被拦成 mixed content，统一升级；
-    // music.126.net 支持 ?param=WxH 缩放参数，按展示尺寸取图把体积砍到几十 KB。
+    // music.126.net 支持 ?param=WxH 缩放，Apple/Wikimedia 也按展示尺寸改小，减少首屏体积。
     function coverUrlFor(raw,size){
       const url=String(raw||'').replace(/^http:\/\//i,'https://');
       if(!url)return '';
       if(size&&/music\.126\.net/.test(url)){
-        // 直接替换已有 param，避免和上游自带的 ?param=300y300 重复。
         return `${url.split('?')[0]}?param=${size}y${size}`;
+      }
+      if(size&&/mzstatic\.com/.test(url)){
+        return url.replace(/\/(\d+)x(\d+)bb\.(jpg|jpeg|png|webp)$/i,(m,w,h,ext)=>{
+          const target=Math.min(Math.max(Number(size),60),Number(w)||size);
+          return `/${target}x${target}bb.${ext}`;
+        });
+      }
+      if(size&&/thumb\.wikimedia\.org/.test(url)){
+        const target=Math.min(Math.max(Number(size)*2,120),330);
+        return url.replace(/\/(\d+)px-/,`/${target}px-`);
       }
       return url;
     }
@@ -2822,7 +2831,7 @@
     function buildToplistArt(row,index){
       const art=document.createElement('span');
       art.className='discovery-art'+(index===undefined?'':' discovery-art-sm');
-      const cover=coverUrlFor(row.cover,100);
+      const cover=coverUrlFor(row.cover,90);
       if(cover){
         const img=document.createElement('img');
         img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.loading='lazy';img.decoding='async';
@@ -2983,10 +2992,12 @@
         card.className='discovery-podium-card ripple-target';
         const art=document.createElement('span');
         art.className='discovery-podium-art';
-        const cover=coverUrlFor(t.cover,300);
+        const cover=coverUrlFor(t.cover,160);
         if(cover){
           const img=document.createElement('img');
-          img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.loading='lazy';img.decoding='async';
+          img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.decoding='async';
+          img.loading=index<4?'eager':'lazy';
+          if(index<4)img.fetchPriority='high';
           img.onerror=()=>{img.remove();art.classList.add('no-img');art.textContent=String(index+1);};
           art.appendChild(img);
         }else{
@@ -3079,7 +3090,7 @@
         card.className='discovery-artist-card ripple-target';
         const avatar=document.createElement('span');
         avatar.className='discovery-artist-avatar';
-        const cover=coverUrlFor(artist.avatar,200);
+        const cover=coverUrlFor(artist.avatar,120);
         if(cover){
           const img=document.createElement('img');
           img.src=cover;img.alt='';img.referrerPolicy='no-referrer';img.loading='lazy';img.decoding='async';

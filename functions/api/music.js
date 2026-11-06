@@ -1543,6 +1543,17 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const term = [title, artist].filter(Boolean).join(" ");
       if (!term) return json({ code: 200, data: { cover: "" } });
 
+      const cacheKey = `cover:v2:${title}|${artist}`;
+      const cached = await cacheGet(cacheKey, env);
+      if (cached?.cover) {
+        return new Response(JSON.stringify({ code: 200, data: { cover: cached.cover } }), {
+          headers: {
+            "content-type": "application/json; charset=UTF-8",
+            "cache-control": "public, max-age=604800",
+          },
+        });
+      }
+
       let cover = "";
       try {
         const songs = await searchQQOfficial(term, 10);
@@ -1566,7 +1577,15 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           console.warn("cover lookup via Netease failed", error);
         }
       }
-      return json({ code: 200, data: { cover } });
+      if (cover) {
+        try { await cacheSet(cacheKey, { cover }, 7 * 86400000, env); } catch (error) {}
+      }
+      return new Response(JSON.stringify({ code: 200, data: { cover } }), {
+        headers: {
+          "content-type": "application/json; charset=UTF-8",
+          "cache-control": cover ? "public, max-age=604800" : "public, max-age=600",
+        },
+      });
     }
 
     if (action === "joox_search") {
