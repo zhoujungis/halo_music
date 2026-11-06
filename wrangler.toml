@@ -6,7 +6,7 @@ pages_build_output_dir = "."
 # Username allowlist for the read-only /admin dashboard.
 ADMIN_USERNAME = "admin"
 # Keep this value in sync with package.json for deployments.
-HALO_MUSIC_VERSION = "2.6.1"
+HALO_MUSIC_VERSION = "2.7.0"
 # Verified Resend sender for Halo Music. RESEND_API_KEY is a secret and must be
 # set with `wrangler pages secret put RESEND_API_KEY`.
 RESEND_FROM = "no-reply@music.zhoujun.dev"
@@ -21,6 +21,8 @@ RESEND_SENDER_NAME = "HALO Music"
 NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
 JOOX_API_URL = "https://apicx.asia/api/joox_music"
 JOOX_TOKEN = "f84ao9lMF_q7husBWRfgUw"
+# 英文界面榜单的公开数据源（CI 每日抓取到 D1；{country} 由抓取脚本替换）。
+APPLE_CHART_URL = "https://rss.marketingtools.apple.com/api/v2/{country}/music/most-played/25/songs.json"
 
 # Registration secrets. Do not commit real values: put them in .dev.vars for
 # local development and in the Pages dashboard (or `wrangler pages secret put`)

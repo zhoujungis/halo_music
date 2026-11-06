@@ -496,16 +496,65 @@
     return String(value || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
   }
 
-  function detectLang() {
+  // 大陆/港澳台常用时区：这些时区优先按中文，其余时区按英文。
+  const CN_TIMEZONES = new Set([
+    'Asia/Shanghai', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Urumqi', 'Asia/Kashgar',
+    'Asia/Macau', 'Asia/Hong_Kong', 'Asia/Taipei', 'PRC', 'ROC', 'Hongkong'
+  ]);
+
+  function clientTimeZone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function detectByTimeZone(timeZone) {
+    const tz = String(timeZone || '').trim();
+    if (!tz) return '';
+    if (CN_TIMEZONES.has(tz)) return 'zh';
+    // 明确落在其他地区时区：按英文，避免受 VPN 出口 IP 影响。
+    if (!/^(Etc\/|UTC$|GMT$)/i.test(tz)) return 'en';
+    return '';
+  }
+
+  function detectByLanguage(value) {
+    const list = Array.isArray(value) ? value : [value];
+    for (const item of list) {
+      if (/^zh/i.test(String(item || ''))) return 'zh';
+      if (/^[a-z]{2}(-|$)/i.test(String(item || ''))) return 'en';
+    }
+    return '';
+  }
+
+  function autoDetect() {
+    const timeZone = clientTimeZone();
+    const byTimeZone = detectByTimeZone(timeZone);
+    if (byTimeZone) return { lang: byTimeZone, source: `timezone:${timeZone}`, ambiguous: false };
+    const languages = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+    const byLanguage = detectByLanguage(languages);
+    if (byLanguage) return { lang: byLanguage, source: `language:${languages[0]}`, ambiguous: !timeZone || /^(Etc\/|UTC$|GMT$)/i.test(timeZone) };
+    return { lang: 'en', source: 'default', ambiguous: true };
+  }
+
+  function storedLang() {
     try {
       const saved = localStorage.getItem(LANG_KEY);
       if (saved === 'zh' || saved === 'en') return saved;
     } catch (error) {}
-    const nav = navigator.languages && navigator.languages.length ? navigator.languages[0] : navigator.language;
-    return normalizeLang(nav);
+    return '';
   }
 
-  let lang = detectLang();
+  function detectLang() {
+    const saved = storedLang();
+    if (saved) return { lang: saved, source: 'stored', fixed: true, ambiguous: false };
+    return { ...autoDetect(), fixed: false };
+  }
+
+  const initial = detectLang();
+  let lang = initial.lang;
+  let langSource = initial.source;
   let applying = false;
 
   function lookup(text) {
@@ -638,7 +687,35 @@
   function setLang(nextLang) {
     const normalized = nextLang === 'zh' ? 'zh' : 'en';
     try { localStorage.setItem(LANG_KEY, normalized); } catch (error) {}
+    langSource = 'manual';
     apply(normalized);
+  }
+
+  // 时区/语言都无法判断（例如系统时区为 UTC）时，才用边缘节点的国家作为兜底。
+  // 有明确时区时不会使用 IP 归属地，避免 VPN 出口影响判断。
+  async function refineWithCountry() {
+    let cached = '';
+    try { cached = sessionStorage.getItem('halo-music-geo') || ''; } catch (error) {}
+    let country = cached;
+    if (!country) {
+      try {
+        const response = await fetch('/api/geo', { headers: { accept: 'application/json' } });
+        if (response.ok) {
+          const data = await response.json();
+          country = String(data?.country || '').toUpperCase();
+          if (country) {
+            try { sessionStorage.setItem('halo-music-geo', country); } catch (error) {}
+          }
+        }
+      } catch (error) {
+        return;
+      }
+    }
+    if (!country) return;
+    const next = country === 'CN' ? 'zh' : 'en';
+    if (next === lang) return;
+    langSource = `country:${country}`;
+    apply(next);
   }
 
   const observer = new MutationObserver((mutations) => {
@@ -679,12 +756,15 @@
       attributes: true,
       attributeFilter: ['placeholder', 'title', 'aria-label', 'alt'],
     });
+    if (!initial.fixed && initial.ambiguous) refineWithCountry();
   }
 
   window.HaloI18n = {
     get lang() { return lang; },
+    get source() { return langSource; },
     setLang,
     translate: (text) => lookup(text),
+    preview: (timeZone, languages) => detectByTimeZone(timeZone) || detectByLanguage(languages) || 'en',
     t: (zh, en) => (lang === 'en' ? en : zh),
   };
 

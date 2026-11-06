@@ -643,6 +643,13 @@ const NETEASE_TOPLIST_CHARTS = {
   new: { id: "3779629", name: "新歌榜" },
   rise: { id: "19723756", name: "飙升榜" },
 };
+// 英文界面的榜单来自公开国际榜单（CI 抓取到 toplist_cache 的 en-* 键），
+// 播放仍由站内的 QQ源/JOOX 解析。
+const EN_TOPLIST_NAMES = {
+  hot: "US Top 20",
+  new: "UK Top 20",
+  rise: "AU Top 20",
+};
 // 榜单数据由 CI 每天凌晨抓取写入 D1（见 scripts/refresh-toplists.mjs），
 // 接口只读数据库，不再在请求路径上调上游。
 
@@ -1478,6 +1485,9 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       const chartKey = clean(url.searchParams.get("chart")) || "hot";
       const chart = NETEASE_TOPLIST_CHARTS[chartKey];
       if (!chart) return json({ error: "未知榜单" }, 400);
+      const locale = clean(url.searchParams.get("locale")).toLowerCase() === "en" ? "en" : "zh";
+      const cacheKey = locale === "en" ? `en-${chartKey}` : chartKey;
+      const name = locale === "en" ? EN_TOPLIST_NAMES[chartKey] || "Top 20" : chart.name;
       const toplistLimit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 10));
       let tracks = [];
       let updatedAt = null;
@@ -1485,7 +1495,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
         try {
           const row = await env.DB.prepare(
             "SELECT payload_json, updated_at FROM toplist_cache WHERE chart = ?",
-          ).bind(chartKey).first();
+          ).bind(cacheKey).first();
           if (row) {
             tracks = JSON.parse(row.payload_json) || [];
             updatedAt = Number(row.updated_at) || null;
@@ -1494,7 +1504,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
           console.warn("toplist read failed", error);
         }
       }
-      return json({ code: 200, data: { name: chart.name, tracks: tracks.slice(0, toplistLimit), updatedAt } });
+      return json({ code: 200, data: { name, tracks: tracks.slice(0, toplistLimit), updatedAt, locale } });
     }
 
     if (action === "netease_audio") {

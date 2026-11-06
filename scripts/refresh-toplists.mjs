@@ -10,8 +10,45 @@ const CHARTS = {
   new: { id: "3779629", name: "新歌榜" },
   rise: { id: "19723756", name: "飙升榜" },
 };
+// 英文界面使用的国际榜单（公开榜单源，地址只写在 wrangler.toml）。
+const EN_CHARTS = {
+  "en-hot": { country: "us", name: "US Top 20" },
+  "en-new": { country: "gb", name: "UK Top 20" },
+  "en-rise": { country: "au", name: "AU Top 20" },
+};
 const LIMIT = 20;
 const TIMEOUT_MS = 15000;
+
+function readConfig(key) {
+  const toml = readFileSync("wrangler.toml", "utf8");
+  const match = new RegExp(`${key}\\s*=\\s*"([^"]+)"`).exec(toml);
+  return match ? match[1] : "";
+}
+
+async function fetchAppleChart(country, endpoint) {
+  if (!endpoint) return [];
+  const url = endpoint.replace("{country}", country);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (!response.ok) continue;
+      const data = await response.json();
+      const rows = (data?.feed?.results || [])
+        .map((row) => ({
+          id: `apple-${row.id}`,
+          title: String(row.name || "").slice(0, 200),
+          artist: String(row.artistName || "").slice(0, 300),
+          cover: String(row.artworkUrl100 || "").replace(/\/(\d+)x(\d+)bb\./, "/300x300bb."),
+        }))
+        .filter((row) => row.title);
+      if (rows.length) return rows.slice(0, LIMIT);
+    } catch (error) {
+      console.log(`  ${country} 第 ${attempt + 1} 次失败：${error.message}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+  return [];
+}
 
 function readProviders() {
   const toml = readFileSync("wrangler.toml", "utf8");
@@ -116,6 +153,24 @@ for (const [key, chart] of Object.entries(CHARTS)) {
     `INSERT INTO toplist_cache (chart, payload_json, updated_at) VALUES ('${key}', '${sqlEscape(JSON.stringify(rows))}', ${now}) ON CONFLICT(chart) DO UPDATE SET payload_json = excluded.payload_json, updated_at = excluded.updated_at;`,
   );
   written += 1;
+}
+
+const appleChartEndpoint = readConfig("APPLE_CHART_URL");
+if (appleChartEndpoint) {
+  for (const [key, chart] of Object.entries(EN_CHARTS)) {
+    console.log(`抓取 ${chart.name}（${chart.country}）`);
+    const rows = await fetchAppleChart(chart.country, appleChartEndpoint);
+    if (!rows.length) {
+      console.log(`  ${chart.name} 本轮无数据，保留上一次快照`);
+      continue;
+    }
+    statements.push(
+      `INSERT INTO toplist_cache (chart, payload_json, updated_at) VALUES ('${key}', '${sqlEscape(JSON.stringify(rows))}', ${now}) ON CONFLICT(chart) DO UPDATE SET payload_json = excluded.payload_json, updated_at = excluded.updated_at;`,
+    );
+    written += 1;
+  }
+} else {
+  console.log("未配置 APPLE_CHART_URL，跳过英文榜单");
 }
 
 if (!written) {

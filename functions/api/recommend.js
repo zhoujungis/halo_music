@@ -24,6 +24,25 @@ const DEFAULT_SONGS = [
   plays: 0,
 }));
 
+// 英文界面的默认推荐：国际曲目，点击时同样走站内 QQ源/JOOX 解析。
+const DEFAULT_SONGS_EN = [
+  { title: "Cruel Summer", artist: "Taylor Swift" },
+  { title: "Blinding Lights", artist: "The Weeknd" },
+  { title: "Shape of You", artist: "Ed Sheeran" },
+  { title: "Flowers", artist: "Miley Cyrus" },
+  { title: "As It Was", artist: "Harry Styles" },
+  { title: "Levitating", artist: "Dua Lipa" },
+  { title: "bad guy", artist: "Billie Eilish" },
+  { title: "Someone Like You", artist: "Adele" },
+].map((item) => ({
+  track_uid: "",
+  title: item.title,
+  artist: item.artist,
+  source: "",
+  cover: "",
+  plays: 0,
+}));
+
 function normalizeRows(rows) {
   return (rows || [])
     .map((row) => ({
@@ -59,6 +78,7 @@ function mergeRows(groups) {
 export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: "数据库未绑定" }, 500);
   const username = await authenticatedUsername(request, env);
+  const lang = new URL(request.url).searchParams.get("lang") === "en" ? "en" : "zh";
 
   let sameArtist = [];
   let coListen = [];
@@ -106,6 +126,14 @@ export async function onRequestGet({ request, env }) {
   const personal = mergeRows([sameArtist, coListen]);
   if (personal.length >= MIN_TRACKS) {
     return json({ basis: "personal", tracks: personal });
+  }
+
+  // 英文界面不做“全站热歌”兜底（站内记录以中文歌为主），直接用国际默认推荐补足。
+  if (lang === "en") {
+    return json({
+      basis: personal.length ? "personal" : "default",
+      tracks: mergeRows([personal, DEFAULT_SONGS_EN]),
+    });
   }
 
   // 全站播放最多的歌：所有用户都算，包括游客场景。

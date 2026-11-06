@@ -176,10 +176,12 @@
     const SEARCH_HISTORY_LIMIT = 8;
     const TOPLIST_TTL = 30 * 60 * 1000;
     const TOPLIST_CHARTS = [
-      { key: 'hot', label: '热歌' },
-      { key: 'new', label: '新歌' },
-      { key: 'rise', label: '飙升' },
+      { key: 'hot', label: '热歌', enLabel: 'US Top 20' },
+      { key: 'new', label: '新歌', enLabel: 'UK Top 20' },
+      { key: 'rise', label: '飙升', enLabel: 'AU Top 20' },
     ];
+    function uiLang(){ return window.HaloI18n?.lang === 'en' ? 'en' : 'zh'; }
+    function chartLabel(chart){ return uiLang() === 'en' ? chart.enLabel : `${chart.label}榜`; }
     let toplistCache = {};
     let toplistLoading = {};
     let toplistFailed = {};
@@ -196,6 +198,20 @@
       { name: '薛之谦', avatar: 'https://p1.music.126.net/Z2x6knGRr7eRrZeOlgCngA==/109951172414270313.jpg' },
       { name: '孙燕姿', avatar: 'https://p2.music.126.net/VED2XoZcISpeGUTE_Q6lTA==/109951170045683199.jpg' },
     ];
+    // 英文界面的热门歌手（头像来自 Wikimedia，加载失败时回退首字母）。
+    const POPULAR_ARTISTS_EN = [
+      { name: 'Taylor Swift', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png/330px-Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png' },
+      { name: 'Ed Sheeran', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Ed_Sheeran_2022_%283x4_crop%29.jpg/330px-Ed_Sheeran_2022_%283x4_crop%29.jpg' },
+      { name: 'The Weeknd', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/The_Weeknd_Portrait_by_Brian_Ziff.jpg/330px-The_Weeknd_Portrait_by_Brian_Ziff.jpg' },
+      { name: 'Billie Eilish', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg/330px-BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg' },
+      { name: 'Bruno Mars', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg/330px-BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg' },
+      { name: 'Adele', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Adele_2016.jpg/330px-Adele_2016.jpg' },
+      { name: 'Coldplay', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/ColdplayWembley120925_%28cropped%29.jpg/330px-ColdplayWembley120925_%28cropped%29.jpg' },
+      { name: 'Drake', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg/330px-Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg' },
+    ];
+    function popularArtists(){
+      return uiLang() === 'en' ? POPULAR_ARTISTS_EN : POPULAR_ARTISTS;
+    }
     let recommendCache = { tracks: [], basis: '', at: 0 };
     let recommendLoading = false;
     let recommendFailed = false;
@@ -2698,24 +2714,25 @@
     // ===================== 热门榜单 =====================
 
     function cachedToplist(key){
-      const entry=toplistCache[key];
+      const entry=toplistCache[`${uiLang()}:${key}`];
       return entry&&Date.now()-entry.at<TOPLIST_TTL?entry.tracks:null;
     }
 
     async function loadToplist(key){
-      if(toplistLoading[key]||cachedToplist(key))return;
-      toplistLoading[key]=true;
+      const cacheKey=`${uiLang()}:${key}`;
+      if(toplistLoading[cacheKey]||cachedToplist(key))return;
+      toplistLoading[cacheKey]=true;
       try{
-        const response=await fetchWithTimeout(`/api/music?action=netease_toplist&chart=${encodeURIComponent(key)}&limit=10`,{},12000);
+        const response=await fetchWithTimeout(`/api/music?action=netease_toplist&chart=${encodeURIComponent(key)}&locale=${uiLang()}&limit=10`,{},12000);
         const json=await response.json();
         const tracks=Array.isArray(json?.data?.tracks)?json.data.tracks:[];
-        if(tracks.length)toplistCache[key]={tracks,at:Date.now()};
-        else toplistFailed[key]=true;
+        if(tracks.length)toplistCache[cacheKey]={tracks,at:Date.now(),lang:uiLang()};
+        else toplistFailed[cacheKey]=true;
       }catch(error){
         console.warn('toplist load failed',error);
-        toplistFailed[key]=true;
+        toplistFailed[cacheKey]=true;
       }finally{
-        toplistLoading[key]=false;
+        toplistLoading[cacheKey]=false;
       }
       // 数据到位后刷新发现页推荐与榜单页。
       if(!state.searchKeyword&&!state.searchInProgress)renderMiniSearchList();
@@ -2815,7 +2832,7 @@
         const tab=document.createElement('button');
         tab.type='button';
         tab.className='discovery-chart-tab ripple-target'+(chart.key===activeToplistChart?' active':'');
-        tab.textContent=`${chart.label}榜`;
+        tab.textContent=chartLabel(chart);
         tab.addEventListener('click',()=>{
           if(activeToplistChart===chart.key)return;
           activeToplistChart=chart.key;
@@ -2834,18 +2851,20 @@
       const head=document.createElement('div');
       head.className='toplist-column-head';
       const name=document.createElement('strong');
-      name.textContent=`${chart.label}榜`;
+      name.textContent=chartLabel(chart);
       const sub=document.createElement('span');
       sub.textContent='每日 02:00 更新';
       head.append(name,sub);
       column.appendChild(head);
 
       const tracks=cachedToplist(chart.key);
+      const cacheKey=`${uiLang()}:${chart.key}`;
+      const isEn=uiLang()==='en';
       const list=document.createElement('div');
       list.className='discovery-recent-list toplist-column-list';
       if(tracks){
         tracks.slice(0,10).forEach((row,index)=>{
-          const trackUid=`netease-${row.id}`;
+          const trackUid=isEn?`apple-${row.id}`:`netease-${row.id}`;
           const rowEl=document.createElement('button');
           rowEl.type='button';
           rowEl.className='discovery-recent-item ripple-target';
@@ -2866,16 +2885,17 @@
           rowEl.append(meta,mark);
           rowEl.addEventListener('click',()=>{
             if(isCurrentPlaying({uid:trackUid})){dom.audio.pause();return;}
+            if(isEn){playHistoryTrack({title:row.title,artist:row.artist,cover:row.cover});return;}
             playNeteaseTrack(row.id,row.title,row.artist,row.cover);
           });
           list.appendChild(rowEl);
         });
       }else{
         const status=document.createElement('div');
-        status.className='discovery-toplist-status'+(toplistFailed[chart.key]?' is-error':' is-loading');
-        status.textContent=toplistFailed[chart.key]?'榜单每日 02:00 更新，稍后再来看看':'正在获取…';
+        status.className='discovery-toplist-status'+(toplistFailed[cacheKey]?' is-error':' is-loading');
+        status.textContent=toplistFailed[cacheKey]?'榜单每日 02:00 更新，稍后再来看看':'正在获取…';
         list.appendChild(status);
-        if(!toplistFailed[chart.key])loadToplist(chart.key);
+        if(!toplistFailed[cacheKey])loadToplist(chart.key);
       }
       column.appendChild(list);
       return column;
@@ -2887,7 +2907,7 @@
       if(recommendLoading)return;
       recommendLoading=true;
       try{
-        const response=await fetchWithTimeout('/api/recommend',{},10000);
+        const response=await fetchWithTimeout(`/api/recommend?lang=${uiLang()}`,{},10000);
         if(response.ok){
           const data=await response.json();
           recommendCache={
@@ -2998,11 +3018,12 @@
       // 推荐数据未就绪：先用热榜兜底展示，数据到达后自动重绘。
       const chart=cachedToplist('hot');
       if(chart&&chart.length){
+        const isEn=uiLang()==='en';
         section.appendChild(buildRecommendedCards(chart.slice(0,8).map(row=>({
-          track_uid:`netease-${row.id}`,
+          track_uid:isEn?'':`netease-${row.id}`,
           title:row.title,
           artist:row.artist,
-          source:'netease',
+          source:isEn?'':'netease',
           cover:row.cover
         }))));
         if(!recommendLoading)loadRecommendations();
@@ -3028,7 +3049,7 @@
       section.appendChild(head);
       const row=document.createElement('div');
       row.className='discovery-artist-row';
-      POPULAR_ARTISTS.forEach(artist=>{
+      popularArtists().forEach(artist=>{
         const name=artist.name;
         const card=document.createElement('button');
         card.type='button';
@@ -5362,8 +5383,23 @@
       }, 'image/png');
     }
 
+    // 语言切换后，榜单/推荐属于“按语言取不同数据”，必须清缓存重拉。
+    function handleLanguageChange(){
+      toplistCache={};
+      toplistLoading={};
+      toplistFailed={};
+      recommendCache={tracks:[],basis:'',at:0};
+      recommendFailed=false;
+      recommendLoading=false;
+      activeToplistChart='hot';
+      renderToplistPage();
+      renderMiniSearchList();
+      if(state.isAuthenticated&&dom.listeningSummary)loadAccountSummary?.();
+    }
+
     function init(){
       setupDOM();
+      document.addEventListener('halo:langchange',handleLanguageChange);
       try{applyTheme(localStorage.getItem(THEME_STORAGE_KEY)||'light');}catch(e){applyTheme('light');}
       setupParticles();
       setupRipple();
