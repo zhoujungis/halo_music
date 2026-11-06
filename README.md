@@ -582,3 +582,11 @@ rate-limited by client IP. Release builds are unsigned unless `CSC_LINK` and
 
 Set `HALO_MUSIC_VERSION` in the Pages environment (and `wrangler.toml`) for each
 release so the Android update endpoint stays aligned with the GitHub Release.
+
+<!-- blog-backlink -->
+---
+
+## 相关阅读
+
+- 博客：[尘世栈帧 — 技术、编程、AI 与科学](https://blog.zhoujun.dev/)
+- 项目详解：[Halo 音乐广场技术拆解：多音源在线音乐应用](https://blog.zhoujun.dev/article/halo-music-square-architecture/)
