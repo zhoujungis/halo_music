@@ -4082,3 +4082,9 @@ html[data-theme="dark"] .search-batch-select-all:checked {
 /* ------------------------------------------------ insights share card */
 .insights-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .insights-share-btn { min-height: 32px; padding-inline: 14px; font-size: 12px; }
+
+/* language toggle */
+.lang-toggle-btn { min-width: 46px; height: 36px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(31,42,36,.14); background: #fff; color: #1f2a24; font-size: 12px; font-weight: 600; letter-spacing: .04em; cursor: pointer; }
+.lang-toggle-btn:hover { border-color: rgba(31,42,36,.32); }
+[data-theme="dark"] .lang-toggle-btn { background: #1f2a24; color: #f7f7f2; border-color: rgba(255,255,255,.16); }
+.account-language-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; margin-bottom: 8px; border-bottom: 1px solid rgba(31,42,36,.10); }

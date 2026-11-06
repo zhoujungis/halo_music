@@ -5049,6 +5049,8 @@
       const FONT = '"PingFang SC", "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
       const M = 64;
       const RIGHT = W - M;
+      const EN_CARD = window.HaloI18n?.lang === 'en';
+      const L = (zh, en) => (EN_CARD ? en : zh);
 
       // 纸张底色
       const paper = ctx.createLinearGradient(0, 0, 0, H);
@@ -5083,7 +5085,7 @@
       ctx.fillText('HALO MUSIC', M + 84, 96);
       ctx.fillStyle = MUTED;
       ctx.font = `400 20px ${FONT}`;
-      ctx.fillText('听歌报告', M + 84, 124);
+      ctx.fillText(L('听歌报告', 'LISTENING REPORT'), M + 84, 124);
       const now = new Date();
       const stamp = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
       ctx.textAlign = 'right';
@@ -5094,13 +5096,13 @@
       // 标题
       ctx.fillStyle = INK;
       ctx.font = `700 68px ${FONT}`;
-      ctx.fillText('我的听歌报告', M, 244);
+      ctx.fillText(L('我的听歌报告', 'My Listening Report'), M, 244);
       const start = new Date(Date.now() - 29 * 86400000);
       const rangeText = `${String(start.getMonth() + 1).padStart(2, '0')}.${String(start.getDate()).padStart(2, '0')} – ${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
       ctx.fillStyle = MUTED;
       ctx.font = `400 26px ${FONT}`;
       const nameText = String(profileName || '').trim();
-      ctx.fillText(fitCanvasText(ctx, `最近 30 天 · ${rangeText}${nameText ? ` · ${nameText}` : ''}`, 800), M, 292);
+      ctx.fillText(fitCanvasText(ctx, L(`最近 30 天 · ${rangeText}${nameText ? ` · ${nameText}` : ''}`, `Last 30 days · ${rangeText}${nameText ? ` · ${nameText}` : ''}`), 800), M, 292);
 
       // 主视觉：累计时长
       const heroY = 330;
@@ -5132,7 +5134,7 @@
 
       ctx.fillStyle = 'rgba(247,243,232,0.72)';
       ctx.font = `400 26px ${FONT}`;
-      ctx.fillText('累计播放时长', M + 48, heroY + 66);
+      ctx.fillText(L('累计播放时长', 'TOTAL LISTENING TIME'), M + 48, heroY + 66);
 
       const hours = Number(summary.totalSeconds || 0) / 3600;
       const hoursText = hours >= 100 ? String(Math.round(hours)) : hours >= 10 ? String(Math.round(hours)) : hours.toFixed(1);
@@ -5141,12 +5143,12 @@
       ctx.fillText(hoursText, M + 44, heroY + 212);
       const hoursWidth = ctx.measureText(hoursText).width;
       ctx.font = `500 40px ${FONT}`;
-      ctx.fillText('小时', M + 44 + hoursWidth + 18, heroY + 206);
+      ctx.fillText(L('小时', 'hrs'), M + 44 + hoursWidth + 18, heroY + 206);
 
-      const favArtist = mergeRankedRows(summary.topArtists || [], (item) => normalizeMusicMatchText(item.artist))[0]?.artist || '暂无';
+      const favArtist = mergeRankedRows(summary.topArtists || [], (item) => normalizeMusicMatchText(item.artist))[0]?.artist || L('暂无', 'None yet');
       ctx.font = `400 24px ${FONT}`;
       ctx.fillStyle = 'rgba(247,243,232,0.72)';
-      ctx.fillText(fitCanvasText(ctx, `本月 ${Number(summary.month?.plays || 0)} 次播放 · 最常听 ${favArtist}`, 700), M + 48, heroY + 268);
+      ctx.fillText(fitCanvasText(ctx, L(`本月 ${Number(summary.month?.plays || 0)} 次播放 · 最常听 ${favArtist}`, `${Number(summary.month?.plays || 0)} plays this month · Most played ${favArtist}`), 700), M + 48, heroY + 268);
 
       // 三张统计卡
       const statY = 676;
@@ -5154,9 +5156,9 @@
       const statW = 304;
       const gap = 20;
       const stats = [
-        [Number(summary.plays || 0).toLocaleString(), '次播放'],
-        [Number(summary.uniqueTracks || 0).toLocaleString(), '首歌曲'],
-        [favArtist, '最常听歌手'],
+        [Number(summary.plays || 0).toLocaleString(), L('次播放', 'plays')],
+        [Number(summary.uniqueTracks || 0).toLocaleString(), L('首歌曲', 'songs')],
+        [favArtist, L('最常听歌手', 'Top artist')],
       ];
       stats.forEach(([value, label], index) => {
         const x = M + index * (statW + gap);
@@ -5184,18 +5186,18 @@
       const chartTitleY = 900;
       ctx.fillStyle = INK;
       ctx.font = `600 30px ${FONT}`;
-      ctx.fillText('最近 7 天', M, chartTitleY);
+      ctx.fillText(L('最近 7 天', 'Last 7 days'), M, chartTitleY);
       const weekTotal = (Array.isArray(summary.daily) ? summary.daily : []).reduce((sum, row) => sum + Number(row.plays || 0), 0);
 
       const daily = Array.isArray(summary.daily) ? summary.daily : [];
       const byDay = new Map(daily.map((row) => [String(row.day), row]));
-      const weekLabels = ['日', '一', '二', '三', '四', '五', '六'];
+      const weekLabels = EN_CARD ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['日', '一', '二', '三', '四', '五', '六'];
       const points = [];
       for (let offset = 6; offset >= 0; offset -= 1) {
         const date = new Date(Date.now() - offset * 86400000 + 8 * 3600000);
         const key = date.toISOString().slice(0, 10);
         points.push({
-          label: `周${weekLabels[date.getUTCDay()]}`,
+          label: EN_CARD ? weekLabels[date.getUTCDay()] : `周${weekLabels[date.getUTCDay()]}`,
           value: Number(byDay.get(key)?.plays || 0),
         });
       }
@@ -5266,7 +5268,7 @@
       ctx.textAlign = 'right';
       ctx.fillStyle = MUTED;
       ctx.font = `400 24px ${FONT}`;
-      ctx.fillText(`共 ${weekTotal} 次播放`, RIGHT, chartTitleY);
+      ctx.fillText(L(`共 ${weekTotal} 次播放`, `${weekTotal} plays total`), RIGHT, chartTitleY);
       ctx.textAlign = 'left';
 
       // 底部双栏
@@ -5275,8 +5277,8 @@
       const rowGap = 60;
       ctx.fillStyle = INK;
       ctx.font = `600 28px ${FONT}`;
-      ctx.fillText('最常听歌手', M, sectionY);
-      ctx.fillText('最常听歌曲', 560, sectionY);
+      ctx.fillText(L('最常听歌手', 'Top artists'), M, sectionY);
+      ctx.fillText(L('最常听歌曲', 'Top songs'), 560, sectionY);
 
       const artistColors = ['#3f6b57', '#b5643f', '#5a6e8c'];
       const artists = mergeRankedRows(summary.topArtists || [], (item) => normalizeMusicMatchText(item.artist)).slice(0, 3);
@@ -5293,12 +5295,12 @@
         ctx.textAlign = 'left';
         ctx.fillStyle = INK;
         ctx.font = `600 26px ${FONT}`;
-        const name = fitCanvasText(ctx, item.artist || '未知歌手', 240);
+        const name = fitCanvasText(ctx, item.artist || L('未知歌手', 'Unknown artist'), 240);
         ctx.fillText(name, M + 64, y);
         const nameWidth = ctx.measureText(name).width;
         ctx.fillStyle = MUTED;
         ctx.font = `400 22px ${FONT}`;
-        ctx.fillText(`${Number(item.plays || 0)} 次`, M + 64 + nameWidth + 14, y);
+        ctx.fillText(L(`${Number(item.plays || 0)} 次`, `${Number(item.plays || 0)} plays`), M + 64 + nameWidth + 14, y);
       });
 
       const tracks = mergeRankedRows(summary.topTracks || [], (item) => `${normalizeMusicMatchText(item.title)}|${normalizeMusicMatchText(item.artist)}`).slice(0, 3);
@@ -5309,7 +5311,7 @@
         ctx.fillText(`0${index + 1}`, 560, y);
         ctx.fillStyle = INK;
         ctx.font = `600 26px ${FONT}`;
-        const title = fitCanvasText(ctx, item.title || '未知歌曲', 260);
+        const title = fitCanvasText(ctx, item.title || L('未知歌曲', 'Unknown song'), 260);
         ctx.fillText(title, 606, y);
         const titleWidth = ctx.measureText(title).width;
         ctx.fillStyle = MUTED;
@@ -5329,7 +5331,7 @@
       ctx.fillText('HALO MUSIC · music.zhoujun.dev', M, 1428);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#8f9a91';
-      ctx.fillText('把听过的歌，变成自己的时间线', RIGHT, 1428);
+      ctx.fillText(L('把听过的歌，变成自己的时间线', 'Every song you’ve heard, on your own timeline.'), RIGHT, 1428);
       ctx.textAlign = 'left';
 
       return { width: W, height: H };
