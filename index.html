@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Halo音乐</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2.4.7" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2.4.7" />
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2.4.7" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2.5.1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2.5.1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2.5.1" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f7f7f2" />
   <meta name="referrer" content="no-referrer" />
@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Halo音乐" />
   <script>try{var _t=localStorage.getItem('halo-music-theme')||'light';document.documentElement.dataset.theme=_t;var _m=document.querySelector('meta[name="theme-color"]');if(_m)_m.setAttribute('content',_t==='light'?'#f7f7f2':'#18201c');}catch(e){}</script>
-  <meta name="app-version" content="2.4.7" />
+  <meta name="app-version" content="2.5.1" />
   <meta name="google-site-verification" content="1Cv5EI2xZqXCaZnwCBQJBHukLAD6SJkn1gfuamc7fpU" />
   <meta name="description" content="Halo Music 是一个轻量、简洁、跨平台的个人音乐空间：聚合搜索与播放、收藏与歌单、听歌分析。" />
   <script type="application/ld+json">
@@ -30,7 +30,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://music.zhoujun.dev/" />
   <meta property="og:image" content="https://music.zhoujun.dev/icon-512.png" />
-  <link rel="stylesheet" href="styles.css?v=2.4.7" />
+  <link rel="stylesheet" href="styles.css?v=2.5.1" />
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
@@ -39,7 +39,7 @@
     <header class="ripple-target">
       <div class="logo-area">
         <div class="brand-mark ripple-target">
-          <img src="favicon.svg?v=2.4.7" alt="HALO Music" class="brand-mark-img">
+          <img src="favicon.svg?v=2.5.1" alt="HALO Music" class="brand-mark-img">
         </div>
         <div class="title-text">
           <h1 data-i18n="appTitle">Halo音乐</h1>
@@ -204,6 +204,7 @@
               <div class="playlist-file-actions">
                 <button id="delete-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="deletePlaylist">删除歌单</button>
                 <button id="edit-playlist-btn" class="btn btn-ghost ripple-target">编辑歌单</button>
+                <button id="share-playlist-btn" class="btn btn-ghost ripple-target" type="button">分享歌单</button>
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
@@ -222,7 +223,10 @@
               <button id="account-logout" class="btn btn-ghost account-hero-logout" type="button">退出登录</button>
             </header>
             <section class="listening-summary insights-panel" aria-live="polite">
-              <h3 class="account-section-title">听歌分析</h3>
+              <div class="insights-head">
+                <h3 class="account-section-title">听歌分析</h3>
+                <button id="insights-share-card" class="btn btn-ghost insights-share-btn" type="button">生成分享卡</button>
+              </div>
               <div id="listening-summary-content" class="listening-summary-content">正在加载…</div>
             </section>
             <div class="account-settings-grid">
@@ -635,7 +639,7 @@
         <h3>关于内容来源</h3>
         <p>HALO Music 只展示第三方平台公开的检索结果并代理播放地址，不存储、不制作任何音频文件。音乐、封面与歌词的版权归各平台及原作者所有，详见免责声明。</p>
         <h3>版本与反馈</h3>
-        <p>当前版本 v2.4.7。问题与建议请提交到 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>。</p>
+        <p>当前版本 v2.5.1。问题与建议请提交到 <a href="https://github.com/zhoujungis/halo_music/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>。</p>
       </div>
     </div>
   </div>
@@ -647,7 +651,7 @@
         <button id="privacy-close" class="modal-close-btn" type="button" data-i18n-title="infoClose" aria-label="关闭" title="关闭">×</button>
       </div>
       <div class="info-body">
-        <p class="info-footnote">随 v2.4.7 更新。这份说明描述的是 Halo Music 当前实际的数据处理方式。</p>
+        <p class="info-footnote">随 v2.5.1 更新。这份说明描述的是 Halo Music 当前实际的数据处理方式。</p>
         <h3>1. 我们收集什么</h3>
         <ul>
           <li><b>账号信息</b>：邮箱、用户名，以及密码的单向哈希（PBKDF2-SHA256，10 万次迭代加随机盐，不保存明文密码）；可选的显示名与头像图片地址。</li>
@@ -706,6 +710,6 @@
   </div>
   <div id="toast"></div>
 
-  <script src="major.js?v=2.4.7"></script>
+  <script src="major.js?v=2.5.1"></script>
 </body>
 </html>

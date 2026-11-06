@@ -31,6 +31,7 @@
               <div class="playlist-file-actions">
                 <button id="delete-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="deletePlaylist">删除歌单</button>
                 <button id="edit-playlist-btn" class="btn btn-ghost ripple-target">编辑歌单</button>
+                <button id="share-playlist-btn" class="btn btn-ghost ripple-target" type="button">分享歌单</button>
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
@@ -49,7 +50,10 @@
               <button id="account-logout" class="btn btn-ghost account-hero-logout" type="button">退出登录</button>
             </header>
             <section class="listening-summary insights-panel" aria-live="polite">
-              <h3 class="account-section-title">听歌分析</h3>
+              <div class="insights-head">
+                <h3 class="account-section-title">听歌分析</h3>
+                <button id="insights-share-card" class="btn btn-ghost insights-share-btn" type="button">生成分享卡</button>
+              </div>
               <div id="listening-summary-content" class="listening-summary-content">正在加载…</div>
             </section>
             <div class="account-settings-grid">

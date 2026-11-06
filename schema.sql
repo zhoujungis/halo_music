@@ -80,6 +80,18 @@ CREATE TABLE IF NOT EXISTS toplist_cache (
   updated_at INTEGER NOT NULL
 );
 
+-- 歌单分享快照（公开只读 /s/<token>）
+CREATE TABLE IF NOT EXISTS shared_playlists (
+  token TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  tracks_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_shared_playlists_user ON shared_playlists(username);
+
 CREATE TABLE IF NOT EXISTS registration_ips (
   ip_hash TEXT PRIMARY KEY,
   username TEXT NOT NULL,

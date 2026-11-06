@@ -3357,7 +3357,11 @@
       exportBtn.type='button';exportBtn.className='btn btn-ghost mobile-playlist-tool ripple-target';
       exportBtn.title=t('exportPlaylist');exportBtn.setAttribute('aria-label',t('exportPlaylist'));exportBtn.textContent=t('mobileExportAction');
       exportBtn.addEventListener('click',()=>dom.exportPlaylistBtn.click());
-      toolbar.appendChild(create);toolbar.appendChild(editBtn);toolbar.appendChild(importBtn);toolbar.appendChild(exportBtn);
+      const shareBtn=document.createElement('button');
+      shareBtn.type='button';shareBtn.className='btn btn-ghost mobile-playlist-tool ripple-target';
+      shareBtn.textContent='分享';
+      shareBtn.addEventListener('click',shareCurrentPlaylist);
+      toolbar.appendChild(create);toolbar.appendChild(editBtn);toolbar.appendChild(shareBtn);toolbar.appendChild(importBtn);toolbar.appendChild(exportBtn);
       dom.playlistList.appendChild(toolbar);
 
       if(!state.playlists.length){
@@ -3942,6 +3946,7 @@
     }
 
     function renderAccountSummary(summary={}){
+      lastAccountSummary=summary;
       const target=dom.listeningSummary;
       target.replaceChildren();
       const plays=Number(summary.plays||0);
@@ -4143,6 +4148,8 @@
       dom.playlistSelect=$('playlist-select');
       dom.deletePlaylistBtn=$('delete-playlist-btn');
       dom.editPlaylistBtn=$('edit-playlist-btn');
+      dom.sharePlaylistBtn=$('share-playlist-btn');
+      dom.insightsShareCard=$('insights-share-card');
       dom.newPlaylistBtn=$('new-playlist-btn');
       dom.importPlaylistBtn=$('import-playlist-btn');
       dom.importPlaylistInput=$('import-playlist-input');
@@ -4749,6 +4756,8 @@
         if(!pl){showToast(t('toastNeedPlaylistSelected'));return;}
         openPlaylistModal(pl);
       });
+      dom.sharePlaylistBtn?.addEventListener('click',shareCurrentPlaylist);
+      dom.insightsShareCard?.addEventListener('click',buildInsightsShareCard);
       dom.newPlaylistBtn.addEventListener('click',()=>openPlaylistModal());
       dom.importPlaylistBtn.addEventListener('click',openImportPlaylistModal);
       dom.importPlaylistFileBtn.addEventListener('click',()=>dom.importPlaylistInput.click());
@@ -4893,6 +4902,464 @@
 
     // ===================== 初始化 =====================
 
+    // ===================== 歌单分享 & 听歌分享卡 =====================
+
+    let lastAccountSummary = null;
+
+    async function copyTextToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (error) {
+        // fall through to the legacy path
+      }
+      try {
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        const ok = document.execCommand('copy');
+        input.remove();
+        return ok;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function shareCurrentPlaylist() {
+      if (!requireLibraryAccess()) return;
+      const plId = getSelectedPlaylistId();
+      const pl = state.playlists.find((item) => item.id === plId);
+      if (!pl || !pl.tracks.length) {
+        showToast('歌单里还没有歌曲，先加几首再分享吧');
+        return;
+      }
+      const tracks = pl.tracks.map(serializeTrack).filter(Boolean);
+      try {
+        const response = await fetch('/api/share', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: pl.name, description: pl.desc || '', tracks }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showToast(data.error || '分享失败，请稍后再试');
+          return;
+        }
+        const url = data.url || `https://music.zhoujun.dev/s/${data.token}`;
+        const copied = await copyTextToClipboard(url);
+        showToast(copied ? `分享链接已复制：${url}` : `分享链接：${url}`, 5000);
+      } catch (error) {
+        console.warn('share playlist failed', error);
+        showToast('分享失败，请稍后再试');
+      }
+    }
+
+    async function importSharedPlaylist(token) {
+      const clean = String(token || '').trim();
+      if (!/^[a-z0-9]{6,32}$/i.test(clean)) return;
+      try {
+        const response = await fetch(`/api/share?id=${encodeURIComponent(clean)}`);
+        if (!response.ok) throw new Error(`share ${response.status}`);
+        const data = await response.json();
+        const tracks = (Array.isArray(data.tracks) ? data.tracks : [])
+          .map(deserializeTrack)
+          .filter(Boolean);
+        if (!tracks.length) {
+          showToast('这个分享的歌单是空的');
+          return;
+        }
+        const id = `pl-share-${clean}`;
+        let playlist = state.playlists.find((item) => item.id === id);
+        if (!playlist) {
+          playlist = {
+            id,
+            name: data.name || '分享的歌单',
+            desc: data.description || '',
+            tracks,
+          };
+          state.playlists.push(playlist);
+        }
+        tracks.forEach((track) => {
+          if (track.uid && !state.trackMap.has(track.uid)) state.trackMap.set(track.uid, track);
+        });
+        saveLibraryToStorage();
+        renderPlaylistOptions();
+        renderPlaylistList();
+        showToast(`已导入歌单：${playlist.name}`, 3000);
+      } catch (error) {
+        console.warn('import shared playlist failed', error);
+        showToast('分享链接无效或已失效');
+      }
+    }
+
+    function importSharedFromUrl() {
+      let share = '';
+      try {
+        share = new URL(window.location.href).searchParams.get('share') || '';
+      } catch (error) {
+        return;
+      }
+      if (!share) return;
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('share');
+        history.replaceState(null, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : '') + url.hash);
+      } catch (error) {}
+      importSharedPlaylist(share);
+    }
+
+    function drawRoundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function fitCanvasText(ctx, text, maxWidth) {
+      const value = String(text || '');
+      if (ctx.measureText(value).width <= maxWidth) return value;
+      let cut = value;
+      while (cut.length > 1 && ctx.measureText(`${cut}…`).width > maxWidth) {
+        cut = cut.slice(0, -1);
+      }
+      return `${cut}…`;
+    }
+
+    function drawInsightsCard(canvas, summary, profileName) {
+      const W = 1080;
+      const H = 1440;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const INK = '#17201a';
+      const MUTED = '#6a766c';
+      const GREEN = '#2f5a45';
+      const CREAM = '#f7f3e8';
+      const ACCENT = '#b5643f';
+      const FONT = '"PingFang SC", "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif';
+      const M = 64;
+      const RIGHT = W - M;
+
+      // 纸张底色
+      const paper = ctx.createLinearGradient(0, 0, 0, H);
+      paper.addColorStop(0, '#fdfbf6');
+      paper.addColorStop(1, '#f0eade');
+      ctx.fillStyle = paper;
+      ctx.fillRect(0, 0, W, H);
+
+      // 右上角柔光
+      const glow = ctx.createRadialGradient(W - 40, 40, 20, W - 40, 40, 420);
+      glow.addColorStop(0, 'rgba(63,107,87,0.14)');
+      glow.addColorStop(1, 'rgba(63,107,87,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(W - 480, 0, 480, 480);
+
+      // 品牌
+      ctx.save();
+      ctx.shadowColor = 'rgba(47,90,69,0.28)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 6;
+      ctx.fillStyle = GREEN;
+      drawRoundRect(ctx, M, 64, 64, 64, 18);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = CREAM;
+      ctx.font = `700 34px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.fillText('H', M + 32, 64 + 43);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = INK;
+      ctx.font = `600 24px ${FONT}`;
+      ctx.fillText('HALO MUSIC', M + 84, 96);
+      ctx.fillStyle = MUTED;
+      ctx.font = `400 20px ${FONT}`;
+      ctx.fillText('听歌报告', M + 84, 124);
+      const now = new Date();
+      const stamp = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+      ctx.textAlign = 'right';
+      ctx.font = `400 22px ${FONT}`;
+      ctx.fillText(stamp, RIGHT, 100);
+      ctx.textAlign = 'left';
+
+      // 标题
+      ctx.fillStyle = INK;
+      ctx.font = `700 68px ${FONT}`;
+      ctx.fillText('我的听歌报告', M, 244);
+      const start = new Date(Date.now() - 29 * 86400000);
+      const rangeText = `${String(start.getMonth() + 1).padStart(2, '0')}.${String(start.getDate()).padStart(2, '0')} – ${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+      ctx.fillStyle = MUTED;
+      ctx.font = `400 26px ${FONT}`;
+      const nameText = String(profileName || '').trim();
+      ctx.fillText(fitCanvasText(ctx, `最近 30 天 · ${rangeText}${nameText ? ` · ${nameText}` : ''}`, 800), M, 292);
+
+      // 主视觉：累计时长
+      const heroY = 330;
+      const heroH = 306;
+      ctx.save();
+      ctx.shadowColor = 'rgba(23,32,26,0.22)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 18;
+      const heroFill = ctx.createLinearGradient(M, heroY, RIGHT, heroY + heroH);
+      heroFill.addColorStop(0, '#356549');
+      heroFill.addColorStop(1, '#264838');
+      ctx.fillStyle = heroFill;
+      drawRoundRect(ctx, M, heroY, RIGHT - M, heroH, 36);
+      ctx.fill();
+      ctx.restore();
+
+      // 同心圆装饰
+      ctx.save();
+      drawRoundRect(ctx, M, heroY, RIGHT - M, heroH, 36);
+      ctx.clip();
+      ctx.strokeStyle = 'rgba(247,243,232,0.10)';
+      ctx.lineWidth = 2;
+      for (const radius of [132, 196, 262]) {
+        ctx.beginPath();
+        ctx.arc(RIGHT - 130, heroY + 34, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(247,243,232,0.72)';
+      ctx.font = `400 26px ${FONT}`;
+      ctx.fillText('累计播放时长', M + 48, heroY + 66);
+
+      const hours = Number(summary.totalSeconds || 0) / 3600;
+      const hoursText = hours >= 100 ? String(Math.round(hours)) : hours >= 10 ? String(Math.round(hours)) : hours.toFixed(1);
+      ctx.fillStyle = CREAM;
+      ctx.font = `700 132px ${FONT}`;
+      ctx.fillText(hoursText, M + 44, heroY + 212);
+      const hoursWidth = ctx.measureText(hoursText).width;
+      ctx.font = `500 40px ${FONT}`;
+      ctx.fillText('小时', M + 44 + hoursWidth + 18, heroY + 206);
+
+      const favArtist = mergeRankedRows(summary.topArtists || [], (item) => normalizeMusicMatchText(item.artist))[0]?.artist || '暂无';
+      ctx.font = `400 24px ${FONT}`;
+      ctx.fillStyle = 'rgba(247,243,232,0.72)';
+      ctx.fillText(fitCanvasText(ctx, `本月 ${Number(summary.month?.plays || 0)} 次播放 · 最常听 ${favArtist}`, 700), M + 48, heroY + 268);
+
+      // 三张统计卡
+      const statY = 676;
+      const statH = 152;
+      const statW = 304;
+      const gap = 20;
+      const stats = [
+        [Number(summary.plays || 0).toLocaleString(), '次播放'],
+        [Number(summary.uniqueTracks || 0).toLocaleString(), '首歌曲'],
+        [favArtist, '最常听歌手'],
+      ];
+      stats.forEach(([value, label], index) => {
+        const x = M + index * (statW + gap);
+        ctx.save();
+        ctx.shadowColor = 'rgba(23,32,26,0.08)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetY = 10;
+        ctx.fillStyle = '#ffffff';
+        drawRoundRect(ctx, x, statY, statW, statH, 26);
+        ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = ['#3f6b57', '#b5643f', '#5a6e8c'][index];
+        ctx.beginPath();
+        ctx.arc(x + 34, statY + 26, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = INK;
+        ctx.font = `700 ${index === 2 ? 34 : 46}px ${FONT}`;
+        ctx.fillText(fitCanvasText(ctx, value, statW - 56), x + 28, statY + 78);
+        ctx.fillStyle = MUTED;
+        ctx.font = `400 24px ${FONT}`;
+        ctx.fillText(label, x + 28, statY + 120);
+      });
+
+      // 最近 7 天面积图
+      const chartTitleY = 900;
+      ctx.fillStyle = INK;
+      ctx.font = `600 30px ${FONT}`;
+      ctx.fillText('最近 7 天', M, chartTitleY);
+      const weekTotal = (Array.isArray(summary.daily) ? summary.daily : []).reduce((sum, row) => sum + Number(row.plays || 0), 0);
+
+      const daily = Array.isArray(summary.daily) ? summary.daily : [];
+      const byDay = new Map(daily.map((row) => [String(row.day), row]));
+      const weekLabels = ['日', '一', '二', '三', '四', '五', '六'];
+      const points = [];
+      for (let offset = 6; offset >= 0; offset -= 1) {
+        const date = new Date(Date.now() - offset * 86400000 + 8 * 3600000);
+        const key = date.toISOString().slice(0, 10);
+        points.push({
+          label: `周${weekLabels[date.getUTCDay()]}`,
+          value: Number(byDay.get(key)?.plays || 0),
+        });
+      }
+      const top = 962;
+      const bottom = 1102;
+      const maxValue = Math.max(1, ...points.map((item) => item.value));
+      const step = (RIGHT - M) / (points.length - 1);
+      const coords = points.map((item, index) => ({
+        x: M + index * step,
+        y: bottom - (item.value / maxValue) * (bottom - top),
+      }));
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(coords[0].x, bottom);
+      coords.forEach((point, index) => {
+        if (index === 0) {
+          ctx.lineTo(point.x, point.y);
+          return;
+        }
+        const prev = coords[index - 1];
+        const midX = (prev.x + point.x) / 2;
+        ctx.bezierCurveTo(midX, prev.y, midX, point.y, point.x, point.y);
+      });
+      ctx.lineTo(coords[coords.length - 1].x, bottom);
+      ctx.closePath();
+      const area = ctx.createLinearGradient(0, top, 0, bottom);
+      area.addColorStop(0, 'rgba(63,107,87,0.34)');
+      area.addColorStop(1, 'rgba(63,107,87,0.02)');
+      ctx.fillStyle = area;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      coords.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+          return;
+        }
+        const prev = coords[index - 1];
+        const midX = (prev.x + point.x) / 2;
+        ctx.bezierCurveTo(midX, prev.y, midX, point.y, point.x, point.y);
+      });
+      ctx.strokeStyle = '#3f6b57';
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+
+      coords.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#fdfbf6';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#3f6b57';
+        ctx.stroke();
+        ctx.fillStyle = MUTED;
+        ctx.font = `400 22px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(points[index].label, point.x, bottom + 40);
+        ctx.fillStyle = INK;
+        ctx.font = `600 22px ${FONT}`;
+        ctx.fillText(String(points[index].value), point.x, point.y - 24);
+      });
+      ctx.textAlign = 'right';
+      ctx.fillStyle = MUTED;
+      ctx.font = `400 24px ${FONT}`;
+      ctx.fillText(`共 ${weekTotal} 次播放`, RIGHT, chartTitleY);
+      ctx.textAlign = 'left';
+
+      // 底部双栏
+      const sectionY = 1206;
+      const rowStart = 1262;
+      const rowGap = 60;
+      ctx.fillStyle = INK;
+      ctx.font = `600 28px ${FONT}`;
+      ctx.fillText('最常听歌手', M, sectionY);
+      ctx.fillText('最常听歌曲', 560, sectionY);
+
+      const artistColors = ['#3f6b57', '#b5643f', '#5a6e8c'];
+      const artists = mergeRankedRows(summary.topArtists || [], (item) => normalizeMusicMatchText(item.artist)).slice(0, 3);
+      artists.forEach((item, index) => {
+        const y = rowStart + index * rowGap;
+        ctx.beginPath();
+        ctx.arc(M + 24, y - 9, 24, 0, Math.PI * 2);
+        ctx.fillStyle = artistColors[index % artistColors.length];
+        ctx.fill();
+        ctx.fillStyle = CREAM;
+        ctx.font = `600 22px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(String(item.artist || '?').slice(0, 1), M + 24, y);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = INK;
+        ctx.font = `600 26px ${FONT}`;
+        const name = fitCanvasText(ctx, item.artist || '未知歌手', 240);
+        ctx.fillText(name, M + 64, y);
+        const nameWidth = ctx.measureText(name).width;
+        ctx.fillStyle = MUTED;
+        ctx.font = `400 22px ${FONT}`;
+        ctx.fillText(`${Number(item.plays || 0)} 次`, M + 64 + nameWidth + 14, y);
+      });
+
+      const tracks = mergeRankedRows(summary.topTracks || [], (item) => `${normalizeMusicMatchText(item.title)}|${normalizeMusicMatchText(item.artist)}`).slice(0, 3);
+      tracks.forEach((item, index) => {
+        const y = rowStart + index * rowGap;
+        ctx.fillStyle = ACCENT;
+        ctx.font = `700 22px ${FONT}`;
+        ctx.fillText(`0${index + 1}`, 560, y);
+        ctx.fillStyle = INK;
+        ctx.font = `600 26px ${FONT}`;
+        const title = fitCanvasText(ctx, item.title || '未知歌曲', 260);
+        ctx.fillText(title, 606, y);
+        const titleWidth = ctx.measureText(title).width;
+        ctx.fillStyle = MUTED;
+        ctx.font = `400 22px ${FONT}`;
+        ctx.fillText(fitCanvasText(ctx, item.artist || '', RIGHT - 606 - titleWidth - 16), 606 + titleWidth + 14, y);
+      });
+
+      // 页脚
+      ctx.strokeStyle = 'rgba(23,32,26,0.12)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(M, 1392);
+      ctx.lineTo(RIGHT, 1392);
+      ctx.stroke();
+      ctx.fillStyle = MUTED;
+      ctx.font = `400 22px ${FONT}`;
+      ctx.fillText('HALO MUSIC · music.zhoujun.dev', M, 1428);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#8f9a91';
+      ctx.fillText('把听过的歌，变成自己的时间线', RIGHT, 1428);
+      ctx.textAlign = 'left';
+
+      return { width: W, height: H };
+    }
+
+    function buildInsightsShareCard() {
+      const summary = lastAccountSummary;
+      if (!summary || !Number(summary.plays || 0)) {
+        showToast('还没有听歌数据，先播放几首歌再来生成');
+        return;
+      }
+      const canvas = document.createElement('canvas');
+      drawInsightsCard(canvas, summary, state.profileName || '我的音乐');
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          showToast('分享卡生成失败，请稍后再试');
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `halo-insights-${new Date().toISOString().slice(0, 10)}.png`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast('分享卡已生成');
+      }, 'image/png');
+    }
+
     function init(){
       setupDOM();
       try{applyTheme(localStorage.getItem(THEME_STORAGE_KEY)||'light');}catch(e){applyTheme('light');}
@@ -4916,6 +5383,7 @@
       updateAuthUI();
       loadAuthSession();
       checkForAndroidUpdate();
+      importSharedFromUrl();
     }
 
     document.addEventListener('DOMContentLoaded',init);

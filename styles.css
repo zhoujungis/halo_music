@@ -4078,3 +4078,7 @@ html[data-theme="dark"] .search-batch-select-all:checked {
   line-height: 1.7;
 }
 .noscript-intro h2 { margin: 0 0 6px; color: var(--text); font-size: 16px; }
+
+/* ------------------------------------------------ insights share card */
+.insights-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.insights-share-btn { min-height: 32px; padding-inline: 14px; font-size: 12px; }
