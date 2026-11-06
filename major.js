@@ -2974,7 +2974,8 @@
         if(!cover)return;
         recommendCoverLookups.set(key,cover);
         const img=document.createElement('img');
-        img.src=cover;img.alt='';img.referrerPolicy='no-referrer';
+        img.src=coverUrlFor(cover,120);img.alt='';img.referrerPolicy='no-referrer';
+        img.loading='lazy';img.decoding='async';
         art.classList.remove('no-img');
         art.textContent='';
         art.appendChild(img);

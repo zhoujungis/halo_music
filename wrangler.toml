@@ -6,7 +6,7 @@ pages_build_output_dir = "."
 # Username allowlist for the read-only /admin dashboard.
 ADMIN_USERNAME = "admin"
 # Keep this value in sync with package.json for deployments.
-HALO_MUSIC_VERSION = "2.8.3"
+HALO_MUSIC_VERSION = "2.8.4"
 # Verified Resend sender for Halo Music. RESEND_API_KEY is a secret and must be
 # set with `wrangler pages secret put RESEND_API_KEY`.
 RESEND_FROM = "no-reply@music.zhoujun.dev"
