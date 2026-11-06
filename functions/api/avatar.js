@@ -11,7 +11,7 @@ const ARTISTS = {
   "薛之谦": "https://p1.music.126.net/Z2x6knGRr7eRrZeOlgCngA==/109951172414270313.jpg?param=120y120",
   "孙燕姿": "https://p2.music.126.net/VED2XoZcISpeGUTE_Q6lTA==/109951170045683199.jpg?param=120y120",
   // 英文歌手（Wikimedia 标准 250px 缩略图）
-  "Taylor Swift": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png/250px-Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png",
+  "Taylor Swift": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Taylor_Swift_2_-_2019_by_Glenn_Francis.jpg/250px-Taylor_Swift_2_-_2019_by_Glenn_Francis.jpg",
   "Ed Sheeran": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Ed_Sheeran_2022_%283x4_crop%29.jpg/250px-Ed_Sheeran_2022_%283x4_crop%29.jpg",
   "The Weeknd": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/The_Weeknd_Portrait_by_Brian_Ziff.jpg/250px-The_Weeknd_Portrait_by_Brian_Ziff.jpg",
   "Billie Eilish": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg/250px-BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg",
@@ -55,7 +55,7 @@ export async function onRequestGet({ request, env }) {
   const source = ARTISTS[name];
   if (!source) return new Response("Not found", { status: 404 });
 
-  const cacheKey = `avatar:v1:${name}`;
+  const cacheKey = `avatar:v2:${name}`;
   const cached = memoryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return imageResponse(cached.body, cached.type);
