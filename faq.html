@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>常见问题 - Halo Music</title>
+  <meta name="description" content="Halo Music 常见问题：搜索播放、试听片段、音源失败、账号与同步、歌单导入导出、数据与广告。" />
+  <link rel="canonical" href="https://music.zhoujun.dev/faq" />
+  <link rel="stylesheet" href="/content.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "为什么有的歌只能播放 30 秒？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "免费音源对部分版权歌曲只提供试听片段。播放器会自动检测并尝试切换到完整音源，换不到完整版时会自动跳到下一首。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "收藏和歌单需要登录吗？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "搜索和播放无需登录；收藏、歌单、听歌分析需要登录账号，登录后可以跨设备同步。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "站点会保存我听的歌吗？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "登录后会把曲目标识、歌名、歌手、时长和播放时间写入你的听歌记录，仅用于向你展示听歌分析，不用于广告或用户画像。"
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/"><span class="mark">H</span>Halo Music</a>
+    <nav>
+      <a href="/">播放器</a>
+      <a href="/charts">榜单</a>
+      <a href="/guide">使用指南</a>
+      <a href="/about">关于</a>
+    </nav>
+  </header>
+  <main>
+    <h1>常见问题</h1>
+    <p>这里整理了使用 Halo Music 时最常遇到的问题。如果没有找到答案，可以到<a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">反馈页面</a>提问。</p>
+
+    <h2>搜索与播放</h2>
+    <h3>为什么搜索结果里同一首歌会出现多次？</h3>
+    <p>搜索结果来自多个平台，平台之间可能有同名歌曲的官方版与翻唱版。系统会按歌名与歌手做去重，但仍可能保留不同来源的可用版本，方便在其中一个失效时切换。</p>
+
+    <h3>为什么有的歌只能播放 30 秒？</h3>
+    <p>免费音源对部分版权歌曲只提供试听片段。播放器会自动检测并尝试切换到完整音源，换不到完整版时会自动跳到下一首。</p>
+
+    <h3>点击播放没反应或提示播放失败怎么办？</h3>
+    <p>通常是上游音源暂时不可用。播放器会自动尝试新的解析线路与其它平台版本；也可以稍后重试，或换一个搜索结果试听。</p>
+
+    <h3>音质标签为什么有时不显示？</h3>
+    <p>只有能确认音质时才会显示标签。无法确认的歌曲不会标注「无损」，以免误导。</p>
+
+    <h2>账号与数据</h2>
+    <h3>收藏和歌单需要登录吗？</h3>
+    <p>搜索和播放无需登录；收藏、歌单与听歌分析需要登录账号，登录后可以跨设备同步。</p>
+
+    <h3>站点会保存我听的歌吗？</h3>
+    <p>登录后会把曲目标识、歌名、歌手、时长和播放时间写入你的听歌记录，仅用于向你展示听歌分析，不用于广告投放或用户画像。详细说明见<a href="/privacy">隐私政策</a>。</p>
+
+    <h3>可以注销账号吗？</h3>
+    <p>可以。在「我的信息」里展开「注销账户」，输入密码确认后会删除账号、收藏、歌单和听歌记录，且无法恢复。</p>
+
+    <h3>忘记密码怎么办？</h3>
+    <p>目前没有自助找回入口。可以通过<a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">反馈页面</a>说明情况，或使用 Google 账号登录（如果之前绑定过）。</p>
+
+    <h2>歌单与数据</h2>
+    <h3>如何导入自己的歌单？</h3>
+    <p>「我的音乐 → 歌单 → 导入歌单」，粘贴网易云、QQ 音乐或汽水音乐的公开歌单分享链接即可。大型歌单会按平台限制截取前若干首。</p>
+
+    <h3>导出的 JSON 有什么用？</h3>
+    <p>导出文件包含收藏与全部歌单，可用于备份或在其它设备上重新导入，避免换设备或误删导致数据丢失。</p>
+
+    <h2>客户端与广告</h2>
+    <h3>Windows / Android 客户端和网页版有区别吗？</h3>
+    <p>客户端是网页版的封装，功能一致；Android 客户端额外支持后台播放、锁屏与通知栏控制。iPhone 可以把网页添加到主屏幕，获得接近 App 的全屏体验。</p>
+
+    <h3>站点的广告由谁提供？</h3>
+    <p>广告由 Google AdSense 提供，可能与你的浏览兴趣相关。可以在 <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google 广告设置</a> 中管理个性化广告。</p>
+
+    <h3>站点提供音频下载吗？</h3>
+    <p>不提供。站内不存储、不制作音频文件，页面上的「下载」只用于把当前歌曲加入本地收藏备份。</p>
+
+    <p><a class="cta" href="/">回到播放器</a></p>
+  </main>
+  <footer class="site">
+    <p>Halo Music · <a href="/about">关于本站</a> · <a href="/guide">使用指南</a> · <a href="/charts">热门榜单</a> · <a href="/privacy">隐私政策</a> · <a href="/terms">服务条款</a> · <a href="/disclaimer">免责声明</a></p>
+  </footer>
+</body>
+</html>
