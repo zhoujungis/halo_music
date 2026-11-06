@@ -287,14 +287,26 @@
       return Boolean(track&&state.currentTrack&&state.currentTrack.uid===track.uid&&state.isPlaying);
     }
     // 所有列表里的播放图标（▶/⏸）统一跟随当前播放状态。
+    function normalizeMatchText(value){
+      return String(value||'').toLowerCase().replace(/\s+/g,'').trim();
+    }
+    function rowMatchesCurrent(rowUid,title,artist){
+      if(!state.currentTrack)return false;
+      if(rowUid&&rowUid===state.currentTrack.uid)return true;
+      return normalizeMatchText(title)===normalizeMatchText(state.currentTrack.title)
+        &&normalizeMatchText(artist)===normalizeMatchText(state.currentTrack.artist);
+    }
     function updatePlayMarks(){
       const uid=state.currentTrack?.uid||'';
       const playing=Boolean(state.isPlaying);
       document.querySelectorAll('[data-track-uid]').forEach(row=>{
+        const same=row.dataset.trackUid===uid
+          ||(row.dataset.trackTitle&&normalizeMatchText(row.dataset.trackTitle)===normalizeMatchText(state.currentTrack?.title)
+            &&normalizeMatchText(row.dataset.trackArtist)===normalizeMatchText(state.currentTrack?.artist));
         const mark=row.querySelector('.discovery-play-mark');
-        if(mark)mark.textContent=row.dataset.trackUid===uid&&playing?'⏸':'▶';
+        if(mark)mark.textContent=same&&playing?'⏸':'▶';
         const btn=row.querySelector('.track-actions .btn-secondary');
-        if(btn)btn.textContent=row.dataset.trackUid===uid&&playing?'⏸':'▶';
+        if(btn)btn.textContent=same&&playing?'⏸':'▶';
       });
     }
     function updateAuthUI(){
@@ -2869,6 +2881,8 @@
           rowEl.type='button';
           rowEl.className='discovery-recent-item ripple-target';
           rowEl.dataset.trackUid=trackUid;
+          rowEl.dataset.trackTitle=row.title||'';
+          rowEl.dataset.trackArtist=row.artist||'';
           const rank=document.createElement('span');
           rank.className='discovery-rank-num'+(index<3?' top3':'');
           rank.textContent=String(index+1);
@@ -2881,11 +2895,15 @@
           meta.append(t1,t2);
           const mark=document.createElement('b');
           mark.className='discovery-play-mark';
-          mark.textContent=isCurrentPlaying({uid:trackUid})?'⏸':'▶';
+          mark.textContent=rowMatchesCurrent(trackUid,row.title,row.artist)?'⏸':'▶';
           rowEl.append(meta,mark);
-          rowEl.addEventListener('click',()=>{
-            if(isCurrentPlaying({uid:trackUid})){dom.audio.pause();return;}
-            if(isEn){playHistoryTrack({title:row.title,artist:row.artist,cover:row.cover});return;}
+          rowEl.addEventListener('click',async()=>{
+            if(rowMatchesCurrent(trackUid,row.title,row.artist)){dom.audio.pause();return;}
+            if(isEn){
+              const played=await playHistoryTrack({title:row.title,artist:row.artist,cover:row.cover});
+              if(played?.uid){rowEl.dataset.trackUid=played.uid;updatePlayMarks();}
+              return;
+            }
             playNeteaseTrack(row.id,row.title,row.artist,row.cover);
           });
           list.appendChild(rowEl);
@@ -2987,7 +3005,7 @@
         card.append(art,copy);
         card.dataset.trackUid=t.track_uid||'';
         card.addEventListener('click',()=>{
-          if(isCurrentPlaying({uid:t.track_uid||''})){dom.audio.pause();return;}
+          if(rowMatchesCurrent(t.track_uid||'',t.title,t.artist)){dom.audio.pause();return;}
           playHistoryTrack(t);
         });
         row.appendChild(card);
@@ -3101,7 +3119,7 @@
         state.trackMap.set(track.uid,track);
         playTrack(track,{type:'search',index:-1,playlistId:null});
         if(window.matchMedia('(max-width: 760px)').matches)setMobileView('lyrics');
-        return;
+        return track;
       }
       const keyword=`${title} ${artist}`.trim();
       if(!keyword)return;
