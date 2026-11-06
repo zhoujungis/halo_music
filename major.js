@@ -3317,7 +3317,8 @@
       const cover=playlist.tracks?.[0]?.cover||'';
       if(cover){
         const img=document.createElement('img');
-        img.src=cover;img.alt='';img.referrerPolicy='no-referrer';
+        img.src=coverUrlFor(cover,120);img.alt='';img.referrerPolicy='no-referrer';
+        img.loading='lazy';img.decoding='async';
         img.onerror=()=>{img.remove();art.textContent=(playlist.name||'P').slice(0,1).toUpperCase();};
         art.appendChild(img);
       }else art.textContent=(playlist.name||'P').slice(0,1).toUpperCase();
