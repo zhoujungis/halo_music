@@ -100,3 +100,6 @@ footer.site a { color: var(--text-dim); }
 .chart-card li b { color: var(--accent); font-weight: 700; min-width: 20px; }
 .chart-card li span { color: var(--text); }
 .chart-card li small { color: var(--text-dim); display: block; font-size: 11px; }
+
+header.site a.lang-switch { padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; line-height: 1.5; }
+header.site a.lang-switch:hover { border-color: var(--accent); }

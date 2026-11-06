@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy - Halo Music</title>
+  <meta name="description" content="Halo Music privacy policy: what data we collect, how it is used and retained, third-party services, and your rights." />
+  <link rel="canonical" href="https://music.zhoujun.dev/en/privacy" />
+  <link rel="alternate" hreflang="zh-CN" href="https://music.zhoujun.dev/privacy" />
+  <link rel="alternate" hreflang="en" href="https://music.zhoujun.dev/en/privacy" />
+  <link rel="alternate" hreflang="x-default" href="https://music.zhoujun.dev/privacy" />
+  <link rel="stylesheet" href="/content.css" />
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/"><span class="mark">H</span>Halo Music</a>
+    <nav>
+      <a href="/">Player</a>
+      <a href="/en/charts">Charts</a>
+      <a href="/en/guide">Guide</a>
+      <a href="/en/about">About</a>
+      <a class="lang-switch" href="/privacy" hreflang="zh-CN">中文</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p>This policy describes how Halo Music actually handles data today. Continuing to use the site means you understand the following.</p>
+
+    <h2>1. What we collect</h2>
+    <ul>
+      <li><b>Account data</b>: email, username, and a one-way password hash (PBKDF2-SHA256, 100k iterations with a random salt — no plaintext passwords); optional display name and avatar URL.</li>
+      <li><b>Google sign-in</b>: we receive your Google account ID, verified email, name, and avatar URL. We never see your Google password.</li>
+      <li><b>Library</b>: your favorite songs and playlists, stored as JSON.</li>
+      <li><b>Listening history</b>: track ID, title, artist, duration, and play time. Used only to show you your listening stats — never for ads or profiling.</li>
+      <li><b>Email codes</b>: only the code hash and expiry are stored. Codes expire after 10 minutes; rate-limit IP hashes are deleted after 24 hours and are only used to limit request frequency.</li>
+      <li><b>Cache</b>: search keywords are cached for about 45 seconds; resolved audio URLs for up to 365 days (to speed up playback and avoid repeated lookups). This also applies to anonymous visits.</li>
+    </ul>
+
+    <h2>2. Local browser storage</h2>
+    <p>Theme preference, playlists, and the queue are stored locally in localStorage. Your session uses the HttpOnly cookie <code>hm_token</code> (Secure, SameSite=Lax, 30 days), which page scripts cannot read.</p>
+
+    <h2>3. Third-party services</h2>
+    <ul>
+      <li>Cloudflare: page hosting, API runtime, and database storage.</li>
+      <li>Resend: sending registration code emails.</li>
+      <li>Google: OAuth sign-in.</li>
+      <li>Google AdSense: serves ads on this site and may use cookies or similar technologies to record your visits to this and other sites for personalized ads. You can manage or disable personalized ads in <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google Ad Settings</a>.</li>
+      <li>Music platforms and their public parsing endpoints: search and playback; search keywords are sent to the corresponding platform.</li>
+    </ul>
+
+    <h2>4. How data is used</h2>
+    <p>This data is used only for sign-in, syncing favorites and playlists, showing you your listening stats, and searching and playing content. Listening history powers only the stats you can see; it is never used for advertising, marketing, or profiling.</p>
+
+    <h2>5. Retention, export, and deletion</h2>
+    <p>Account data is kept until you delete your account. After deletion, your account, favorites, playlists, listening history, and sessions are removed and cannot be recovered; underlying backups may retain snapshots for a while and then expire automatically. To export your data, ask via <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a>.</p>
+
+    <h2>6. Security</h2>
+    <p>The site uses HTTPS; session cookies are HttpOnly, Secure, and SameSite; passwords are stored only as hashes. No internet service can guarantee absolute security — never reuse an important password here.</p>
+
+    <h2>7. Minors</h2>
+    <p>The site is not directed at children under 14, and we do not knowingly collect their personal information.</p>
+
+    <h2>8. Changes and contact</h2>
+    <p>Any changes will be posted on this page. Questions? Reach us via <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a> or email <a href="mailto:edfc1582@shmarpe.resend.app">edfc1582@shmarpe.resend.app</a>.</p>
+  </main>
+  <footer class="site">
+    <p>Halo Music · <a href="/en/about">About</a> · <a href="/en/guide">Guide</a> · <a href="/en/terms">Terms</a> · <a href="/en/disclaimer">Disclaimer</a></p>
+  </footer>
+</body>
+</html>

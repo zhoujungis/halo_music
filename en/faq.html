@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ - Halo Music</title>
+  <meta name="description" content="Halo Music FAQ: search and playback, preview clips, source failures, accounts and sync, playlist import/export, data and ads." />
+  <link rel="canonical" href="https://music.zhoujun.dev/en/faq" />
+  <link rel="alternate" hreflang="zh-CN" href="https://music.zhoujun.dev/faq" />
+  <link rel="alternate" hreflang="en" href="https://music.zhoujun.dev/en/faq" />
+  <link rel="alternate" hreflang="x-default" href="https://music.zhoujun.dev/faq" />
+  <link rel="stylesheet" href="/content.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why do some songs only play for 30 seconds?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Free sources only provide a preview clip for some licensed tracks. The player detects this and tries to switch to a full version; if none is available it skips to the next song."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need an account for favorites and playlists?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Search and playback need no account. Favorites, playlists, and listening stats require signing in, and then sync across devices."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the site store what I listen to?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "When signed in, the track ID, title, artist, duration, and play time are written to your listening history. It is only used to show you your listening stats, never for ads or profiling."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <header class="site">
+    <a class="brand" href="/"><span class="mark">H</span>Halo Music</a>
+    <nav>
+      <a href="/">Player</a>
+      <a href="/en/charts">Charts</a>
+      <a href="/en/guide">Guide</a>
+      <a href="/en/about">About</a>
+      <a class="lang-switch" href="/faq" hreflang="zh-CN">中文</a>
+    </nav>
+  </header>
+  <main>
+    <h1>FAQ</h1>
+    <p>The most common questions about Halo Music. If your question isn't answered here, ask on <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a>.</p>
+
+    <h2>Search and playback</h2>
+    <h3>Why does the same song appear more than once?</h3>
+    <p>Results come from several platforms, and different platforms may have both an official version and covers with the same title. Results are de-duplicated by title and artist, but versions from different sources are kept so playback can fall back when one fails.</p>
+
+    <h3>Why do some songs only play for 30 seconds?</h3>
+    <p>Free sources only provide a preview clip for some licensed tracks. The player detects this and tries to switch to a full version; if none is available it skips to the next song.</p>
+
+    <h3>Nothing happens when I press play, or playback fails. What now?</h3>
+    <p>Usually the upstream source is temporarily unavailable. The player tries other routes and versions automatically; you can also retry later or try another search result.</p>
+
+    <h3>Why is the quality label sometimes missing?</h3>
+    <p>The label only appears when the quality is confirmed. Unconfirmed tracks are never labeled "lossless" to avoid misleading you.</p>
+
+    <h2>Accounts and data</h2>
+    <h3>Do I need an account for favorites and playlists?</h3>
+    <p>Search and playback need no account. Favorites, playlists, and listening stats require signing in, and then sync across devices.</p>
+
+    <h3>Does the site store what I listen to?</h3>
+    <p>When signed in, the track ID, title, artist, duration, and play time are written to your listening history. It is only used to show you your listening stats, never for ads or profiling. See the <a href="/en/privacy">privacy policy</a> for details.</p>
+
+    <h3>Can I delete my account?</h3>
+    <p>Yes. In "My Info", open "Delete account", enter your password, and confirm. Your account, favorites, playlists, and listening history are deleted permanently.</p>
+
+    <h3>I forgot my password. What can I do?</h3>
+    <p>There is no self-service reset yet. Ask on <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a>, or sign in with Google if you linked it before.</p>
+
+    <h2>Playlists and data</h2>
+    <h3>How do I import my playlists?</h3>
+    <p>Go to "My Music → Playlists → Import playlist" and paste a public playlist share link from NetEase Cloud Music, QQ Music, or Qishui Music. Large playlists are capped by the platform's per-import limit.</p>
+
+    <h3>What is the exported JSON for?</h3>
+    <p>It contains your favorites and all playlists, so you can back them up or import them on another device — handy when switching devices or recovering from an accidental delete.</p>
+
+    <h2>Apps and ads</h2>
+    <h3>How do the Windows / Android apps differ from the web app?</h3>
+    <p>The apps wrap the web app and have the same features. The Android app additionally supports background playback, lock-screen, and notification controls. On iPhone, add the site to your Home Screen for a near-native full-screen experience.</p>
+
+    <h3>Who provides the ads?</h3>
+    <p>Ads are served by Google AdSense and may be based on your interests. You can manage personalized ads in <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google Ad Settings</a>.</p>
+
+    <h3>Does the site offer audio downloads?</h3>
+    <p>No. No audio files are stored or created; the download button only adds the song to your local favorites backup.</p>
+
+    <p><a class="cta" href="/">Open the player</a></p>
+  </main>
+  <footer class="site">
+    <p>Halo Music · <a href="/en/about">About</a> · <a href="/en/guide">Guide</a> · <a href="/en/charts">Charts</a> · <a href="/en/privacy">Privacy</a> · <a href="/en/terms">Terms</a> · <a href="/en/disclaimer">Disclaimer</a></p>
+  </footer>
+</body>
+</html>

@@ -43,6 +43,12 @@ const DEFAULT_SONGS_EN = [
   plays: 0,
 }));
 
+// 含中日韩字符的曲目视为“中文/亚洲曲目”，英文界面下过滤掉。
+function isLatinTrack(row) {
+  const text = `${row?.title || ""}${row?.artist || ""}`;
+  return !/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(text);
+}
+
 function normalizeRows(rows) {
   return (rows || [])
     .map((row) => ({
@@ -124,16 +130,19 @@ export async function onRequestGet({ request, env }) {
   }
 
   const personal = mergeRows([sameArtist, coListen]);
+  // 英文界面只保留非中文曲目，避免个人/全站历史里的中文歌混进英文推荐。
+  const personalEn = lang === "en" ? personal.filter(isLatinTrack) : personal;
+  if (lang === "en") {
+    if (personalEn.length >= MIN_TRACKS) {
+      return json({ basis: "personal", tracks: personalEn });
+    }
+    return json({
+      basis: personalEn.length ? "personal" : "default",
+      tracks: mergeRows([personalEn, DEFAULT_SONGS_EN]),
+    });
+  }
   if (personal.length >= MIN_TRACKS) {
     return json({ basis: "personal", tracks: personal });
-  }
-
-  // 英文界面不做“全站热歌”兜底（站内记录以中文歌为主），直接用国际默认推荐补足。
-  if (lang === "en") {
-    return json({
-      basis: personal.length ? "personal" : "default",
-      tracks: mergeRows([personal, DEFAULT_SONGS_EN]),
-    });
   }
 
   // 全站播放最多的歌：所有用户都算，包括游客场景。

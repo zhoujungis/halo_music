@@ -10,4 +10,14 @@
   <url><loc>https://music.zhoujun.dev/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://music.zhoujun.dev/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://music.zhoujun.dev/disclaimer</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://music.zhoujun.dev/en</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/charts</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/guide</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/changelog</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/contact</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/privacy</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/terms</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://music.zhoujun.dev/en/disclaimer</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
 </urlset>

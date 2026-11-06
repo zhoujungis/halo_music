@@ -2910,8 +2910,13 @@
         const response=await fetchWithTimeout(`/api/recommend?lang=${uiLang()}`,{},10000);
         if(response.ok){
           const data=await response.json();
+          const tracks=(Array.isArray(data?.tracks)?data.tracks:[]).filter(item=>item&&item.title);
+          // 英文界面兜底过滤中文曲目，避免服务端历史数据混入。
+          const visibleTracks=uiLang()==='en'
+            ?tracks.filter(item=>!/[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]/.test(`${item.title||''}${item.artist||''}`))
+            :tracks;
           recommendCache={
-            tracks:Array.isArray(data?.tracks)?data.tracks.filter(item=>item&&item.title):[],
+            tracks:visibleTracks,
             basis:String(data?.basis||''),
             at:Date.now()
           };
@@ -5383,6 +5388,17 @@
       }, 'image/png');
     }
 
+    // 英文界面下，页脚内容页链接指向 /en/ 版本。
+    function syncFooterLanguage(){
+      const en=uiLang()==='en';
+      document.querySelectorAll('footer .footer-link').forEach(link=>{
+        const base=link.dataset.baseHref||link.getAttribute('href')||'';
+        if(!base.startsWith('/'))return;
+        if(!link.dataset.baseHref)link.dataset.baseHref=base;
+        link.setAttribute('href',en?(base.startsWith('/en/')?base:`/en${base}`):(base.replace(/^\/en/,'')||'/'));
+      });
+    }
+
     // 语言切换后，榜单/推荐属于“按语言取不同数据”，必须清缓存重拉。
     function handleLanguageChange(){
       toplistCache={};
@@ -5392,6 +5408,7 @@
       recommendFailed=false;
       recommendLoading=false;
       activeToplistChart='hot';
+      syncFooterLanguage();
       renderToplistPage();
       renderMiniSearchList();
       if(state.isAuthenticated&&dom.listeningSummary)loadAccountSummary?.();
@@ -5400,6 +5417,7 @@
     function init(){
       setupDOM();
       document.addEventListener('halo:langchange',handleLanguageChange);
+      syncFooterLanguage();
       try{applyTheme(localStorage.getItem(THEME_STORAGE_KEY)||'light');}catch(e){applyTheme('light');}
       setupParticles();
       setupRipple();
