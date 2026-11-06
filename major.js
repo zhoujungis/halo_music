@@ -189,25 +189,25 @@
     const RECOMMEND_TTL = 5 * 60 * 1000;
     // 推荐歌手：站内既有的热门歌手池（头像为网易图床直链，加载失败回退首字母）。
     const POPULAR_ARTISTS = [
-      { name: '周杰伦', avatar: 'https://p1.music.126.net/NWv6PtSBkyWZzqbJVzBr7g==/109951169164936450.jpg' },
-      { name: '林俊杰', avatar: 'https://p2.music.126.net/78q0jUUJ0h08GxAs2G-tCA==/109951168529051968.jpg' },
-      { name: '陈奕迅', avatar: 'https://p1.music.126.net/5KJI2mq0G0OQHQaAfAJfwg==/109951173289563385.jpg' },
-      { name: '告五人', avatar: 'https://p2.music.126.net/7G5nKTU6uOgZaCCzVMC1kg==/109951173831544913.jpg' },
-      { name: '五月天', avatar: 'https://p1.music.126.net/qr5EV1Z5LDgar18Pilw0Eg==/109951170331174200.jpg' },
-      { name: '邓紫棋', avatar: 'https://p1.music.126.net/nvhb84VlA7jYwKy5yY4N4w==/109951169621849611.jpg' },
-      { name: '薛之谦', avatar: 'https://p1.music.126.net/Z2x6knGRr7eRrZeOlgCngA==/109951172414270313.jpg' },
-      { name: '孙燕姿', avatar: 'https://p2.music.126.net/VED2XoZcISpeGUTE_Q6lTA==/109951170045683199.jpg' },
+      { name: '周杰伦', avatar: '/api/avatar?name=%E5%91%A8%E6%9D%B0%E4%BC%A6' },
+      { name: '林俊杰', avatar: '/api/avatar?name=%E6%9E%97%E4%BF%8A%E6%9D%B0' },
+      { name: '陈奕迅', avatar: '/api/avatar?name=%E9%99%88%E5%A5%95%E8%BF%85' },
+      { name: '告五人', avatar: '/api/avatar?name=%E5%91%8A%E4%BA%94%E4%BA%BA' },
+      { name: '五月天', avatar: '/api/avatar?name=%E4%BA%94%E6%9C%88%E5%A4%A9' },
+      { name: '邓紫棋', avatar: '/api/avatar?name=%E9%82%93%E7%B4%AB%E6%A3%8B' },
+      { name: '薛之谦', avatar: '/api/avatar?name=%E8%96%9B%E4%B9%8B%E8%B0%A6' },
+      { name: '孙燕姿', avatar: '/api/avatar?name=%E5%AD%99%E7%87%95%E5%A7%BF' },
     ];
     // 英文界面的热门歌手（头像来自 Wikimedia，加载失败时回退首字母）。
     const POPULAR_ARTISTS_EN = [
-      { name: 'Taylor Swift', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png/330px-Taylor_Swift_at_the_2023_MTV_Video_Music_Awards_%283%29.png' },
-      { name: 'Ed Sheeran', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Ed_Sheeran_2022_%283x4_crop%29.jpg/330px-Ed_Sheeran_2022_%283x4_crop%29.jpg' },
-      { name: 'The Weeknd', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/The_Weeknd_Portrait_by_Brian_Ziff.jpg/330px-The_Weeknd_Portrait_by_Brian_Ziff.jpg' },
-      { name: 'Billie Eilish', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg/330px-BillieEilishO2140725-39_-_54665577407_%28cropped%29.jpg' },
-      { name: 'Bruno Mars', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg/330px-BrunoMars24KMagicWorldTourLive_%28cropped%29.jpg' },
-      { name: 'Adele', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Adele_2016.jpg/330px-Adele_2016.jpg' },
-      { name: 'Coldplay', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/ColdplayWembley120925_%28cropped%29.jpg/330px-ColdplayWembley120925_%28cropped%29.jpg' },
-      { name: 'Drake', avatar: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg/330px-Drake_at_The_Carter_Effect_2017_%2836818935200%29_%28cropped%29.jpg' },
+      { name: 'Taylor Swift', avatar: '/api/avatar?name=Taylor%20Swift' },
+      { name: 'Ed Sheeran', avatar: '/api/avatar?name=Ed%20Sheeran' },
+      { name: 'The Weeknd', avatar: '/api/avatar?name=The%20Weeknd' },
+      { name: 'Billie Eilish', avatar: '/api/avatar?name=Billie%20Eilish' },
+      { name: 'Bruno Mars', avatar: '/api/avatar?name=Bruno%20Mars' },
+      { name: 'Adele', avatar: '/api/avatar?name=Adele' },
+      { name: 'Coldplay', avatar: '/api/avatar?name=Coldplay' },
+      { name: 'Drake', avatar: '/api/avatar?name=Drake' },
     ];
     function popularArtists(){
       return uiLang() === 'en' ? POPULAR_ARTISTS_EN : POPULAR_ARTISTS;
