@@ -189,25 +189,25 @@
     const RECOMMEND_TTL = 5 * 60 * 1000;
     // 推荐歌手：站内既有的热门歌手池（头像为网易图床直链，加载失败回退首字母）。
     const POPULAR_ARTISTS = [
-      { name: '周杰伦', avatar: '/api/avatar?name=%E5%91%A8%E6%9D%B0%E4%BC%A6' },
-      { name: '林俊杰', avatar: '/api/avatar?name=%E6%9E%97%E4%BF%8A%E6%9D%B0' },
-      { name: '陈奕迅', avatar: '/api/avatar?name=%E9%99%88%E5%A5%95%E8%BF%85' },
-      { name: '告五人', avatar: '/api/avatar?name=%E5%91%8A%E4%BA%94%E4%BA%BA' },
-      { name: '五月天', avatar: '/api/avatar?name=%E4%BA%94%E6%9C%88%E5%A4%A9' },
-      { name: '邓紫棋', avatar: '/api/avatar?name=%E9%82%93%E7%B4%AB%E6%A3%8B' },
-      { name: '薛之谦', avatar: '/api/avatar?name=%E8%96%9B%E4%B9%8B%E8%B0%A6' },
-      { name: '孙燕姿', avatar: '/api/avatar?name=%E5%AD%99%E7%87%95%E5%A7%BF' },
+      { name: '周杰伦', avatar: '/avatars/zhou-jielun.jpg' },
+      { name: '林俊杰', avatar: '/avatars/lin-junjie.jpg' },
+      { name: '陈奕迅', avatar: '/avatars/eason-chan.jpg' },
+      { name: '告五人', avatar: '/avatars/accusefive.jpg' },
+      { name: '五月天', avatar: '/avatars/mayday.jpg' },
+      { name: '邓紫棋', avatar: '/avatars/gem.jpg' },
+      { name: '薛之谦', avatar: '/avatars/joker-xue.jpg' },
+      { name: '孙燕姿', avatar: '/avatars/stefanie-sun.jpg' },
     ];
     // 英文界面的热门歌手（头像来自 Wikimedia，加载失败时回退首字母）。
     const POPULAR_ARTISTS_EN = [
-      { name: 'Taylor Swift', avatar: '/api/avatar?name=Taylor%20Swift' },
-      { name: 'Ed Sheeran', avatar: '/api/avatar?name=Ed%20Sheeran' },
-      { name: 'The Weeknd', avatar: '/api/avatar?name=The%20Weeknd' },
-      { name: 'Billie Eilish', avatar: '/api/avatar?name=Billie%20Eilish' },
-      { name: 'Bruno Mars', avatar: '/api/avatar?name=Bruno%20Mars' },
-      { name: 'Adele', avatar: '/api/avatar?name=Adele' },
-      { name: 'Coldplay', avatar: '/api/avatar?name=Coldplay' },
-      { name: 'Drake', avatar: '/api/avatar?name=Drake' },
+      { name: 'Taylor Swift', avatar: '/avatars/taylor-swift.jpg' },
+      { name: 'Ed Sheeran', avatar: '/avatars/ed-sheeran.jpg' },
+      { name: 'The Weeknd', avatar: '/avatars/the-weeknd.jpg' },
+      { name: 'Billie Eilish', avatar: '/avatars/billie-eilish.jpg' },
+      { name: 'Bruno Mars', avatar: '/avatars/bruno-mars.jpg' },
+      { name: 'Adele', avatar: '/avatars/adele.jpg' },
+      { name: 'Coldplay', avatar: '/avatars/coldplay.jpg' },
+      { name: 'Drake', avatar: '/avatars/drake.jpg' },
     ];
     function popularArtists(){
       return uiLang() === 'en' ? POPULAR_ARTISTS_EN : POPULAR_ARTISTS;
