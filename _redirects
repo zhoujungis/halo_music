@@ -1,0 +1,25 @@
+# Permanent redirects for URLs that existed before the clean-URL migration.
+# Cloudflare Pages would answer these with an automatic 308; making them
+# explicit 301s keeps the signal clear for search engines.
+
+/index.html / 301
+
+/guide.html /guide 301
+/faq.html /faq 301
+/about.html /about 301
+/changelog.html /changelog 301
+/contact.html /contact 301
+/privacy.html /privacy 301
+/terms.html /terms 301
+/disclaimer.html /disclaimer 301
+
+/en /en/ 301
+/en/index.html /en/ 301
+/en/guide.html /en/guide 301
+/en/faq.html /en/faq 301
+/en/about.html /en/about 301
+/en/changelog.html /en/changelog 301
+/en/contact.html /en/contact 301
+/en/privacy.html /en/privacy 301
+/en/terms.html /en/terms 301
+/en/disclaimer.html /en/disclaimer 301
