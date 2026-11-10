@@ -137,7 +137,9 @@
                 <div class="player-btn-row">
                   <button id="fav-btn" class="btn btn-secondary btn-icon ripple-target" title="收藏 (F)">❤</button>
                   <button id="save-to-playlist-btn" class="btn btn-secondary btn-icon ripple-target" title="保存到歌单" aria-label="保存到歌单">＋</button>
+                  <button id="queue-add-current-btn" class="btn btn-secondary btn-icon queue-add-btn ripple-target" type="button" title="加入播放列表" aria-label="加入播放列表">☷</button>
                   <button id="download-btn" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="downloadTitle" title="下载当前歌曲" aria-label="下载当前歌曲"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg></button>
+                  <button id="offline-btn" class="btn btn-secondary btn-icon ripple-target" type="button" title="离线歌曲" aria-label="离线歌曲"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v10H4z"/><path d="M8 19h8"/><path d="M12 15v4"/></svg></button>
                 </div>
                 <div id="player-status" class="status-pill" data-i18n="playerStatusIdle">空闲</div>
               </div>
@@ -217,6 +219,7 @@
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
+                <button id="offline-manage-btn" class="btn btn-ghost ripple-target" type="button">离线歌曲</button>
                 <input id="import-playlist-input" type="file" accept="application/json,text/plain,.json,.txt" style="display:none;" />
               </div>
             </div>
@@ -719,6 +722,23 @@
         <h3>账号安全</h3>
         <p>本站账号仅用于演示功能，请勿使用与其他重要服务相同的密码。</p>
       </div>
+    </div>
+  </div>
+  <div id="offline-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal offline-modal" role="dialog" aria-modal="true" aria-labelledby="offline-title">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-title-icon">↓</div>
+          <span id="offline-title">离线歌曲</span>
+        </div>
+        <button id="offline-close" class="modal-close-btn" type="button" aria-label="关闭">×</button>
+      </div>
+      <p id="offline-summary" class="modal-desc">已下载 0 首</p>
+      <div class="offline-actions">
+        <button id="offline-import-btn" class="btn btn-secondary ripple-target" type="button">导入本地歌曲</button>
+        <input id="offline-import-input" type="file" accept="audio/*" multiple style="display:none;" />
+      </div>
+      <div id="offline-list" class="offline-list"></div>
     </div>
   </div>
   <div id="toast"></div>

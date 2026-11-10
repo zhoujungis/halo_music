@@ -99,6 +99,8 @@
     '收藏 (F)': 'Favorite (F)',
     '保存到歌单': 'Save to playlist',
     '下载当前歌曲': 'Download this song',
+    '离线歌曲': 'Offline songs',
+    '导入本地歌曲': 'Import local songs',
     '上一首 (P)': 'Previous (P)',
     '播放/暂停 (Space)': 'Play/Pause (Space)',
     '下一首 (N)': 'Next (N)',
@@ -296,6 +298,7 @@
 
     // ===== toasts / actions =====
     '已添加到收藏': 'Added to favorites',
+    '已加入收藏': 'Added to favorites',
     '已从收藏移除': 'Removed from favorites',
     '已添加到歌单': 'Added to playlist',
     '该歌曲已在当前列表里~': 'Already in this list',

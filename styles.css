@@ -423,7 +423,13 @@ footer {
 }
 
 #download-btn { display: inline-flex; align-items: center; justify-content: center; }
-#download-btn svg {
+#download-btn.is-downloaded {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+#download-btn svg,
+#offline-btn svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -642,6 +648,42 @@ footer {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+.offline-modal { width: min(620px, 100%); }
+.offline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.offline-list { display: flex; flex-direction: column; gap: 6px; }
+.offline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.offline-row.is-lost { border-style: dashed; }
+.offline-row-main { flex: 1; min-width: 0; }
+.offline-row-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+.offline-row-sub {
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.offline-row-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
+.offline-empty {
+  padding: 20px 0;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
 .modal input[type="text"],
@@ -1025,7 +1067,7 @@ footer {
   align-items: center;
   gap: 8px;
 }
-.player-btn-row { display: flex; gap: 6px; }
+.player-btn-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
 .btn-fav-active {
   border-color: var(--danger-line);
@@ -1378,6 +1420,19 @@ footer {
   gap: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.track-meta-sub > .offline-mark {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 15px;
+  letter-spacing: .02em;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .track-actions {

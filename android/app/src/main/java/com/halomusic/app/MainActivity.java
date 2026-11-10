@@ -40,6 +40,8 @@ public class MainActivity extends Activity {
     WebSettings settings = webView.getSettings();
     settings.setJavaScriptEnabled(true);
     settings.setDomStorageEnabled(true);
+    // 已下载歌曲的离线副本存在 IndexedDB 里，WebView 需要开启本地数据库。
+    settings.setDatabaseEnabled(true);
     settings.setMediaPlaybackRequiresUserGesture(false);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setSupportMultipleWindows(false);
