@@ -1434,13 +1434,25 @@
       track.detailsLoaded=true;
     }
 
-    // 常见繁简差异（QQ源 的歌手名多为繁体），匹配前统一，避免「周杰倫」对不上「周杰伦」。
-    const TRADITIONAL_CHARS={'傑':'杰','倫':'伦','陳':'陈','華':'华','鄧':'邓','張':'张','劉':'刘','謙':'谦','孫':'孙','楊':'杨','黃':'黄','龍':'龙','鳳':'凤','許':'许','齊':'齐','羅':'罗','葉':'叶','趙':'赵','藍':'蓝','雲':'云','韓':'韩','貝':'贝'};
+    // 常见繁简差异（平台返回的歌手/歌名繁简不一），匹配前统一成简体，
+    // 避免「周杰倫」对不上「周杰伦」、「說好的幸福呢」对不上「说好的幸福呢」。
+    const TRADITIONAL_CHARS=(()=>{
+      const pairs=[
+        '傑杰','倫伦','陳陈','華华','鄧邓','張张','劉刘','謙谦','孫孙','楊杨','黃黄','龍龙','鳳凤','許许','齊齐','羅罗','葉叶','趙赵','藍蓝','雲云','韓韩','貝贝','蕭萧','馮冯','鄒邹','鄭郑','謝谢','鍾钟','譚谭','陸陆','賈贾','嚴严','歐欧','陽阳','馬马','韋韦','蘇苏','顧顾','錢钱','湯汤','盧卢','蔣蒋','範范','莊庄','龔龚',
+        '說说','愛爱','夢梦','淚泪','聽听','見见','讓让','這这','過过','還还','麼么','嗎吗','誰谁','給给','對对','時时','間间','開开','關关','難难','無无','為为','從从','會会','裡里','裏里','來来','後后','個个','們们','妳你',
+        '長长','場场','車车','塵尘','稱称','遲迟','齒齿','衝冲','蟲虫','醜丑','儲储','處处','傳传','創创','純纯','詞词','錯错','達达','帶带','單单','擔担','膽胆','彈弹','當当','黨党','導导','島岛','燈灯','敵敌','遞递','點点','電电','調调','疊叠','東东','動动','獨独','讀读','斷断','隊队','噸吨','奪夺','兒儿','爾尔','發发','罰罚','飛飞','費费','紛纷','墳坟','奮奋','憤愤','豐丰','風风','婦妇','復复','複复','該该','蓋盖','趕赶','夠够','溝沟','構构','購购','觀观','館馆','慣惯','廣广','規规','歸归','貴贵','國国','漢汉','號号','畫画','話话','懷怀','壞坏','歡欢','環环','換换','喚唤','揮挥','輝辉','毀毁','繪绘','獲获','貨货','禍祸','擊击','機机','積积','極极','際际','繼继','紀纪','記记','濟济','計计','價价','駕驾','堅坚','監监','減减','簡简','鍵键','將将','獎奖','講讲','醬酱','膠胶','澆浇','驕骄','嬌娇','腳脚','較较','階阶','節节','潔洁','結结','屆届','緊紧','僅仅','進进','盡尽','勁劲','驚惊','經经','鏡镜','競竞','靜静','舊旧','劇剧','據据','懼惧','覺觉','決决','絕绝','軍军','凱凯','顆颗','殼壳','課课','墾垦','懇恳','庫库','誇夸','塊块','寬宽','礦矿','虧亏','擴扩','闊阔','賴赖','欄栏','爛烂','勞劳','樂乐','類类','離离','禮礼','麗丽','歷历','曆历','勵励','連连','聯联','戀恋','練练','煉炼','糧粮','兩两','輛辆','諒谅','療疗','遼辽','獵猎','臨临','鄰邻','靈灵','嶺岭','領领','樓楼','蘆芦','爐炉','錄录','慮虑','亂乱','輪轮','論论','邏逻','媽妈','罵骂','買买','賣卖','邁迈','麥麦','滿满','貓猫','沒没','謎谜','門门','悶闷','夢梦','麵面','廟庙','滅灭','鳴鸣','謀谋','畝亩','納纳','鬧闹','腦脑','寧宁','擬拟','釀酿','鳥鸟','農农','濃浓','諾诺','盤盘','龐庞','賠赔','噴喷','鵬鹏','騙骗','飄飘','頻频','貧贫','評评','憑凭','撲扑','樸朴','譜谱','騎骑','豈岂','啟启','氣气','棄弃','遷迁','僑侨','橋桥','簽签','淺浅','槍枪','牆墙','搶抢','強强','竊窃','親亲','輕轻','慶庆','窮穷','區区','驅驱','趨趋','權权','勸劝','卻却','確确','擾扰','熱热','認认','榮荣','軟软','灑洒','薩萨','賽赛','傘伞','喪丧','掃扫','澀涩','殺杀','紗纱','曬晒','傷伤','賞赏','燒烧','紹绍','捨舍','設设','紳绅','審审','聲声','勝胜','聖圣','師师','詩诗','屍尸','實实','識识','勢势','視视','試试','飾饰','適适','釋释','壽寿','獸兽','書书','屬属','數数','樹树','帥帅','雙双','順顺','碩硕','爍烁','絲丝','飼饲','鬆松','聳耸','頌颂','訟讼','訴诉','雖虽','隨随','歲岁','損损','縮缩','瑣琐','鎖锁','臺台','颱台','態态','攤摊','灘滩','壇坛','歎叹','嘆叹','燙烫','濤涛','討讨','騰腾','題题','體体','條条','貼贴','鐵铁','廳厅','銅铜','統统','頭头','圖图','塗涂','團团','頹颓','脫脱','鴕鸵','馱驮','駝驼','橢椭','窪洼','襪袜','彎弯','灣湾','頑顽','萬万','網网','違违','圍围','偉伟','偽伪','衛卫','聞闻','紋纹','穩稳','問问','甕瓮','烏乌','嗚呜','蕪芜','吳吴','塢坞','霧雾','務务','誤误','錫锡','犧牺','襲袭','習习','係系','戲戏','細细','蝦虾','轄辖','峽峡','狹狭','廈厦','鮮鲜','纖纤','鹹咸','賢贤','銜衔','顯显','險险','現现','獻献','縣县','餡馅','羨羡','憲宪','線线','廂厢','鑲镶','鄉乡','詳详','響响','項项','蕭萧','銷销','曉晓','嘯啸','蠍蝎','協协','挾挟','攜携','脅胁','諧谐','寫写','瀉泻','謝谢','鋅锌','釁衅','興兴','洶汹','鏽锈','繡绣','虛虚','噓嘘','須须','敘叙','緒绪','續续','軒轩','懸悬','選选','癬癣','絢绚','學学','勳勋','詢询','尋寻','馴驯','訓训','訊讯','遜逊','壓压','鴉鸦','鴨鸭','啞哑','亞亚','訝讶','煙烟','閹阉','鹽盐','顏颜','閻阎','豔艳','厭厌','硯砚','彥彦','諺谚','驗验','鴦鸯','揚扬','瘍疡','養养','癢痒','樣样','瑤瑶','搖摇','堯尧','遙遥','窯窑','謠谣','藥药','爺爷','頁页','業业','醫医','銥铱','頤颐','遺遗','儀仪','蟻蚁','藝艺','億亿','憶忆','義义','詣诣','議议','誼谊','譯译','異异','繹绎','蔭荫','陰阴','銀银','飲饮','隱隐','櫻樱','嬰婴','鷹鹰','應应','纓缨','瑩莹','螢萤','營营','熒荧','蠅蝇','贏赢','穎颖','喲哟','擁拥','傭佣','癰痈','踴踊','詠咏','湧涌','憂忧','優优','郵邮','鈾铀','猶犹','遊游','誘诱','於于','輿舆','魚鱼','漁渔','娛娱','與与','嶼屿','語语','籲吁','禦御','獄狱','譽誉','預预','馭驭','鴛鸳','淵渊','轅辕','園园','員员','圓圆','緣缘','遠远','願愿','約约','躍跃','鑰钥','嶽岳','粵粤','悅悦','閱阅','鄖郧','勻匀','隕陨','運运','蘊蕴','韻韵','紮扎','雜杂','災灾','載载','攢攒','暫暂','贊赞','贓赃','髒脏','鑿凿','棗枣','竈灶','責责','擇择','則则','澤泽','賊贼','贈赠','劄札','詐诈','齋斋','債债','氈毡','盞盏','斬斩','輾辗','嶄崭','棧栈','戰战','綻绽','漲涨','帳帐','賬账','脹胀','蟄蛰','轍辙','鍺锗','貞贞','針针','偵侦','診诊','鎮镇','陣阵','掙挣','睜睁','猙狰','爭争','幀帧','證证','織织','職职','執执','紙纸','摯挚','擲掷','幟帜','質质','滯滞','終终','種种','腫肿','眾众','謅诌','軸轴','皺皱','晝昼','驟骤','豬猪','諸诸','誅诛','燭烛','矚瞩','囑嘱','貯贮','鑄铸','築筑','註注','駐驻','專专','磚砖','轉转','賺赚','樁桩','裝装','妝妆','壯壮','狀状','錐锥','贅赘','墜坠','綴缀','諄谆','準准','濁浊','茲兹','資资','漬渍','蹤踪','綜综','總总','縱纵','詛诅','組组','鑽钻',
+        '鬥斗','剝剥','佈布','佔占','迴回','彙汇','夥伙','隻只','飢饥','跡迹','薑姜','儘尽','瞭了','釐厘','穀谷','劃划','幾几','捲卷','嘗尝','僱雇','滷卤','摺折','纔才','粧妆','菸烟','牠它','祇只','喫吃','囪囱','牀床','峯峰','羣群','氾泛','剋克','盃杯','祕秘','癡痴','矇蒙','濛蒙','繫系','鬱郁'
+      ];
+      const map=Object.create(null);
+      for(const pair of pairs)map[pair[0]]=pair[1];
+      return map;
+    })();
+    const TRADITIONAL_CHAR_RE=new RegExp('['+Object.keys(TRADITIONAL_CHARS).join('')+']','g');
+    const toSimplifiedChars=value=>String(value||'').replace(TRADITIONAL_CHAR_RE,ch=>TRADITIONAL_CHARS[ch]||ch);
 
     function normalizeMusicMatchText(value){
-      return String(value||'').toLowerCase()
-        .replace(/[\s\-—_·•()（）【】\[\]《》'".,，。:：;；!?！？]/g,'')
-        .replace(/[傑倫陳華鄧張劉謙孫楊黃龍鳳許齊羅葉趙藍雲韓貝]/g,ch=>TRADITIONAL_CHARS[ch]||ch);
+      return toSimplifiedChars(value).toLowerCase()
+        .replace(/[\s\-—_·•()（）【】\[\]《》'".,，。:：;；!?！？]/g,'');
     }
 
     // QQ源 行用 title/artist，QQ 行用 song_title/singer_name，两种字段都认。
@@ -1707,18 +1719,28 @@
       });
     }
 
+    // 镜像会被“同名不同平台”匹配频繁读取，按原始字符串缓存，避免每次重新解析。
+    let offlineMirrorRaw=null;
+    let offlineMirrorList=[];
     function readOfflineLibraryMirror(){
       try{
-        const raw=localStorage.getItem(OFFLINE_LIBRARY_KEY);
+        const raw=localStorage.getItem(OFFLINE_LIBRARY_KEY)||'';
+        if(raw===offlineMirrorRaw)return offlineMirrorList;
         const list=raw?JSON.parse(raw):[];
-        return Array.isArray(list)?list.filter(item=>item&&item.uid):[];
+        offlineMirrorRaw=raw;
+        offlineMirrorList=Array.isArray(list)?list.filter(item=>item&&item.uid):[];
+        return offlineMirrorList;
       }catch(error){
-        return [];
+        offlineMirrorRaw=null;
+        offlineMirrorList=[];
+        return offlineMirrorList;
       }
     }
 
     function writeOfflineLibraryMirror(list){
       try{localStorage.setItem(OFFLINE_LIBRARY_KEY,JSON.stringify(list));}catch(error){}
+      offlineMirrorRaw=null;
+      offlineMirrorList=[];
     }
 
     function rememberOfflineLibrary(track,extra={}){
@@ -1834,30 +1856,56 @@
       }
     }
 
+    // 本地副本按“歌名 + 歌手”复用（繁简、标点差异都归一化），
+    // 同一首歌曲换一个平台也能直接用已有文件，不重复下载/预取。
+    function offlineUidFor(track){
+      if(!track?.uid)return '';
+      const uid=String(track.uid);
+      if(hasOfflineTrack(uid))return uid;
+      const title=normalizeMusicMatchText(track.title);
+      if(!title)return '';
+      const artist=normalizeMusicMatchText(track.artist);
+      let titleOnly='';
+      for(const item of readOfflineLibraryMirror()){
+        const itemUid=String(item.uid||'');
+        if(!itemUid||!offlineUids.has(itemUid))continue;
+        if(normalizeMusicMatchText(item.title)!==title)continue;
+        const itemArtist=normalizeMusicMatchText(item.artist);
+        if(itemArtist&&artist){
+          if(itemArtist===artist)return itemUid;
+          continue;
+        }
+        if(!titleOnly)titleOnly=itemUid;
+      }
+      return titleOnly;
+    }
+
     // 本地副本里一并保存的歌词/封面，播放时直接套用，离线也不用请求接口。
-    function applyOfflineMetadata(track){
-      if(!track?.uid)return;
-      const meta=offlineMetaCache.get(String(track.uid));
+    function applyOfflineMetadata(track,uid){
+      const key=uid?String(uid):(track?.uid?String(track.uid):'');
+      if(!key)return;
+      const meta=offlineMetaCache.get(key);
       if(!meta)return;
       if(meta.lrc&&!track.lrc)track.lrc=meta.lrc;
       if(meta.cover)track.offlineCover=meta.cover;
     }
 
     async function ensureOfflineUrl(track){
-      if(!track?.uid||!hasOfflineTrack(track.uid))return '';
-      const cached=offlineUrlCache.get(String(track.uid));
+      const uid=offlineUidFor(track);
+      if(!uid)return '';
+      const cached=offlineUrlCache.get(uid);
       if(cached){
-        rememberOfflineUrl(track.uid,cached);
-        applyOfflineMetadata(track);
+        rememberOfflineUrl(uid,cached);
+        applyOfflineMetadata(track,uid);
         return cached;
       }
       try{
-        const record=await readOfflineTrack(track.uid);
+        const record=await readOfflineTrack(uid);
         if(!record?.blob)return '';
-        offlineMetaCache.set(String(track.uid),{lrc:record.lrc||'',cover:record.cover||''});
-        applyOfflineMetadata(track);
+        offlineMetaCache.set(uid,{lrc:record.lrc||'',cover:record.cover||''});
+        applyOfflineMetadata(track,uid);
         const url=URL.createObjectURL(record.blob);
-        rememberOfflineUrl(track.uid,url);
+        rememberOfflineUrl(uid,url);
         return url;
       }catch(error){
         console.warn('offline audio unavailable',error);
@@ -1927,7 +1975,7 @@
       const btn=dom.downloadBtn;
       if(!btn)return;
       const track=state.currentTrack;
-      const downloaded=Boolean(track&&(track.localAudio||hasOfflineTrack(track.uid)));
+      const downloaded=Boolean(track&&(track.localAudio||offlineUidFor(track)));
       btn.classList.toggle('is-downloaded',downloaded);
       const label=downloaded
         ?bilingual('已下载，无需重复下载','Already downloaded')
@@ -1940,7 +1988,7 @@
       document.querySelectorAll('.track-item[data-track-uid]').forEach(row=>{
         const uid=row.dataset.trackUid;
         const track=state.trackMap.get(uid);
-        const downloaded=hasOfflineTrack(uid)||Boolean(track?.localAudio);
+        const downloaded=Boolean(track?.localAudio)||Boolean(offlineUidFor(track))||hasOfflineTrack(uid);
         let mark=row.querySelector('.offline-mark');
         if(!downloaded){
           if(mark)mark.remove();
@@ -2054,7 +2102,7 @@
         openLoginModal();
         return false;
       }
-      if(track.localAudio||hasOfflineTrack(key)){
+      if(track.localAudio||offlineUidFor(track)){
         if(!auto){
           showToast(bilingual(
             `《${downloadTrackTitle(track)}》已下载，无需重复下载`,
@@ -2160,7 +2208,7 @@
     }
 
     function normalizeLocalName(value){
-      return String(value||'').toLowerCase().replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
+      return toSimplifiedChars(value).toLowerCase().replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
     }
 
     function findLocalMatch(meta){
@@ -2584,18 +2632,20 @@
         updateDesktopPlaybackVisual();
       }
       // 已下载到本地的副本优先：断网也能播，也不依赖音源接口是否可用。
-      let offlineUrl=offlineUrlCache.get(String(track.uid))||'';
-      if(!offlineUrl&&hasOfflineTrack(track.uid))offlineUrl=await ensureOfflineUrl(track);
+      // 按歌名+歌手匹配，换平台也能复用同一份本地文件。
+      const offlineUid=offlineUidFor(track);
+      let offlineUrl=offlineUid?(offlineUrlCache.get(offlineUid)||''):'';
+      if(!offlineUrl&&offlineUid)offlineUrl=await ensureOfflineUrl(track);
       // 桌面端：下载目录里已有同名文件就直接读文件播放，不再走在线音源。
       if(!offlineUrl)await resolveLocalAudio(track);
       // 标记过已下载、但本地副本读不出来：提示并按需自动重新下载。
       let offlineLost=false;
-      if(!offlineUrl&&!track.localAudio&&hasOfflineTrack(track.uid)){
+      if(!offlineUrl&&!track.localAudio&&offlineUid){
         try{
-          const record=await readOfflineTrack(track.uid);
+          const record=await readOfflineTrack(offlineUid);
           if(!record?.blob){
             offlineLost=true;
-            dropOfflineTrack(track.uid);
+            dropOfflineTrack(offlineUid);
           }
         }catch(error){
           console.warn('offline record check failed',error);
@@ -2604,7 +2654,7 @@
       if(!offlineUrl&&!track.localAudio&&lostOfflineIndex.has(String(track.uid)))offlineLost=true;
       if(offlineLost)handleOfflineCacheLost(track);
       // 本地副本里保存过歌词/封面时直接套用，播放界面和离线都不再请求接口。
-      if(hasOfflineTrack(track.uid))applyOfflineMetadata(track);
+      if(offlineUid)applyOfflineMetadata(track,offlineUid);
       if(requestToken!==playbackRequestToken)return;
       state.currentTrack=track;
       document.body.classList.add('has-track');
@@ -2624,10 +2674,18 @@
       // 歌单/收藏里还原出来的歌没有缓存地址，先用本地字段把地址推算出来。
       primeTrackAudioUrl(track);
 
+      // 已预取好的下一首 blob 优先：后台切歌不能现拉网络流，否则 iOS 会在
+      // 2 秒内把音频会话降级，表现为进度条在走但没有声音。
+      const readyPreload=peekPreloadedAudio(track);
+      if(readyPreload){
+        releaseActivePlaybackBlob();
+        activePlaybackBlobUrl=readyPreload;
+      }
+
       // 只要已知音源地址就先起播：自动切歌必须在 ended 事件里同步调用 play()，
       // iOS 后台不会给异步回调第二次机会。以前只有网易云走这条路，
       // 歌单/收藏里还原出来的歌会先等详情和整首预取，后台就断在这里。
-      const playbackUrl=offlineUrl||track.localAudio||track.audioUrl||'';
+      const playbackUrl=offlineUrl||track.localAudio||readyPreload||track.audioUrl||'';
       const earlyAudioUrl=playbackUrl;
       let earlyPlayback=null;
       if(earlyAudioUrl){
@@ -2663,7 +2721,7 @@
         const resolvedUrl=offlineUrl||track.localAudio||track.audioUrl;
         if(!resolvedUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
 
-        if(earlyPlayback&&earlyAudioUrl===resolvedUrl){
+        if(earlyPlayback&&(earlyAudioUrl===resolvedUrl||earlyAudioUrl===readyPreload)){
           await earlyPlayback;
           if(requestToken!==playbackRequestToken)return;
           state.isPlaying=true;
@@ -2761,17 +2819,25 @@
       };
     }
 
+    // 下一首预取：本地已有副本就直接用本地，不重复下载。
+    // 所有音源统一走这一套；只有 iOS 需要提前预取：iOS 后台切歌时重新加载
+    // 网络音频会丢掉音频会话（进度在走但没有声音）。其他平台流式切歌不受影响。
     function preloadAudio(track){
       if(!track?.audioUrl)return;
-      // QQ源 代理流单曲 10MB 级，整段预取成 blob 会拖慢起播，直接流式播放。
-      if(track.source==='qq')return;
+      if(track.localAudio||offlineUidFor(track)){
+        stopPreloadedAudio();
+        return;
+      }
+      if(!isIOSDevice())return;
       const url=new URL(track.audioUrl,window.location.href).href;
       if(nextAudioPreload?.url===url)return;
       stopPreloadedAudio();
       const controller=new AbortController();
       const entry={url,blobUrl:'',controller,promise:null};
       nextAudioPreload=entry;
-      entry.promise=fetchWithTimeout(url,{cache:'force-cache',credentials:'same-origin',signal:controller.signal},12000)
+      // 不用 fetchWithTimeout：整首预取要持续读取 body，超时器只管到响应头；
+      // 直接用 entry 的 controller，stopPreloadedAudio 才能在读取过程中真正中断。
+      entry.promise=fetch(url,{cache:'force-cache',credentials:'same-origin',signal:controller.signal})
         .then(response=>{
           if(!response.ok)throw new Error(`prefetch failed: ${response.status}`);
           return response.blob();
@@ -2784,6 +2850,15 @@
           if(error?.name!=='AbortError')console.warn('next audio prefetch failed',error);
           if(nextAudioPreload===entry)nextAudioPreload=null;
         });
+    }
+
+    // 同步取走已经预取完成的 blob；没完成时不等待，否则会错过 iOS 的会话宽限。
+    function peekPreloadedAudio(track){
+      const entry=nextAudioPreload;
+      const url=track?.audioUrl?new URL(track.audioUrl,window.location.href).href:'';
+      if(!entry||!entry.blobUrl||entry.url!==url)return '';
+      nextAudioPreload=null;
+      return entry.blobUrl;
     }
 
     function stopPreloadedAudio(){
@@ -2834,8 +2909,9 @@
       const prepared={fromUid:currentUid,target,ready:false,promise:null};
       preparedNextTrack=prepared;
       // 已下载的歌提前把本地副本地址准备好，自动切歌时就不必等网络。
-      if(hasOfflineTrack(target.track.uid)){
-        if(offlineUrlCache.get(String(target.track.uid))){
+      const offlineUid=offlineUidFor(target.track);
+      if(offlineUid){
+        if(offlineUrlCache.get(offlineUid)){
           prepared.ready=true;
         }else{
           ensureOfflineUrl(target.track).then(url=>{
@@ -2848,7 +2924,7 @@
       // ended 事件里可以同步起播；歌词/封面随后再补。
       if(primeTrackAudioUrl(target.track)){
         prepared.ready=true;
-        if(!hasOfflineTrack(target.track.uid))preloadAudio(target.track);
+        if(!offlineUid)preloadAudio(target.track);
       }
       prepared.promise=ensureTrackDetails(target.track,{silent:true})
         .catch(error=>console.warn('prepare next track failed',error))
@@ -4462,7 +4538,7 @@
         const aSpan=document.createElement('span'); aSpan.textContent=track.artist||'';
         // 音乐源不再对外展示。
         sub.appendChild(aSpan);
-        if(track.localAudio||hasOfflineTrack(track.uid)){
+        if(track.localAudio||offlineUidFor(track)){
           const offlineMark=document.createElement('span');
           offlineMark.className='offline-mark';
           offlineMark.textContent=bilingual('已下载','Downloaded');
@@ -5570,9 +5646,10 @@
         // 记录出错时的请求代数：若错误处理期间用户/自动跳已切歌，放弃过期恢复。
         const requestToken=playbackRequestToken;
         // -1) 离线副本损坏或被系统清理：丢掉缓存，后面按在线音源恢复。
-        const offline=offlineUrlCache.get(String(track.uid));
+        const offlineUid=offlineUidFor(track);
+        const offline=offlineUid?offlineUrlCache.get(offlineUid):'';
         if(offline&&dom.audio.getAttribute('src')===offline){
-          dropOfflineTrack(track.uid);
+          dropOfflineTrack(offlineUid);
           showToast(bilingual('本地文件无法播放，已切回在线音源','Local file failed, switched back to streaming'));
         }
         // 0) 本地文件播不了就丢掉本地路径，回退在线音源。
