@@ -3007,7 +3007,7 @@ header {
   body[data-mobile-view="lyrics"] .player-panel > .panel-header { display: flex; }
   .player-top { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: center; gap: clamp(18px, 4vh, 32px); }
   .player-main { display: flex; width: 100%; }
-  body[data-mobile-view="lyrics"] .player-panel .player-top { display: flex; }
+  body[data-mobile-view="lyrics"] .player-panel .player-top { display: flex; pointer-events: auto; }
   body[data-mobile-view="lyrics"] .player-panel .player-main { display: flex; }
   .cover-wrapper {
     width: min(72vw, 340px, 37vh);
