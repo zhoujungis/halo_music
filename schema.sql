@@ -46,6 +46,22 @@ CREATE TABLE IF NOT EXISTS search_cache (
 
 CREATE INDEX IF NOT EXISTS idx_search_cache_expires_at ON search_cache(expires_at);
 
+-- 解析出的播放直链（酷我 / 咪咕经 apicx 解析），按歌曲+序号长期保存。
+CREATE TABLE IF NOT EXISTS music_links (
+  key TEXT PRIMARY KEY,
+  source TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  artist TEXT NOT NULL DEFAULT '',
+  album TEXT NOT NULL DEFAULT '',
+  cover TEXT NOT NULL DEFAULT '',
+  quality TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL,
+  lyric TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_music_links_updated_at ON music_links(updated_at);
+
 CREATE TABLE IF NOT EXISTS email_verification_codes (
   email TEXT NOT NULL,
   purpose TEXT NOT NULL,

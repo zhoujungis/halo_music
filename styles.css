@@ -501,6 +501,8 @@ footer {
 .source-dot.qq { color: #4dd0e1; }
 .source-dot.qishui { color: #55e6a5; }
 .source-dot.bilibili { color: #fb7299; }
+.source-dot.kuwo { color: #ffb347; }
+.source-dot.migu { color: #7c8cff; }
 
 /* Ripple (injected by setupRipple in major.js). */
 .ripple-target,
@@ -894,6 +896,26 @@ footer {
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+.mini-cover {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 16px;
+}
+.mini-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .mini-meta-main {

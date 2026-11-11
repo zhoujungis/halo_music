@@ -423,15 +423,355 @@ export function pickJooxStream(links) {
   return null;
 }
 
-async function jooxRequest(env, keyword, index = 0, signal = null) {
+async function jooxRequest(env, keyword, index = 0, signal = null, timeoutMs = API_TIMEOUT_MS) {
   const { base, token } = jooxEndpoint(env);
   const endpoint = new URL(base);
   endpoint.searchParams.set("msg", clean(keyword));
   endpoint.searchParams.set("token", token);
   endpoint.searchParams.set("br", "4");
   if (index) endpoint.searchParams.set("n", String(index));
-  const response = await request(endpoint.href, {}, API_TIMEOUT_MS, signal);
+  const response = await request(endpoint.href, {}, timeoutMs, signal);
   return readJson(response);
+}
+
+// ===================== 华语音源（酷我 / 咪咕，经 apicx） =====================
+// apicx 按账号发 token，同一个 token 对 kuwo_music / migu 等接口通用。
+// JOOX_TOKENS 可配多个（逗号分隔），某个 token 被限流时冷却并换下一个。
+const APICX_API_BASE = "https://apicx.asia/api";
+const APICX_TOKEN_COOLDOWN_MS = 5 * 60 * 1000;
+const APICX_SEARCH_CACHE_MS = 30 * 60 * 1000;
+const apicxTokenCooldown = new Map();
+
+function apicxTokens(env) {
+  const tokens = [env?.JOOX_TOKEN, ...String(env?.JOOX_TOKENS || "").split(/[\s,;]+/)]
+    .map((token) => clean(token))
+    .filter(Boolean);
+  return [...new Set(tokens)];
+}
+
+// 解析出的播放直链写入 D1（music_links），刷新页面或换设备也能复用。
+// 直链带签名，超过 APICX_LINK_FRESH_MS 就重新解析，避免播到过期地址。
+const APICX_LINK_FRESH_MS = 20 * 60 * 1000;
+let musicLinksReady = false;
+
+async function ensureMusicLinksTable(env) {
+  if (musicLinksReady || !env?.DB) return;
+  musicLinksReady = true;
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS music_links (
+       key TEXT PRIMARY KEY,
+       source TEXT NOT NULL,
+       title TEXT NOT NULL DEFAULT '',
+       artist TEXT NOT NULL DEFAULT '',
+       album TEXT NOT NULL DEFAULT '',
+       cover TEXT NOT NULL DEFAULT '',
+       quality TEXT NOT NULL DEFAULT '',
+       url TEXT NOT NULL,
+       lyric TEXT NOT NULL DEFAULT '',
+       updated_at INTEGER NOT NULL
+     )`,
+  ).run().catch(() => {});
+}
+
+async function linkLookup(env, key) {
+  if (!env?.DB) return null;
+  try {
+    const row = await env.DB.prepare(
+      "SELECT url, title, artist, album, cover, quality, lyric, updated_at FROM music_links WHERE key = ?",
+    ).bind(key).first();
+    if (!row?.url) return null;
+    if (Date.now() - Number(row.updated_at || 0) > APICX_LINK_FRESH_MS) return null;
+    return {
+      url: row.url,
+      title: row.title || "",
+      artist: row.artist || "",
+      album: row.album || "",
+      cover: row.cover || "",
+      qualityLabel: row.quality || "",
+      lyric: row.lyric || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function linkSave(env, key, detail) {
+  if (!env?.DB) return;
+  await ensureMusicLinksTable(env);
+  await env.DB.prepare(
+    `INSERT OR REPLACE INTO music_links
+       (key, source, title, artist, album, cover, quality, url, lyric, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    key,
+    detail.source || "",
+    detail.title || "",
+    detail.artist || "",
+    detail.album || "",
+    detail.cover || "",
+    detail.qualityLabel || "",
+    detail.url,
+    detail.lyric || "",
+    Date.now(),
+  ).run().catch(() => {});
+}
+
+async function apicxRequest(env, name, params, signal = null, timeoutMs = API_TIMEOUT_MS) {
+  const tokens = apicxTokens(env);
+  if (!tokens.length) {
+    throw Object.assign(new Error("apicx 未配置 token（JOOX_TOKEN / JOOX_TOKENS）"), { status: 503 });
+  }
+  const base = clean(env?.APICX_API_BASE) || APICX_API_BASE;
+  const endpoint = new URL(`${base.replace(/\/$/, "")}/${name}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      endpoint.searchParams.set(key, String(value));
+    }
+  }
+  const now = Date.now();
+  const ordered = [...tokens].sort(
+    (a, b) => (apicxTokenCooldown.get(a) || 0) - (apicxTokenCooldown.get(b) || 0),
+  );
+  let lastError = null;
+  for (const token of ordered) {
+    if ((apicxTokenCooldown.get(token) || 0) > now) continue;
+    try {
+      const response = await request(endpoint.href, {
+        headers: { authorization: token, token },
+      }, timeoutMs, signal);
+      if ([401, 403, 429].includes(response.status)) {
+        response.body?.cancel();
+        apicxTokenCooldown.set(token, Date.now() + APICX_TOKEN_COOLDOWN_MS);
+        lastError = new Error(`apicx 拒绝请求（${response.status}）`);
+        continue;
+      }
+      const data = await readJson(response);
+      const code = Number(data?.code);
+      if ([401, 403, 429].includes(code)) {
+        apicxTokenCooldown.set(token, Date.now() + APICX_TOKEN_COOLDOWN_MS);
+        lastError = new Error(clean(data?.msg) || `apicx ${code}`);
+        continue;
+      }
+      if (code !== 200) {
+        throw new Error(clean(data?.msg) || `apicx ${name} 返回 ${code || "未知错误"}`);
+      }
+      apicxTokenCooldown.delete(token);
+      return data.data;
+    } catch (error) {
+      if ([401, 403, 429].includes(Number(error?.upstreamStatus || 0))) {
+        apicxTokenCooldown.set(token, Date.now() + APICX_TOKEN_COOLDOWN_MS);
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError || Object.assign(new Error("apicx 全部 token 暂不可用"), { status: 429 });
+}
+
+// 酷我官方图床：img1.kwcdn.kuwo.cn 证书失效，统一走 img4.kuwo.cn。
+function httpsCover(value) {
+  const url = clean(value);
+  const match = /^https?:\/\/([a-z0-9-]+\.)*kuwo\.cn\/(.+)$/i.exec(url);
+  if (match) return `https://img4.kuwo.cn/${match[2]}`;
+  return url.replace(/^http:\/\//i, "https://");
+}
+
+// ---- 直连搜索：酷我（可翻页、封面取官网） ----
+function kuwoCover(short) {
+  const path = clean(short).replace(/^\d+\//, "");
+  return path ? `https://img4.kuwo.cn/star/albumcover/700/${path}` : "";
+}
+
+async function searchKuwoDirect(keyword, limit, page, env, waitUntil) {
+  const pageSize = Math.min(100, Math.max(1, Number(limit) || 30));
+  const pageNo = Math.max(1, Number(page) || 1);
+  const cacheKey = `kuwo2:search:${keyword}:${pageNo}:${pageSize}`;
+  const cached = await searchCacheGet(cacheKey, env);
+  if (Array.isArray(cached)) return cached;
+  const endpoint = new URL("https://search.kuwo.cn/r.s");
+  endpoint.search = new URLSearchParams({
+    client: "kt",
+    all: keyword,
+    pn: String(pageNo - 1),
+    rn: String(pageSize),
+    uid: "794762570",
+    ver: "kwplayer_ar_9.2.2.1",
+    vipver: "1",
+    show_copyright_off: "1",
+    newver: "1",
+    ft: "music",
+    cluster: "0",
+    strategy: "2012",
+    encoding: "utf8",
+    rformat: "json",
+    vermerge: "1",
+    mobi: "1",
+  });
+  const response = await request(endpoint.href, {
+    headers: { referer: "https://www.kuwo.cn/" },
+  }, 10_000);
+  const data = await readJson(response);
+  const rows = Array.isArray(data?.abslist) ? data.abslist : [];
+  const songs = rows.map((item, index) => ({
+    index: (pageNo - 1) * pageSize + index + 1,
+    songid: clean(item?.MUSICRID).replace(/^MUSIC_/i, ""),
+    title: clean(item?.SONGNAME),
+    artist: clean(item?.ARTIST),
+    album: clean(item?.ALBUM),
+    duration: Math.max(0, Number(item?.DURATION) || 0),
+    cover: kuwoCover(item?.web_albumpic_short),
+  })).filter((song) => song.title);
+  if (songs.length) await searchCacheSet(cacheKey, songs, APICX_SEARCH_CACHE_MS, env, waitUntil);
+  return songs;
+}
+
+// ---- 直连搜索：咪咕（20 首/页，封面取官网 imgItems） ----
+function miguCover(item) {
+  const items = (Array.isArray(item?.imgItems) ? item.imgItems : [])
+    .filter((entry) => clean(entry?.img || entry?.url))
+    .sort((a, b) => (Number(b?.width) || 0) - (Number(a?.width) || 0));
+  return clean(items[0]?.img || items[0]?.url || "");
+}
+
+function miguDuration(item) {
+  const bitrates = { LQ: 48000, PQ: 128000, HQ: 320000 };
+  const formats = (Array.isArray(item?.rateFormats) ? item.rateFormats : [])
+    .filter((entry) => Number(entry?.size) > 0 && bitrates[clean(entry?.formatType)]);
+  const pick = formats.sort((a, b) => Number(b.size) - Number(a.size))[0];
+  if (!pick) return 0;
+  return Math.round((Number(pick.size) * 8) / bitrates[clean(pick.formatType)]);
+}
+
+async function searchMiguDirect(keyword, page, env, waitUntil) {
+  const pageNo = Math.max(1, Number(page) || 1);
+  const pageSize = 20;
+  const cacheKey = `migu:search:${keyword}:${pageNo}`;
+  const cached = await searchCacheGet(cacheKey, env);
+  if (Array.isArray(cached)) return cached;
+  const endpoint = new URL("https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do");
+  endpoint.search = new URLSearchParams({
+    text: keyword,
+    pageNo: String(pageNo),
+    pageSize: String(pageSize),
+    isCorrect: "1",
+    companyId: "0",
+    sort: "1",
+    searchSwitch: '{"song":1}',
+  });
+  const response = await request(endpoint.href, {
+    headers: { referer: "https://music.migu.cn/" },
+  }, 10_000);
+  const data = await readJson(response);
+  const rows = Array.isArray(data?.songResultData?.result) ? data.songResultData.result : [];
+  const songs = rows.map((item, index) => ({
+    index: (pageNo - 1) * pageSize + index + 1,
+    songid: clean(item?.copyrightId || item?.contentId),
+    contentId: clean(item?.contentId),
+    title: clean(item?.name),
+    artist: (Array.isArray(item?.singers) ? item.singers : [])
+      .map((singer) => clean(singer?.name))
+      .filter(Boolean)
+      .join(" / "),
+    album: clean((Array.isArray(item?.albums) ? item.albums[0] : null)?.name),
+    duration: miguDuration(item),
+    cover: miguCover(item),
+  })).filter((song) => song.title);
+  if (songs.length) await searchCacheSet(cacheKey, songs, APICX_SEARCH_CACHE_MS, env, waitUntil);
+  return songs;
+}
+
+// 直连搜索的结果没有 apicx 序号，播放时先用 apicx 搜索匹配出序号。
+function normalizeSongMatch(value) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/[\s\-—_·•()（）【】\[\]《》'".,，。:：;；!?！？&/、]/g, "");
+}
+
+function scoreSongRow(candidate, title, artist) {
+  const rowTitle = normalizeSongMatch(candidate?.title);
+  const rowArtist = normalizeSongMatch(candidate?.artist);
+  const targetTitle = normalizeSongMatch(title);
+  const targetArtist = normalizeSongMatch(artist);
+  let score = 0;
+  if (rowTitle && targetTitle && rowTitle === targetTitle) score += 100;
+  else if (rowTitle && targetTitle && (rowTitle.includes(targetTitle) || targetTitle.includes(rowTitle))) score += 45;
+  if (rowArtist && targetArtist && rowArtist === targetArtist) score += 50;
+  else if (rowArtist && targetArtist && (rowArtist.includes(targetArtist) || targetArtist.includes(rowArtist))) score += 24;
+  return score;
+}
+
+async function apicxResolveIndex(source, query, title, artist, env) {
+  const cacheKey = `apicx:index:${source}:${query}:${title}:${artist}`;
+  const cached = await cacheGet(cacheKey, env);
+  if (Number(cached?.index) > 0) return Number(cached.index);
+  const data = source === "kuwo"
+    ? await apicxRequest(env, "kuwo_music", { msg: query }, null, 8_000)
+    : await apicxRequest(env, "migu", { gm: query }, null, 8_000);
+  const rows = Array.isArray(data) ? data : (Array.isArray(data?.songs) ? data.songs : []);
+  let best = null;
+  rows.forEach((row, position) => {
+    const index = Number(row?.index ?? row?.n) || position + 1;
+    const score = scoreSongRow({
+      title: source === "kuwo" ? row?.name : row?.title,
+      artist: clean(row?.singer),
+    }, title, artist);
+    if (!best || score > best.score) best = { index, score };
+  });
+  const index = best && best.score >= 45 ? best.index : 0;
+  await cacheSet(cacheKey, { index }, 6 * 60 * 60 * 1000, env);
+  return index;
+}
+
+async function apicxDetailPayload(env, source, keyword, index) {
+  const data = source === "kuwo"
+    ? await apicxRequest(env, "kuwo_music", { msg: keyword, n: index, br: 320 }, null, DETAIL_TIMEOUT_MS)
+    : await apicxRequest(env, "migu", { gm: keyword, n: index, br: "HQ" }, null, DETAIL_TIMEOUT_MS);
+  const url = clean(source === "kuwo" ? data?.play_url : data?.url);
+  if (!/^https?:\/\//i.test(url)) throw new Error(`${source} 没有返回可播放地址`);
+  return {
+    source,
+    url,
+    title: clean(source === "kuwo" ? data?.name : data?.title),
+    artist: clean(data?.singer),
+    album: clean(data?.album),
+    cover: httpsCover(data?.cover),
+    lyric: normalizeTimedLyric(source === "kuwo" ? (data?.lyrics?.formatted || "") : (data?.lyric || "")),
+    qualityLabel: clean(source === "kuwo" ? "320k" : (data?.bitrate || data?.quality || "")),
+  };
+}
+
+function apicxDetailMatches(detail, title, artist) {
+  const expectedTitle = normalizeSongMatch(title);
+  const expectedArtist = normalizeSongMatch(artist);
+  const actualTitle = normalizeSongMatch(detail?.title);
+  const actualArtist = normalizeSongMatch(detail?.artist);
+  if (expectedTitle && actualTitle && actualTitle !== expectedTitle) return false;
+  if (expectedArtist && actualArtist && !actualArtist.includes(expectedArtist) && !expectedArtist.includes(actualArtist)) {
+    return false;
+  }
+  return true;
+}
+
+// 直连搜索结果没有 apicx 序号：先按 n=1 试，歌名/歌手对不上再走列表匹配。
+async function apicxSongDetail(env, source, keyword, index, options = {}) {
+  const linkKey = Number(index) > 0 ? `${source}:${keyword}:${index}` : `${source}:${keyword}`;
+  if (!options.refresh) {
+    const linked = await linkLookup(env, linkKey);
+    if (linked) return linked;
+  }
+  let detail;
+  if (Number(index) > 0) {
+    detail = await apicxDetailPayload(env, source, keyword, Number(index));
+  } else {
+    detail = await apicxDetailPayload(env, source, keyword, 1);
+    if (!apicxDetailMatches(detail, options.title, options.artist)) {
+      const matched = await apicxResolveIndex(source, keyword, options.title || "", options.artist || "", env);
+      if (matched > 0 && matched !== 1) detail = await apicxDetailPayload(env, source, keyword, matched);
+    }
+  }
+  await linkSave(env, linkKey, detail);
+  return detail;
 }
 
 // Meting 的图片接口会 302 到网易云直链；转成直链后客户端才能按尺寸缩放
@@ -1258,6 +1598,11 @@ async function lookupLyric(keyword, title, artist, duration, env) {
   const targetTitle = title || keyword;
   const term = [targetTitle, artist].filter(Boolean).join(" ").trim();
   if (!term) return "";
+  // 歌词按「歌名+歌手」永久缓存，重复播放不再请求上游。
+  const cacheKey = `lyric:v1:${targetTitle}|${artist}|${Number(duration) || 0}`;
+  const cached = await cacheGet(cacheKey, env);
+  if (cached?.lyric) return cached.lyric;
+  let found = "";
   try {
     const songs = await searchQQOfficial(term, 10);
     const best = songs
@@ -1266,26 +1611,29 @@ async function lookupLyric(keyword, title, artist, duration, env) {
       .sort((a, b) => b.score - a.score)[0];
     if (best) {
       const lyric = normalizeTimedLyric(await qqOfficialLyric(best.song.mid));
-      if (lyric) return lyric;
+      if (lyric) found = lyric;
     }
   } catch (error) {
     console.warn("lyric lookup via QQ failed", error);
   }
-  try {
-    const rows = await searchNetease(term, 5, env);
-    const best = rows
-      .map((row) => ({ row, score: scoreSongMatch(targetTitle, artist, duration, row?.title, row?.author, 0) }))
-      .filter((entry) => entry.score >= 8 && entry.row?.url)
-      .sort((a, b) => b.score - a.score)[0];
-    const id = /(?:[?&]id=)(\d+)/.exec(String(best?.row?.url || ""))?.[1];
-    if (id) {
-      const lyric = normalizeTimedLyric(await neteaseLyricText(id, env));
-      if (lyric) return lyric;
+  if (!found) {
+    try {
+      const rows = await searchNetease(term, 5, env);
+      const best = rows
+        .map((row) => ({ row, score: scoreSongMatch(targetTitle, artist, duration, row?.title, row?.author, 0) }))
+        .filter((entry) => entry.score >= 8 && entry.row?.url)
+        .sort((a, b) => b.score - a.score)[0];
+      const id = /(?:[?&]id=)(\d+)/.exec(String(best?.row?.url || ""))?.[1];
+      if (id) {
+        const lyric = normalizeTimedLyric(await neteaseLyricText(id, env));
+        if (lyric) found = lyric;
+      }
+    } catch (error) {
+      console.warn("lyric lookup via Netease failed", error);
     }
-  } catch (error) {
-    console.warn("lyric lookup via Netease failed", error);
   }
-  return "";
+  if (found) await cacheSet(cacheKey, { lyric: found }, 30 * 86400000, env);
+  return found;
 }
 
 // 同名歌曲的跨平台匹配：标题 / 歌手优先，繁体与简体对不上时用时长兜底。
@@ -1473,7 +1821,7 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
   try {
     const url = new URL(requestObject.url);
     const action = url.searchParams.get("action") || "";
-    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric", "joox_search", "joox_audio", "joox_lyric"].includes(action)) {
+    if (["qq_detail", "qq_audio", "qq_lyric", "bili_audio", "bili_search", "netease_detail", "netease_audio", "netease_lyric", "joox_search", "joox_audio", "joox_lyric", "kuwo_search", "kuwo_audio", "kuwo_lyric", "migu_search", "migu_audio", "migu_lyric"].includes(action)) {
       if (!env?.DB) return json({ error: "播放服务未初始化" }, 503);
       const refreshToken = requestObject.headers.get("x-cache-refresh-token") || "";
       const trustedRefresh = Boolean(env?.CACHE_REFRESH_TOKEN) && refreshToken === env.CACHE_REFRESH_TOKEN;
@@ -1618,27 +1966,44 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       return json({ code: 200, data: songs.map(normalizeJooxSong) });
     }
 
-    if (action === "joox_audio" || action === "joox_lyric") {
+    if (action === "joox_audio") {
       const keyword = clean(url.searchParams.get("q"));
       if (!keyword) return json({ error: "缺少关键词" }, 400);
       const index = Math.min(30, Math.max(1, Number(url.searchParams.get("n")) || 1));
-      const detail = await jooxRequest(env, keyword, index);
-      const data = detail?.data || {};
-      if (action === "joox_lyric") {
-        let lyric = normalizeTimedLyric(data["歌词内容"] || "");
-        if (!lyric) {
-          lyric = await lookupLyric(
-            keyword,
-            clean(url.searchParams.get("title")),
-            clean(url.searchParams.get("artist")),
-            Math.max(0, Number(url.searchParams.get("duration")) || 0),
-            env,
-          );
-        }
-        return json({ code: 200, data: { lyric } });
+      const expectedTitle = clean(url.searchParams.get("title"));
+      const expectedArtist = clean(url.searchParams.get("artist"));
+      // 详情接口偶尔超时/抽风：失败就走兜底，别让整首歌失去音频。
+      let detail = null;
+      try {
+        detail = await jooxRequest(env, keyword, index, null, DETAIL_TIMEOUT_MS);
+      } catch (error) {
+        console.warn("joox detail unavailable", error);
       }
+      const data = detail?.data || {};
+      // JOOX 的序号在搜索和详情里顺序不一致，带歌名来的请求必须校验。
+      const detailMatches = apicxDetailMatches(
+        { title: data["歌曲名称"], artist: data["歌手"] },
+        expectedTitle,
+        expectedArtist,
+      );
       const stream = pickJooxStream(data["播放链接"]);
-      if (!stream) throw new Error("QQ源 没有可播放的音质");
+      // 详情和列表对不上、或详情直接失败时改用酷我的同名完整版。
+      let finalStream = stream;
+      if (expectedTitle && (!finalStream || !detailMatches)) {
+        try {
+          const fallback = await apicxSongDetail(
+            env,
+            "kuwo",
+            [expectedTitle, expectedArtist].filter(Boolean).join(" "),
+            0,
+            { title: expectedTitle, artist: expectedArtist },
+          );
+          finalStream = { url: fallback.url, container: "mpeg", label: "kuwo" };
+        } catch (error) {
+          console.warn("joox audio mismatch fallback failed", error);
+        }
+      }
+      if (!finalStream) throw new Error("QQ源 没有可播放的音质");
       const download = await beginDownload(requestObject, env, "joox");
       if (download instanceof Response) return download;
       // 播放直接跳转到 QQ源 CDN：走 Worker 代理时首字节约 3s、吞吐不到 1.5MB/s，
@@ -1646,22 +2011,87 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
       if (!download) {
         return new Response(null, {
           status: 302,
-          headers: { Location: stream.url, "Cache-Control": "no-store" },
+          headers: { Location: finalStream.url, "Cache-Control": "no-store" },
         });
       }
       try {
         const range = requestObject.headers.get("range") || "bytes=0-";
-        const upstream = await request(stream.url, {
+        const upstream = await request(finalStream.url, {
           headers: { range, referer: "https://www.joox.com/" },
         }, AUDIO_TIMEOUT_MS);
         if (!isAudioResponse(upstream)) {
           upstream.body?.cancel();
           throw new Error(`QQ源 stream unavailable (${upstream.status})`);
         }
-        const audio = audioResponse(upstream, "joox", stream.container);
+        const audio = audioResponse(upstream, "joox", finalStream.container);
         return finishDownload(audio, download, requestObject);
       } catch (error) {
         await releaseDownload(env, download.username, "joox", download.day);
+        throw error;
+      }
+    }
+
+    if (action === "kuwo_search" || action === "migu_search") {
+      const keyword = clean(url.searchParams.get("q"));
+      if (!keyword) return json({ error: "缺少关键词" }, 400);
+      const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+      const searchLimit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 30));
+      const songs = action === "kuwo_search"
+        ? await searchKuwoDirect(keyword, searchLimit, page, env, waitUntil)
+        : await searchMiguDirect(keyword, page, env, waitUntil);
+      return json({ code: 200, data: songs });
+    }
+
+    // 歌词一律走官方来源（QQ 官方 → 网易云官方），不经过 apicx，避免详情慢导致丢词。
+    if (action === "kuwo_lyric" || action === "migu_lyric" || action === "joox_lyric") {
+      const keyword = clean(url.searchParams.get("q"));
+      const title = clean(url.searchParams.get("title")) || keyword;
+      const artist = clean(url.searchParams.get("artist"));
+      if (!title) return json({ error: "缺少关键词" }, 400);
+      const lyric = await lookupLyric(
+        keyword,
+        title,
+        artist,
+        Math.max(0, Number(url.searchParams.get("duration")) || 0),
+        env,
+      );
+      return json({ code: 200, data: { lyric } });
+    }
+
+    if (["kuwo_audio", "migu_audio"].includes(action)) {
+      const keyword = clean(url.searchParams.get("q"));
+      if (!keyword) return json({ error: "缺少关键词" }, 400);
+      const index = Math.min(30, Math.max(0, Number(url.searchParams.get("n")) || 0));
+      const source = action.startsWith("kuwo") ? "kuwo" : "migu";
+      const refresh = url.searchParams.get("refresh") === "1";
+      const detail = await apicxSongDetail(env, source, keyword, index, {
+        refresh,
+        title: clean(url.searchParams.get("title")),
+        artist: clean(url.searchParams.get("artist")),
+      });
+      const download = await beginDownload(requestObject, env, source);
+      if (download instanceof Response) return download;
+      // 播放直接跳 CDN：酷我/咪咕直链浏览器可直放，走 Worker 代理反而更慢。
+      if (!download) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: detail.url, "Cache-Control": "no-store" },
+        });
+      }
+      try {
+        const range = requestObject.headers.get("range") || "bytes=0-";
+        const referer = source === "kuwo" ? "https://www.kuwo.cn/" : "https://music.migu.cn/";
+        const upstream = await request(detail.url, {
+          headers: { range, referer },
+        }, AUDIO_TIMEOUT_MS);
+        if (!isAudioResponse(upstream)) {
+          upstream.body?.cancel();
+          throw new Error(`${source} stream unavailable (${upstream.status})`);
+        }
+        const audio = audioResponse(upstream, source, "mpeg");
+        return finishDownload(audio, download, requestObject);
+      } catch (error) {
+        await releaseDownload(env, download.username, source, download.day);
         throw error;
       }
     }

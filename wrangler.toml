@@ -21,6 +21,10 @@ RESEND_SENDER_NAME = "HALO Music"
 NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
 JOOX_API_URL = "https://apicx.asia/api/joox_music"
 JOOX_TOKEN = "f84ao9lMF_q7husBWRfgUw"
+# apicx 账号 token 池（逗号分隔）。同一个 token 对 joox_music / kuwo_music /
+# migu 等接口通用；某个 token 被限流时会冷却并轮换到下一个。
+# 生产环境建议改用 `wrangler pages secret put JOOX_TOKENS`。
+JOOX_TOKENS = "-Hdg4SKzZdhEhnNICoFfgQ,rVshOsurI5M6spGWAe71Ow,C1Jr3_ScRbxP8lndfYasWg"
 # 英文界面榜单的公开数据源（CI 每日抓取到 D1；{country} 由抓取脚本替换）。
 APPLE_CHART_URL = "https://rss.marketingtools.apple.com/api/v2/{country}/music/most-played/25/songs.json"
 
