@@ -7,6 +7,11 @@ const COVER_CACHE = "halo-covers-v1";
 const SHELL_ASSETS = [
   "/",
   "/major.js",
+  "/js/fsm.js",
+  "/js/storage.js",
+  "/js/particles.js",
+  "/js/lyrics.js",
+  "/js/player.js",
   "/styles.css",
   "/i18n.js",
   "/manifest.json",

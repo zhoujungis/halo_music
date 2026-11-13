@@ -5,6 +5,8 @@
           <button id="mobile-playlist-delete" class="mobile-playlist-delete" type="button" title="删除歌单" aria-label="删除歌单">×</button>
           <div class="playlist-tabs ripple-target">
             <div class="playlist-tab active" data-tab="results" data-i18n="tabResults">正在播放</div>
+            <div class="playlist-tab" data-tab="sleep">睡眠</div>
+            <div class="playlist-tab" data-tab="offline">离线</div>
             <div class="playlist-tab" data-tab="favorites" data-i18n="tabFavorites">收藏</div>
             <div class="playlist-tab" data-tab="playlists" data-i18n="tabCustomLists">歌单</div>
             <div class="playlist-tab" data-tab="profile">我的信息</div>
@@ -35,12 +37,51 @@
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
-                <button id="offline-manage-btn" class="btn btn-ghost ripple-target" type="button">离线歌曲</button>
                 <input id="import-playlist-input" type="file" accept="application/json,text/plain,.json,.txt" style="display:none;" />
               </div>
             </div>
           </div>
           <div id="playlist-list" class="playlist-list"></div>
+
+          <div id="playlist-sleep-view" class="playlist-tab-view sleep-view" hidden>
+            <div class="sleep-card">
+              <div id="sleep-timer-status-wrap" class="sleep-hero">
+                <span class="sleep-icon" aria-hidden="true">☾</span>
+                <div class="sleep-copy">
+                  <span class="sleep-heading">睡眠定时</span>
+                  <span id="sleep-timer-status" class="sleep-countdown">未开启</span>
+                  <span id="sleep-timer-end" class="sleep-end" hidden></span>
+                </div>
+                <button id="sleep-timer-cancel" class="sleep-cancel-btn" type="button" title="关闭定时" aria-label="关闭定时" hidden>取消</button>
+              </div>
+              <div class="sleep-options">
+                <div id="sleep-timer-options" class="sleep-presets" role="group" aria-label="睡眠定时器">
+                  <button class="sleep-timer-option" data-minutes="10" type="button"><b>10</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="15" type="button"><b>15</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="30" type="button"><b>30</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="45" type="button"><b>45</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="60" type="button"><b>60</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-custom type="button"><b>＋</b><span>自定义</span></button>
+                  <button class="sleep-timer-option sleep-track-option" data-mode="track" type="button">播完当前这首</button>
+                </div>
+                <p class="sleep-tip">最后 5 秒音量渐弱，安静停止</p>
+                <form id="sleep-custom-form" class="sleep-custom" hidden>
+                  <input id="sleep-custom-minutes" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="分钟" aria-label="自定义分钟数" />
+                  <button class="btn btn-secondary" type="submit">开始</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div id="playlist-offline-view" class="playlist-tab-view offline-view" hidden>
+            <div class="offline-view-head">
+              <p id="offline-summary" class="offline-summary">已下载 0 首</p>
+              <button id="offline-import-btn" class="btn btn-secondary ripple-target" type="button">导入本地歌曲</button>
+              <input id="offline-import-input" type="file" accept="audio/*" multiple style="display:none;" />
+            </div>
+            <div id="offline-list" class="offline-list"></div>
+          </div>
+
           <section id="account-profile-view" class="account-profile-view" hidden aria-label="我的信息">
             <header class="account-hero">
               <div id="account-avatar-preview" class="account-avatar-preview" aria-hidden="true">H</div>
@@ -86,4 +127,3 @@
           </section>
         </div>
       </section>
-    </main>

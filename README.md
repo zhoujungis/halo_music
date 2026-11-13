@@ -4,15 +4,15 @@
   <img src="icon.svg" width="88" alt="HALO Music 图标">
 </p>
 
-<p align="center"><strong>多音源搜索、在线播放、歌词同步与歌单管理</strong></p>
+<p align="center"><strong>多音源搜索、在线播放、悬浮歌词、睡眠定时与离线管理</strong></p>
 
-HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线音乐应用，同时提供 Electron 桌面客户端。它把多个平台的搜索结果统一成 HALO Track 数据结构，在浏览器端完成搜索、播放、歌词和歌单交互，在服务端负责鉴权、缓存、音频解析和公开歌单导入。
+HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线音乐应用，同时提供 Electron 桌面客户端。它把多个上游音源的搜索结果统一成 HALO Track 数据结构，在浏览器端完成搜索、播放、歌词和歌单交互，在服务端负责鉴权、缓存、音频解析和公开歌单导入。
 
 - 在线体验：<https://music.zhoujun.dev>
 - 客户端下载：[Windows .exe](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.exe) · [Windows .msi](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music-Setup-x64.msi) · [Android .apk](https://github.com/zhoujungis/halo_music/releases/latest/download/HALO-Music.apk)
 - GitHub：<https://github.com/zhoujungis/halo_music>
 
-> 本项目用于学习、研究和演示。音乐内容、音频地址及相关版权归对应平台所有，请遵守当地法律、上游平台服务条款与版权政策。
+> 本项目用于学习、研究和演示。音乐内容、音频地址及相关版权归对应权利人所有，请遵守当地法律、上游服务条款与版权政策。
 
 ## 目录
 
@@ -30,7 +30,7 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 - [Electron 桌面端](#electron-桌面端)
 - [Android 客户端](#android-客户端)
 - [自动发布](#自动发布)
-- [QQ 音频缓存定时刷新](#qq-音频缓存定时刷新)
+- [音频缓存定时刷新](#音频缓存定时刷新)
 - [配置与部署说明](#配置与部署说明)
 - [常见问题](#常见问题)
 - [限制与后续方向](#限制与后续方向)
@@ -39,23 +39,26 @@ HALO Music 是一个基于 Cloudflare Pages、Pages Functions 和 D1 的在线�
 
 | 模块 | 能力 | 主要实现 |
 | --- | --- | --- |
-| 多源搜索 | 网易云、QQ 音乐；默认聚合搜索、结果去重；QQ 播放失效时按歌手、歌名和时长从哔哩哔哩补位 | `index.html`、`/api/music` |
+| 多源搜索 | 聚合主音源与备用音源，结果去重并交错排序；主音源失效时按歌手、歌名和时长从备用音源补位 | `index.html`、`/api/music` |
 | 播放器 | 播放/暂停、切歌、进度拖动、音量、静音、列表/单曲/随机播放 | `index.html` |
 | 歌词 | LRC 时间轴解析、动态高亮、点击歌词跳转到时间点 | `index.html`、`/api/music` |
+| 睡眠定时 | 10/15/30/45/60 分钟、自定义分钟数、播完当前这首；最后 5 秒渐弱淡出 | `major.js` |
+| 悬浮歌词 | 网页端 Document Picture-in-Picture 玻璃窗；桌面端使用无边框透明置顶窗，额外支持颜色、字号和位置记忆；移动端不提供 | `major.js`、`electron/lyrics-overlay.html` |
+| 离线管理 | 下载歌曲与本地音频导入，统一列表、播放、删除和重新下载 | `major.js`、IndexedDB |
 | 收藏 | 单曲收藏、搜索结果批量收藏、收藏列表 | `index.html`、`/api/library` |
 | 自建歌单 | 新建、删除、导入、导出、添加/移除歌曲 | `index.html`、`/api/library` |
-| 歌单导入 | 网易云、汽水音乐、QQ 音乐公开歌单链接，以及 HALO JSON | `functions/api/import-playlist.js` |
-| 账号 | 邮箱验证码注册、Google 登录、登录/退出、30 天会话、D1 库同步；单 IP 限一个账号 | `functions/api/*.js`、`functions/api/auth/google/` |
+| 歌单导入 | 公开歌单分享链接，以及 HALO JSON | `functions/api/import-playlist.js` |
+| 账号 | 邮箱验证码注册、Google 登录、登录/退出、30 天会话、D1 库同步 | `functions/api/*.js`、`functions/api/auth/google/` |
 | 管理 | `/admin` 管理面板，查看账号、会话、收藏和缓存概况 | `admin/`、`functions/api/admin.js` |
 | 缓存 | 搜索缓存、音源解析缓存、内存 LRU、D1 二级缓存 | `functions/api/music.js`、`schema.sql` |
-| 桌面端 | Electron 原生窗口、外链交给系统浏览器、Windows .exe/.msi/便携版 | `electron/`、`package.json` |
+| 桌面端 | Electron 原生窗口、透明歌词悬浮窗、外链交给系统浏览器、Windows .exe/.msi/便携版 | `electron/`、`package.json` |
 | Android | 轻量 WebView 客户端，加载线上站点 | `android/` |
 
 ## 界面与交互
 
 ### 桌面端布局
 
-桌面端默认进入极简歌词视图，仅显示唱片动画和歌词。右上角“设置”可切换到搜索、我的歌单或播放列表工作区。
+桌面端使用顶部主导航：发现 / 榜单 / 正在播放 / 播放队列 / 我的音乐。正在播放页显示封面、歌曲信息、进度、歌词和播放操作；我的音乐页用标签切换睡眠、离线、收藏、歌单和我的信息。右上角提供悬浮歌词入口（仅桌面端）。
 
 ```mermaid
 flowchart LR
@@ -68,7 +71,15 @@ flowchart LR
 
 ### 移动端布局
 
-移动端通过底部导航切换“搜索 / 歌词 / 我的”。歌单概览使用卡片，进入歌单后显示可滚动歌曲列表；媒体查询会重新组织间距、按钮尺寸和滚动区域，而不是简单压缩桌面三栏。
+移动端通过底部导航切换“搜索 / 榜单 / 正在播放 / 队列 / 我的”。我的音乐内同样使用“睡眠 / 离线 / 收藏 / 歌单 / 我的信息”标签；歌单概览使用卡片，进入歌单后显示可滚动歌曲列表。媒体查询会重新组织间距、按钮尺寸和滚动区域，而不是简单压缩桌面布局。
+
+悬浮歌词只在桌面端提供，移动端不显示入口。
+
+### 睡眠、悬浮歌词与离线
+
+- **睡眠定时**：支持 10/15/30/45/60 分钟、自定义分钟数和“播完当前这首”。倒计时最后 5 秒线性淡出音量，归零时暂停并复原音量。
+- **悬浮歌词**：网页端使用 Document Picture-in-Picture（Chrome/Edge）；Electron 桌面端使用无边框、透明、始终置顶的独立窗口，支持颜色、字号和位置记忆。
+- **离线管理**：下载歌曲和本地导入的音频统一出现在「我的音乐 → 离线」，可播放、删除或重新下载。
 
 ### 交互规则
 
@@ -94,10 +105,10 @@ flowchart TB
         Functions[Pages Functions\n/api/*]
         D1[(D1 SQLite)]
     end
-    subgraph Providers[上游平台]
-        Netease[网易云]
-        QQ[QQ 音乐]
-        Qishui[汽水音乐歌单页]
+    subgraph Providers[上游音源]
+        Primary[主音源]
+        Backup[备用音源]
+        Share[公开歌单页]
     end
     Browser --> Static
     Electron --> UI
@@ -106,16 +117,17 @@ flowchart TB
     UI --> Local
     UI --> Audio
     Functions --> D1
-    Functions --> QQ
-    Functions --> Qishui
-    UI --> Netease
+    Functions --> Primary
+    Functions --> Backup
+    Functions --> Share
+    UI --> Primary
 ```
 
 ### 分层职责
 
-- **展示层**：`index.html` 提供页面结构，`styles.css` 提供响应式 CSS，`major.js` 负责主题和国际化交互。
+- **展示层**：`index.html`（由 `src/partials` 构建生成）提供页面结构，`styles.css` 提供响应式 CSS，`major.js` 负责主题和国际化交互。
 - **交互状态层**：运行时 `state` 保存搜索、播放、歌词、登录、收藏、歌单和批量选择状态。
-- **音源适配层**：客户端和 `functions/api/music.js` 把不同平台字段归一化成歌曲对象。
+- **音源适配层**：客户端和 `functions/api/music.js` 把不同上游字段归一化成歌曲对象。
 - **鉴权层**：`_auth.js` 提供密码哈希、Cookie 会话、用户识别和统一 JSON 响应。
 - **持久化层**：D1 存储用户、会话、云端歌单以及搜索/音频缓存；localStorage 提供本地兜底。
 - **桌面壳层**：Electron 提供安全的原生窗口，不把 Node 能力暴露给页面。
@@ -124,9 +136,13 @@ flowchart TB
 
 ```text
 .
-├─ index.html                 # Pages 入口：页面结构
-├─ major.js                  # 浏览器端运行时
+├─ index.html                 # Pages 入口（由 src/partials 构建生成）
+├─ src/partials/              # 页面结构源文件
+├─ scripts/build-html.mjs     # 由 partials 生成 index.html
+├─ major.js                   # 浏览器端运行时
+├─ i18n.js                    # 中英文切换
 ├─ styles.css                 # 页面样式
+├─ sw.js                      # 离线外壳 Service Worker
 ├─ admin/                     # /admin 管理页面
 ├─ functions/api/
 │  ├─ _auth.js                # PBKDF2、Cookie、会话校验、IP 哈希、JSON 响应
@@ -144,15 +160,18 @@ flowchart TB
 │  ├─ music.js                # 搜索、详情、音频解析、缓存和代理
 │  └─ import-playlist.js      # POST /api/import-playlist
 ├─ electron/
-│  ├─ main.cjs                # BrowserWindow 生命周期和安全策略
-│  └─ preload.cjs             # contextBridge 暴露最小桌面信息
+│  ├─ main.cjs                # BrowserWindow 生命周期、透明歌词窗与安全策略
+│  ├─ preload.cjs             # contextBridge 暴露最小桌面能力
+│  ├─ lyrics-overlay.html     # 无边框透明歌词窗页面
+│  └─ lyrics-preload.cjs      # 歌词窗的 IPC 桥接
 ├─ android/                   # Android WebView 客户端与 Gradle 工程
 ├─ .github/workflows/
 │  └─ release.yml             # 自动构建 Windows/Android 并更新 Release
+├─ migrations/                # D1 增量迁移
 ├─ schema.sql                 # D1 表、索引和缓存表
 ├─ wrangler.toml              # Pages 与 D1 绑定配置
 ├─ _routes.json               # 仅将 /api/* 路由交给 Functions
-├─ *test.js                   # Node 原生测试：鉴权、导入、播放和音源
+├─ tests/                     # Node 原生测试：鉴权、导入、播放和音源
 ├─ icon.svg                   # 应用图标
 └─ package.json               # npm、Wrangler、Electron 和打包脚本
 ```
@@ -167,14 +186,14 @@ sequenceDiagram
     participant V as index.html
     participant F as /api/music
     participant C as 缓存层
-    participant P as 音乐平台
+    participant P as 上游音源
     U->>V: 输入关键词
-    V->>V: 同时创建网易云和 QQ 搜索任务
-    V->>P: 请求网易云搜索接口
-    V->>F: GET /api/music?action=qq_search
+    V->>V: 同时创建主音源和备用音源搜索任务
+    V->>P: 请求主音源搜索接口
+    V->>F: GET /api/music?action=<search>
     F->>C: 查询内存 LRU / D1 search_cache
-    F-->>V: 统一 QQ 歌曲列表
-    P-->>V: 网易云歌曲列表
+    F-->>V: 统一歌曲列表
+    P-->>V: 主音源歌曲列表
     V->>V: 去重、交错排序、渲染复选框
 ```
 
@@ -182,7 +201,7 @@ sequenceDiagram
 
 1. 点击歌曲行后，页面更新 `state.currentTrack` 和 `state.playContext`。
 2. 客户端检查已有详情、音频地址和预加载的下一首歌曲。
-3. 需要服务端解析时请求 `/api/music?action=qq_audio`。
+3. 需要服务端解析时请求 `/api/music?action=<audio>`。
 4. 服务端优先复用缓存并验证候选音频；失败时客户端可刷新解析或切换备用音源。
 5. 最终 URL 设置到 `<audio>`，`timeupdate` 同步驱动进度条、歌词高亮和当前歌曲样式。
 
@@ -208,7 +227,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | `POST` | `/api/email-code` | 否 | 通过 Resend 发送注册验证码（60 秒冷却、限流） |
 | `POST` | `/api/register` | 否 | 校验邮箱验证码并创建账号，返回会话 Cookie |
-| `POST` | `/api/cache-refresh` | Bearer | 重新解析并刷新 D1 中已有 QQ 歌曲的音频缓存 |
+| `POST` | `/api/cache-refresh` | Bearer | 重新解析并刷新缓存中已有曲目的音频地址 |
 | `GET` | `/api/auth/google/start` | 否 | 跳转 Google OAuth 授权页 |
 | `GET` | `/api/auth/google/callback` | 否 | 处理 Google 回调、创建或关联账号并登录 |
 | `POST` | `/api/login` | 否 | 校验账号密码并创建会话 |
@@ -219,17 +238,11 @@ flowchart LR
 | `POST` | `/api/import-playlist` | 是 | 服务端解析公开歌单分享链接 |
 | `GET` | `/api/music` | 否 | 搜索、详情、音频解析、代理和缓存 |
 
-### `/api/music` 常用 action
+### `/api/music` 的 action
 
-| `action` | 主要参数 | 说明 |
-| --- | --- | --- |
-| `qq_search` | `q`, `limit` | QQ 音乐搜索，含官方接口和备用源 |
-| `qq_detail` | `id` 及音源字段 | 获取详情、封面、歌词或可播放信息 |
-| `qq_audio` | `id`, `duration`, `refresh` | 解析并验证可播放音频 |
-| `bili_search` | `q`, `title`, `artist`, `duration` | QQ 音频失效时搜索匹配的哔哩哔哩视频 |
-| `bili_audio` | `bvid`/`aid`, `page`, `duration` | 代理匹配视频的可播放音频流 |
+`/api/music` 通过 `action` 参数区分搜索、详情、音频解析、备用音源搜索与代理。具体 action 名称、参数和返回结构以 `functions/api/music.js` 为准。
 
-服务端会限制关键词长度、返回数量和上游请求时间，避免单个平台异常拖垮整次请求。
+服务端会限制关键词长度、返回数量和上游请求时间，避免单个音源异常拖垮整次请求。
 
 管理面板使用 `ADMIN_USERNAME`（或逗号分隔的 `ADMIN_USERNAMES`）作为管理员白名单。默认配置为 `admin`；请先在 D1 中为该用户名建立账号，再访问 `/admin`。
 
@@ -239,13 +252,13 @@ flowchart LR
 
 ```js
 {
-  uid: "qq-歌曲标识",
-  source: "qq",                 // netease / qq（QQ 失效时运行时切换 bilibili）
+  uid: "<source>-歌曲标识",
+  source: "<source>",           // 音源标识（主音源 / 备用音源）
   title: "歌曲名",
   artist: "歌手",
   album: "专辑",
   cover: "https://...",
-  songid: "平台歌曲 ID",
+  songid: "音源歌曲 ID",
   quality: "lossless",
   qualityLabel: "无损",
   pay: "",
@@ -299,7 +312,7 @@ flowchart LR
 
 ### Electron 安全边界
 
-`BrowserWindow` 配置了 `contextIsolation: true`、`nodeIntegration: false` 和 `sandbox: true`。Preload 只通过 `contextBridge` 暴露平台名和 Electron 版本；外部链接交给系统默认浏览器打开。
+`BrowserWindow` 配置了 `contextIsolation: true`、`nodeIntegration: false` 和 `sandbox: true`。Preload 只通过 `contextBridge` 暴露最小桌面能力（本地文件读取、悬浮歌词窗口控制）；外部链接交给系统默认浏览器打开。透明歌词窗使用独立的最小 preload，只接收歌词状态和关闭指令。
 
 ## 本地开发
 
@@ -344,7 +357,7 @@ GOOGLE_CLIENT_SECRET=xxxxxxxx
 GOOGLE_REDIRECT_URI=http://localhost:8788/api/auth/google/callback
 # 可选；用于给注册 IP 哈希加 pepper
 AUTH_SECRET=change-me
-# 可选；QQ 缓存定时刷新接口的 Bearer token
+# 可选；音频缓存定时刷新接口的 Bearer token
 CACHE_REFRESH_TOKEN=change-me
 ```
 
@@ -377,13 +390,12 @@ database_name = "halo-music-db"
 database_id = "替换为你的 D1 database_id"
 ```
 
-音源地址通过 Cloudflare Pages 的环境变量配置，不写入前端代码。变量值支持
-逗号或换行分隔的多个地址，服务端会按顺序尝试，某个上游超时或失效会自动切换：
+音源地址通过 Cloudflare Pages 的环境变量配置，不写入前端代码。变量名和取值方式以 `wrangler.toml` 为准；变量值支持逗号或换行分隔的多个地址，服务端会按顺序尝试，某个上游超时或失效会自动切换：
 
 ```toml
 [vars]
-# 网易云取流源：逗号分隔，按顺序尝试
-NETEASE_SOURCE_URLS = "https://your-netease-source.example/meting,https://your-netease-backup.example/meting"
+# 取流地址：逗号分隔，按顺序尝试（占位示例，实际变量名以 wrangler.toml 为准）
+SOURCE_URLS = "https://your-source.example/meting,https://your-source-backup.example/meting"
 ```
 
 注册相关变量属于密钥，不要提交到仓库。生产环境请在 Pages 控制台设置，或使用：
@@ -418,12 +430,12 @@ npm test
 - 登录、会话和登出数据库流程
 - 邮箱规范化、用户名校验、注册 IP 哈希和验证码哈希
 - 收藏和自建歌单按用户持久化
-- 网易云、QQ、汽水音乐字段归一化
+- 多音源字段归一化
 - 歌单分享链接识别与导入
-- QQ 签名算法和分页请求体
+- 上游签名算法和分页请求体
 - LRC 时间标签清洗与歌词切分
 - 音频容器识别、时长估算和播放上下文切歌
-- 浏览器端内联脚本语法检查
+- `index.html` 与 `src/partials` 的构建一致性
 
 提交前还可以检查补丁格式：
 
@@ -440,8 +452,11 @@ Electron main process
         │
         ├─ BrowserWindow（默认 1440×920，最小 960×640）
         ├─ preload.cjs（最小化 contextBridge）
-        └─ loadURL(HALO_MUSIC_URL 或 https://music.zhoujun.dev)
+        ├─ 透明歌词窗（lyrics-overlay.html，无边框 / 透明 / 置顶 / 拖动 / 位置记忆）
+        └─ loadURL(HALO_MUSIC_URL 或线上站点)
 ```
+
+右上角的悬浮歌词按钮在 Electron 中打开独立的透明歌词窗：`frame: false`、`transparent: true`、`alwaysOnTop`，通过 IPC 实时接收歌词、封面和播放进度；悬停可调颜色和字号。网页端使用 Document Picture-in-Picture 玻璃窗，移动端不提供悬浮歌词。
 
 启动开发窗口：
 
@@ -492,19 +507,15 @@ gradle -p android assembleDebug -PhaloVersionName=2.0.0 -PhaloVersionCode=20000
 
 每次 push 都会产生新的 patch 版本和 tag。需要 minor/major 版本时，手动修改 `package.json` 版本后再推送；工作流会使用该版本创建 tag。工作流会同步更新 `package-lock.json`、`wrangler.toml` 和 `index.html` 中的版本号。
 
-## QQ 音频缓存定时刷新
+## 音频缓存定时刷新
 
-`.github/workflows/refresh-qq-cache.yml` 每隔约 20 天运行一次（cron `0 19 */20 * *`，即北京时间 03:00，落在 1/21/31 日）：
+`.github/workflows/` 下的缓存刷新工作流每隔约 20 天运行一次（cron `0 19 */20 * *`，即北京时间 03:00，落在 1/21/31 日）：
 
-1. 从 D1 的收藏、自建歌单和听歌历史中提取 QQ 歌曲 mid
+1. 从 D1 的收藏、自建歌单和听歌历史中提取曲目标识
 2. 调用受保护的 `POST /api/cache-refresh`
 3. 服务端以 `refresh=1` 重新解析并覆盖 `music_cache` 中的音频地址
 
-需要在 GitHub 和 Cloudflare Pages 两处配置相同的 `CACHE_REFRESH_TOKEN` secret。也可以手动触发：
-
-```powershell
-gh workflow run refresh-qq-cache.yml
-```
+需要在 GitHub 和 Cloudflare Pages 两处配置相同的 `CACHE_REFRESH_TOKEN` secret。也可以在仓库的 Actions 页面手动触发该工作流。
 
 ## 配置与部署说明
 
@@ -512,8 +523,9 @@ gh workflow run refresh-qq-cache.yml
 
 | 命令 | 作用 |
 | --- | --- |
-| `npm run dev` | Wrangler Pages 本地开发 |
-| `npm run deploy` | 部署 Pages（需要明确执行） |
+| `npm run build:html` | 由 `src/partials` 生成 `index.html` |
+| `npm run dev` | 构建页面并启动 Wrangler Pages 本地开发 |
+| `npm run deploy` | 构建页面并部署 Pages（需要明确执行） |
 | `npm test` | 执行 Node 原生测试 |
 | `npm run desktop:dev` | 启动 Electron 开发窗口 |
 | `npm run desktop:all` | 构建 Windows NSIS/MSI/便携版 |
@@ -543,13 +555,17 @@ npx electron . --url=https://music.zhoujun.dev
 
 未登录时不展示收藏和歌单；登录后收藏与歌单会同步到 `/api/library`，不同设备需要使用同一账号。
 
-### 为什么导入 QQ 歌单数量有限？
+### 为什么导入公开歌单数量有限？
 
-服务端为了控制请求时间、上游压力和 Pages Function 限制，QQ 歌单最多导入前 1,200 首；网易云最多处理 2,000 首，汽水音乐页面解析上限为 4 MB。
+服务端为了控制请求时间、上游压力和 Pages Function 限制，对单个公开歌单的导入数量和分享页解析大小都设有上限。
 
 ### 为什么播放地址不能永久保存？
 
-部分平台返回的是短时效地址。项目保存平台歌曲标识和已验证候选信息，不把临时音频 URL 当作永久资源；播放失败时会重新解析。
+部分上游返回的是短时效地址。项目保存音源歌曲标识和已验证候选信息，不把临时音频 URL 当作永久资源；播放失败时会重新解析。
+
+### 为什么移动端没有悬浮歌词？
+
+Document Picture-in-Picture 只有桌面版 Chrome / Edge 支持；移动端浏览器不提供该能力，因此入口直接隐藏。桌面客户端则使用独立的无边框透明窗口实现。
 
 ### D1 报“binding 缺失”怎么办？
 
@@ -561,12 +577,12 @@ npx electron . --url=https://music.zhoujun.dev
 
 ## 限制与后续方向
 
-1. 上游平台接口、字段和音频地址可能变化，需要持续维护适配器和备用源。
+1. 上游接口、字段和音频地址可能变化，需要持续维护适配器和备用源。
 2. Pages Functions 的请求时间和上游限流会影响大批量搜索、歌词和歌单导入。
-3. 当前前端主入口仍集中在 `index.html`，后续可以拆分为模块化组件、状态模块和样式文件。
+3. 页面结构已按 `src/partials` 拆分并构建为 `index.html`，但运行时仍集中在 `major.js`；后续可以继续拆分为模块化组件和状态模块。
 4. 当前自动化测试以协议、解析和状态逻辑为主，后续可以加入 Playwright 视觉回归基线。
 5. 用户库目前以 JSON 保存；若要支持协作歌单、增量同步或审计，可拆分为歌曲、歌单和关系表。
-6. 单 IP 注册限制在校园/公司 NAT 下可能误伤其他用户；后续可用 Captcha 或邀请码替代硬性限制。
+6. 邮箱验证码和频控能挡住大部分滥用，但极端情况下仍可能被批量邮箱绕过；后续可加入 Captcha 或邀请码。
 7. 播放解析限流目前是 Worker 实例内的内存桶；高流量场景建议叠加 Cloudflare Rate Limiting 规则。
 
 ## 许可证与第三方声明

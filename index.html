@@ -71,6 +71,7 @@
         <div class="nav-links">
         </div>
         <button id="lang-toggle" class="lang-toggle-btn ripple-target" type="button" data-lang-toggle>EN</button>
+        <button id="pip-lyrics-btn" class="pip-nav-button ripple-target" type="button" title="悬浮歌词" aria-label="悬浮歌词" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="13" height="9" rx="2"/><path d="M8 18h13V9"/></svg></button>
         <button id="theme-toggle" class="theme-toggle-btn theme-toggle ripple-target" type="button" title="切换亮色/暗色" aria-label="切换亮色/暗色"><span id="theme-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg></span></button>
       </div>
     </header>
@@ -139,7 +140,6 @@
                   <button id="save-to-playlist-btn" class="btn btn-secondary btn-icon ripple-target" title="保存到歌单" aria-label="保存到歌单">＋</button>
                   <button id="queue-add-current-btn" class="btn btn-secondary btn-icon queue-add-btn ripple-target" type="button" title="加入播放列表" aria-label="加入播放列表">☷</button>
                   <button id="download-btn" class="btn btn-secondary btn-icon ripple-target" type="button" data-i18n-title="downloadTitle" title="下载当前歌曲" aria-label="下载当前歌曲"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg></button>
-                  <button id="offline-btn" class="btn btn-secondary btn-icon ripple-target" type="button" title="离线歌曲" aria-label="离线歌曲"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v10H4z"/><path d="M8 19h8"/><path d="M12 15v4"/></svg></button>
                 </div>
                 <div id="player-status" class="status-pill" data-i18n="playerStatusIdle">空闲</div>
               </div>
@@ -189,6 +189,8 @@
           <button id="mobile-playlist-delete" class="mobile-playlist-delete" type="button" title="删除歌单" aria-label="删除歌单">×</button>
           <div class="playlist-tabs ripple-target">
             <div class="playlist-tab active" data-tab="results" data-i18n="tabResults">正在播放</div>
+            <div class="playlist-tab" data-tab="sleep">睡眠</div>
+            <div class="playlist-tab" data-tab="offline">离线</div>
             <div class="playlist-tab" data-tab="favorites" data-i18n="tabFavorites">收藏</div>
             <div class="playlist-tab" data-tab="playlists" data-i18n="tabCustomLists">歌单</div>
             <div class="playlist-tab" data-tab="profile">我的信息</div>
@@ -219,12 +221,51 @@
                 <button id="new-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="newPlaylist">新建歌单</button>
                 <button id="import-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="importPlaylist" title="支持网易云音乐、汽水音乐和 QQ 音乐分享链接">导入歌单</button>
                 <button id="export-playlist-btn" class="btn btn-ghost ripple-target" data-i18n="exportPlaylist">导出歌单</button>
-                <button id="offline-manage-btn" class="btn btn-ghost ripple-target" type="button">离线歌曲</button>
                 <input id="import-playlist-input" type="file" accept="application/json,text/plain,.json,.txt" style="display:none;" />
               </div>
             </div>
           </div>
           <div id="playlist-list" class="playlist-list"></div>
+
+          <div id="playlist-sleep-view" class="playlist-tab-view sleep-view" hidden>
+            <div class="sleep-card">
+              <div id="sleep-timer-status-wrap" class="sleep-hero">
+                <span class="sleep-icon" aria-hidden="true">☾</span>
+                <div class="sleep-copy">
+                  <span class="sleep-heading">睡眠定时</span>
+                  <span id="sleep-timer-status" class="sleep-countdown">未开启</span>
+                  <span id="sleep-timer-end" class="sleep-end" hidden></span>
+                </div>
+                <button id="sleep-timer-cancel" class="sleep-cancel-btn" type="button" title="关闭定时" aria-label="关闭定时" hidden>取消</button>
+              </div>
+              <div class="sleep-options">
+                <div id="sleep-timer-options" class="sleep-presets" role="group" aria-label="睡眠定时器">
+                  <button class="sleep-timer-option" data-minutes="10" type="button"><b>10</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="15" type="button"><b>15</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="30" type="button"><b>30</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="45" type="button"><b>45</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-minutes="60" type="button"><b>60</b><span>分钟</span></button>
+                  <button class="sleep-timer-option" data-custom type="button"><b>＋</b><span>自定义</span></button>
+                  <button class="sleep-timer-option sleep-track-option" data-mode="track" type="button">播完当前这首</button>
+                </div>
+                <p class="sleep-tip">最后 5 秒音量渐弱，安静停止</p>
+                <form id="sleep-custom-form" class="sleep-custom" hidden>
+                  <input id="sleep-custom-minutes" type="number" min="1" max="600" step="1" inputmode="numeric" placeholder="分钟" aria-label="自定义分钟数" />
+                  <button class="btn btn-secondary" type="submit">开始</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div id="playlist-offline-view" class="playlist-tab-view offline-view" hidden>
+            <div class="offline-view-head">
+              <p id="offline-summary" class="offline-summary">已下载 0 首</p>
+              <button id="offline-import-btn" class="btn btn-secondary ripple-target" type="button">导入本地歌曲</button>
+              <input id="offline-import-input" type="file" accept="audio/*" multiple style="display:none;" />
+            </div>
+            <div id="offline-list" class="offline-list"></div>
+          </div>
+
           <section id="account-profile-view" class="account-profile-view" hidden aria-label="我的信息">
             <header class="account-hero">
               <div id="account-avatar-preview" class="account-avatar-preview" aria-hidden="true">H</div>
@@ -270,6 +311,7 @@
           </section>
         </div>
       </section>
+
     </main>
 
     <noscript>
@@ -684,10 +726,9 @@
           <li>Cloudflare：页面托管、接口运行与数据库存储。</li>
           <li>Resend：发送注册验证码邮件。</li>
           <li>Google：OAuth 登录。</li>
-          <li>Google AdSense：在本站展示广告，可能使用 Cookie 或类似技术记录你访问本站及其他网站的情况，用于展示个性化广告。你可以在 <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google 广告设置</a> 中管理或关闭个性化广告。</li>
           <li>QQ 音乐、网易云音乐、汽水音乐、哔哩哔哩及其公开解析接口：搜索与播放；搜索关键词会发送给对应平台。</li>
         </ul>
-        <p>本站通过 Google AdSense 展示广告，相关 Cookie 由 Google 及其合作伙伴设置；除此之外没有接入第三方统计或行为追踪脚本。</p>
+        <p>本站没有接入第三方统计、广告或行为追踪脚本。</p>
         <h3>4. 数据用途</h3>
         <p>上述数据仅用于登录、同步收藏与歌单、向你展示听歌总结与最近播放、以及检索与播放内容。听歌记录只服务于你自己可见的统计功能，不用于广告投放、推荐营销或用户画像。搜索关键词与曲目标识会发送给对应的第三方平台以完成检索与播放。</p>
         <h3>5. 保留、导出与删除</h3>
@@ -724,26 +765,9 @@
       </div>
     </div>
   </div>
-  <div id="offline-modal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal offline-modal" role="dialog" aria-modal="true" aria-labelledby="offline-title">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <div class="modal-title-icon">↓</div>
-          <span id="offline-title">离线歌曲</span>
-        </div>
-        <button id="offline-close" class="modal-close-btn" type="button" aria-label="关闭">×</button>
-      </div>
-      <p id="offline-summary" class="modal-desc">已下载 0 首</p>
-      <div class="offline-actions">
-        <button id="offline-import-btn" class="btn btn-secondary ripple-target" type="button">导入本地歌曲</button>
-        <input id="offline-import-input" type="file" accept="audio/*" multiple style="display:none;" />
-      </div>
-      <div id="offline-list" class="offline-list"></div>
-    </div>
-  </div>
   <div id="toast"></div>
 
   <script src="i18n.js?v=2.9.8"></script>
-  <script src="major.js?v=2.9.8"></script>
+  <script type="module" src="major.js?v=2.9.8"></script>
 </body>
 </html>

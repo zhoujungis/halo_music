@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: dark; --accent: #c8ee62; }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: transparent;
+  }
+  body {
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    user-select: none;
+  }
+  .lyrics {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    height: 100%;
+    padding: 12px 50px 20px 20px;
+    -webkit-app-region: drag;
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    opacity: .82;
+  }
+  .thumb {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+  }
+  .meta { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+  .title, .artist { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title { font-size: 11.5px; font-weight: 600; text-shadow: 0 1px 8px rgba(0, 0, 0, .95); }
+  .artist { color: rgba(255, 255, 255, .55); font-size: 10px; text-shadow: 0 1px 8px rgba(0, 0, 0, .95); }
+  .current {
+    display: -webkit-box;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--accent) 78%, #ffffff 22%);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -.01em;
+    text-shadow:
+      0 2px 12px rgba(0, 0, 0, .95),
+      0 0 26px color-mix(in srgb, var(--accent) 45%, transparent);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .next {
+    overflow: hidden;
+    color: rgba(255, 255, 255, .58);
+    font-size: 13px;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, .95);
+    white-space: nowrap;
+  }
+  .progress {
+    position: absolute;
+    right: 20px;
+    bottom: 8px;
+    left: 20px;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .18);
+  }
+  .progress i {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+    transition: width .24s linear;
+  }
+  .tools {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 7px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 999px;
+    background: rgba(10, 13, 10, .78);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .16s ease;
+    backdrop-filter: blur(12px);
+    -webkit-app-region: no-drag;
+  }
+  .lyrics:hover .tools,
+  .tools:focus-within { opacity: 1; pointer-events: auto; }
+  .swatches { display: flex; gap: 5px; }
+  .swatch {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .16);
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  .swatch.on { border-color: #fff; }
+  .color {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  .color::-webkit-color-swatch-wrapper { padding: 0; }
+  .color::-webkit-color-swatch { border: 2px dashed rgba(255, 255, 255, .45); border-radius: 50%; }
+  .sizes { display: flex; gap: 1px; padding-left: 6px; border-left: 1px solid rgba(255, 255, 255, .14); }
+  .size-btn {
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, .5);
+    cursor: pointer;
+    font-weight: 800;
+    line-height: 1;
+    -webkit-app-region: no-drag;
+  }
+  .size-btn:nth-child(1) { font-size: 9px; }
+  .size-btn:nth-child(2) { font-size: 11px; }
+  .size-btn:nth-child(3) { font-size: 13px; }
+  .size-btn.on { color: var(--accent); }
+  .close {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .06);
+    color: rgba(255, 255, 255, .75);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  .close:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+  body.no-track .current { color: rgba(255, 255, 255, .7); font-size: 15px; font-weight: 500; }
+  html[data-size="s"] .current { font-size: 19px; }
+  html[data-size="l"] .current { font-size: 29px; }
+</style>
+</head>
+<body>
+  <div class="lyrics">
+    <div class="head">
+      <img id="thumb" class="thumb" alt="" hidden />
+      <div class="meta">
+        <div id="title" class="title"></div>
+        <div id="artist" class="artist"></div>
+      </div>
+    </div>
+    <div id="current" class="current"></div>
+    <div id="next" class="next"></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="tools">
+      <div id="swatches" class="swatches"></div>
+      <input id="color" type="color" class="color" aria-label="自定义颜色" />
+      <div class="sizes">
+        <button type="button" class="size-btn" data-size="s" aria-label="小字号">A</button>
+        <button type="button" class="size-btn" data-size="m" aria-label="中字号">A</button>
+        <button type="button" class="size-btn" data-size="l" aria-label="大字号">A</button>
+      </div>
+      <button id="close" type="button" class="close" title="关闭悬浮歌词" aria-label="关闭悬浮歌词">×</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const api = window.haloLyrics;
+      const PRESETS = ['#c8ee62', '#63d8ee', '#ffa45c', '#ff80ab', '#b6a1ff'];
+      const KEY = 'halo-music-lyrics-overlay-v1';
+      let settings = { accent: '#c8ee62', size: 'm' };
+      try {
+        settings = Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}'));
+      } catch (error) {}
+
+      const $ = (id) => document.getElementById(id);
+      const swatchWrap = $('swatches');
+      PRESETS.forEach((color) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'swatch';
+        button.dataset.accent = color;
+        button.style.setProperty('--c', color);
+        button.title = color;
+        button.addEventListener('click', () => {
+          settings.accent = color;
+          persist();
+          apply();
+        });
+        swatchWrap.appendChild(button);
+      });
+
+      function persist() {
+        try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (error) {}
+      }
+
+      function apply() {
+        document.documentElement.style.setProperty('--accent', settings.accent || '#c8ee62');
+        document.documentElement.dataset.size = settings.size || 'm';
+        document.querySelectorAll('.swatch').forEach((button) => {
+          button.classList.toggle('on', button.dataset.accent === settings.accent);
+        });
+        document.querySelectorAll('.size-btn').forEach((button) => {
+          button.classList.toggle('on', button.dataset.size === (settings.size || 'm'));
+        });
+        $('color').value = settings.accent || '#c8ee62';
+      }
+
+      $('color').addEventListener('input', (event) => {
+        settings.accent = event.target.value;
+        persist();
+        apply();
+      });
+      document.querySelectorAll('.size-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+          settings.size = button.dataset.size;
+          persist();
+          apply();
+        });
+      });
+      $('close').addEventListener('click', () => api && api.close());
+
+      function setState(state) {
+        if (!state) return;
+        const thumb = $('thumb');
+        if (state.cover) {
+          thumb.src = state.cover;
+          thumb.hidden = false;
+        } else {
+          thumb.hidden = true;
+          thumb.removeAttribute('src');
+        }
+        $('title').textContent = state.track || '';
+        $('artist').textContent = state.artist || '';
+        $('current').textContent = state.current || '';
+        $('next').textContent = state.next || '';
+        document.body.classList.toggle('no-track', !state.track);
+        $('bar').style.width = Math.max(0, Math.min(100, (Number(state.progress) || 0) * 100)) + '%';
+        document.title = state.track ? state.track + ' · ' + (state.artist || '') : 'HALO Music';
+      }
+
+      if (api) {
+        api.onUpdate(setState);
+        api.ready();
+      }
+      apply();
+    })();
+  </script>
+</body>
+</html>

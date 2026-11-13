@@ -45,6 +45,7 @@
       "index.html",
       "manifest.json",
       "major.js",
+      "js/**/*",
       "styles.css",
       "admin/**/*",
       "package.json"
