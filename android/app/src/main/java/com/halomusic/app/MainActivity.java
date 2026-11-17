@@ -172,6 +172,7 @@ public class MainActivity extends Activity {
       boolean playing = false;
       String title = "", artist = "", album = "", cover = "";
       double position = 0, duration = 0;
+      boolean elementPaused = true, elementEnded = false;
       try {
         JSONObject data = new JSONObject(payload == null ? "{}" : payload);
         playing = data.optBoolean("playing", false);
@@ -181,10 +182,15 @@ public class MainActivity extends Activity {
         cover = data.optString("cover", "");
         position = data.optDouble("position", 0);
         duration = data.optDouble("duration", 0);
+        // <audio> 的真实状态：原生服务据此判断“自报播放中但其实卡住”。
+        // 旧版本页面不带这两个字段时按“没有卡住”处理，避免误触发。
+        elementPaused = data.optBoolean("elementPaused", false);
+        elementEnded = data.optBoolean("elementEnded", false);
       } catch (Exception ignored) {
         // 解析失败按空状态处理，不影响网页播放本身。
       }
-      PlaybackService.updateWebState(playing, title, artist, album, cover, position, duration);
+      PlaybackService.updateWebState(playing, title, artist, album, cover, position, duration,
+          elementPaused, elementEnded);
       if (playing) {
         runOnUiThread(MainActivity.this::ensureNotificationPermission);
         PlaybackService.ensureStarted(MainActivity.this);

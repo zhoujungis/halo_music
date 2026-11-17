@@ -31,7 +31,7 @@
       <li><b>Account data</b>: email, username, and a one-way password hash (PBKDF2-SHA256, 100k iterations with a random salt — no plaintext passwords); optional display name and avatar URL.</li>
       <li><b>Google sign-in</b>: we receive your Google account ID, verified email, name, and avatar URL. We never see your Google password.</li>
       <li><b>Library</b>: your favorite songs and playlists, stored as JSON.</li>
-      <li><b>Listening history</b>: track ID, title, artist, duration, and play time. Used only to show you your listening stats — never for ads or profiling.</li>
+      <li><b>Listening history</b>: track ID, title, artist, duration, and play time. Used only to show you your listening stats.</li>
       <li><b>Email codes</b>: only the code hash and expiry are stored. Codes expire after 10 minutes; rate-limit IP hashes are deleted after 24 hours and are only used to limit request frequency.</li>
       <li><b>Cache</b>: search keywords are cached for about 45 seconds; resolved audio URLs for up to 365 days (to speed up playback and avoid repeated lookups). This also applies to anonymous visits.</li>
     </ul>
@@ -46,10 +46,10 @@
       <li>Google: OAuth sign-in.</li>
       <li>Music platforms and their public parsing endpoints: search and playback; search keywords are sent to the corresponding platform.</li>
     </ul>
-    <p>This site does not load third-party analytics, advertising, or tracking scripts.</p>
+    <p>This site does not load third-party analytics or tracking scripts.</p>
 
     <h2>4. How data is used</h2>
-    <p>This data is used only for sign-in, syncing favorites and playlists, showing you your listening stats, and searching and playing content. Listening history powers only the stats you can see; it is never used for advertising, marketing, or profiling.</p>
+    <p>This data is used only for sign-in, syncing favorites and playlists, showing you your listening stats, and searching and playing content. Listening history powers only the stats you can see; it is never used for marketing or profiling.</p>
 
     <h2>5. Retention, export, and deletion</h2>
     <p>Account data is kept until you delete your account. After deletion, your account, favorites, playlists, listening history, and sessions are removed and cannot be recovered; underlying backups may retain snapshots for a while and then expire automatically. To export your data, ask via <a href="https://github.com/zhoujungis/halo_music/issues" rel="noopener">GitHub Issues</a>.</p>

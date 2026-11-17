@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -37,6 +38,10 @@ public class PlaybackService extends Service {
   private static final String CHANNEL_ID = "halo_playback";
   private static final int NOTIFICATION_ID = 42;
   private static final long TICK_INTERVAL_MS = 1000;
+  // 网页在后台可能停在「这首已经播完但没有切歌」或「起播被系统挂起」的状态，
+  // 既没有 ended 也没有 error。用网页上报的 <audio> 真实状态兜底触发 next/play。
+  private static final int STALL_TICKS_BEFORE_ACTION = 3;
+  private static final long WATCHDOG_COOLDOWN_MS = 6000;
 
   static final String ACTION_UPDATE = "com.halomusic.app.action.UPDATE";
   static final String ACTION_PLAY = "com.halomusic.app.action.PLAY";
@@ -53,6 +58,8 @@ public class PlaybackService extends Service {
   private static volatile String webCover = "";
   private static volatile double webPosition = 0;
   private static volatile double webDuration = 0;
+  private static volatile boolean webElementPaused = true;
+  private static volatile boolean webElementEnded = false;
 
   private static PlaybackService instance;
 
@@ -70,6 +77,8 @@ public class PlaybackService extends Service {
   private String lastRenderedArtist = "";
   private String loadedCoverUrl = "";
   private Bitmap coverBitmap;
+  private int stalledTicks;
+  private long lastWatchdogAt;
 
   @Override
   public void onCreate() {
@@ -164,7 +173,7 @@ public class PlaybackService extends Service {
 
   /** 供网页 JS 桥（任意线程）写入最新播放状态。 */
   static void updateWebState(boolean playing, String title, String artist, String album, String cover,
-                             double position, double duration) {
+                             double position, double duration, boolean elementPaused, boolean elementEnded) {
     webPlaying = playing;
     webTitle = title == null ? "" : title;
     webArtist = artist == null ? "" : artist;
@@ -172,6 +181,8 @@ public class PlaybackService extends Service {
     webCover = cover == null ? "" : cover;
     webPosition = position;
     webDuration = duration;
+    webElementPaused = elementPaused;
+    webElementEnded = elementEnded;
   }
 
   /** 服务未运行时启动它；已在运行则立即同步一次状态。 */
@@ -197,6 +208,28 @@ public class PlaybackService extends Service {
     }
     refreshCover();
     renderPlaybackState();
+    runPlaybackWatchdog();
+  }
+
+  /**
+   * 网页自报「正在播放」但 <audio> 其实没在走时，说明页面卡在结束/起播阶段：
+   * - 元素已 ended：自动切歌的 ended 处理没跑通，派发 next；
+   * - 元素是 paused：起播被系统挂起，派发 play 重新拉起。
+   * 需要连续两次采样确认，避免切歌瞬间的正常过渡被误判。
+   */
+  private void runPlaybackWatchdog() {
+    long now = SystemClock.elapsedRealtime();
+    boolean stuck = webPlaying && (webElementEnded || webElementPaused);
+    if (!stuck) {
+      stalledTicks = 0;
+      return;
+    }
+    stalledTicks += 1;
+    if (stalledTicks < STALL_TICKS_BEFORE_ACTION) return;
+    if (now - lastWatchdogAt < WATCHDOG_COOLDOWN_MS) return;
+    lastWatchdogAt = now;
+    stalledTicks = 0;
+    dispatchToWebView(webElementEnded ? "next" : "play");
   }
 
   private void startForegroundWithNotification() {

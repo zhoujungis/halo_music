@@ -3499,6 +3499,59 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       }
     }
 
+    // 播放被打断时统一切回暂停态：后台起播失败不能留下“界面在播、实际无声”的假状态。
+    function markPlaybackInterrupted(){
+      state.isPlaying=false;
+      updateDesktopPlaybackVisual();
+      updatePlayMarks();
+      dom.playBtn.textContent='▶';
+      dom.playerStatus.textContent=t('playerStatusPaused');
+      audioLevel=0;
+      updateMediaSession(state.currentTrack);
+      pushNativePlaybackState(true);
+    }
+
+    // 后台（尤其是 Android WebView）里 play() 可能永远不 settle：系统会把隐藏页面的
+    // 媒体资源加载降级挂起，既没有 error 也没有 ended，表现为时间轴不动、也没有声音。
+    // 超时后强制 load() 重新触发加载再 play()，两次都起不来就交给回前台补播。
+    const PLAYBACK_START_TIMEOUT_MS=6000;
+    function waitForAudioStart(pendingPlay,attempt=0){
+      const audio=dom.audio;
+      const started=()=>!audio.paused&&!audio.ended;
+      if(started())return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        let settled=false;
+        const timer=setTimeout(()=>{
+          if(settled)return;
+          settled=true;
+          if(started()){resolve();return;}
+          if(attempt>=1){
+            const error=new Error('playback start timed out');
+            error.name='PlaybackStartTimeout';
+            reject(error);
+            return;
+          }
+          try{
+            audio.load();
+            waitForAudioStart(audio.play(),attempt+1).then(resolve,reject);
+          }catch(error){
+            reject(error);
+          }
+        },PLAYBACK_START_TIMEOUT_MS);
+        Promise.resolve(pendingPlay).then(()=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          resolve();
+        },error=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          reject(error);
+        });
+      });
+    }
+
     async function playTrack(track,context,options={}){
       if(!track)return;
       // 之前检测到试听片段的歌，直接播记住的完整版。
@@ -3614,7 +3667,7 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         if(!resolvedUrl){showToast(t('toastPlayError'));dom.playerStatus.textContent=t('playerStatusIdle');return;}
 
         if(earlyPlayback&&(earlyAudioUrl===resolvedUrl||earlyAudioUrl===readyPreload)){
-          await earlyPlayback;
+          await waitForAudioStart(earlyPlayback);
           if(requestToken!==playbackRequestToken)return;
           state.isPlaying=true;
           updateDesktopPlaybackVisual();
@@ -3637,7 +3690,7 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
           audioAnalyser.attach(dom.audio.src, dom.audio);
           dom.audio.load();
           const playback=dom.audio.play();
-          await playback;
+          await waitForAudioStart(playback);
           if(requestToken!==playbackRequestToken)return;
           state.isPlaying=true;
           updateDesktopPlaybackVisual();
@@ -3650,14 +3703,17 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       }catch(e){
         if(requestToken!==playbackRequestToken)return;
         playbackHandoff=false;
-        if(e?.name==='NotAllowedError'){
+        if(e?.name==='PlaybackStartTimeout'){
+          // 后台媒体加载被系统挂起：保留当前歌，等回前台或原生心跳再补播，别当成音源失效连跳。
+          pendingResumeOnVisible=true;
+          markPlaybackInterrupted();
+        }else if(e?.name==='NotAllowedError'){
           // iOS 后台拒绝自动起播：保留当前歌，回前台再补播，不要当成音源失效连跳。
           pendingResumeOnVisible=true;
-          state.isPlaying=false;
-          updateDesktopPlaybackVisual();
-          updatePlayMarks();
-          dom.playBtn.textContent='▶';
-          dom.playerStatus.textContent=t('playerStatusPaused');
+          markPlaybackInterrupted();
+        }else if(e?.name==='AbortError'){
+          // 起播还没完成就被暂停/换源：保持暂停即可，不要当成音源失效连跳。
+          markPlaybackInterrupted();
         }else{
           console.error(e);
           handleTerminalPlayFailure(track._neteaseFallbackError?t('toastNeteaseFallbackError'):undefined);
@@ -3714,15 +3770,15 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
     }
 
     // 下一首预取：本地已有副本就直接用本地，不重复下载。
-    // 所有音源统一走这一套；只有 iOS 需要提前预取：iOS 后台切歌时重新加载
-    // 网络音频会丢掉音频会话（进度在走但没有声音）。其他平台流式切歌不受影响。
+    // iOS 后台切歌重新加载网络音频会丢掉音频会话；Android WebView 后台会把隐藏页面的
+    // 媒体资源加载降级挂起，同样起不来。这两个平台都提前把整首取成 blob，切歌时同步起播。
     function preloadAudio(track){
       if(!track?.audioUrl)return;
       if(track.localAudio||offlineUidFor(track)){
         stopPreloadedAudio();
         return;
       }
-      if(!isIOSDevice())return;
+      if(!isIOSDevice()&&!isAndroidWebView())return;
       const url=new URL(track.audioUrl,window.location.href).href;
       if(nextAudioPreload?.url===url)return;
       stopPreloadedAudio();
@@ -3901,6 +3957,8 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         return;
       }
       if(consecutivePlayFailures>MAX_CONSECUTIVE_PLAY_FAILURES)consecutivePlayFailures=0;
+      // 连跳也救不回来：必须把状态收回暂停，否则后台会一直显示“正在播放”但没声音。
+      markPlaybackInterrupted();
       showToast(message||t('toastPlayError'));
       dom.playerStatus.textContent=t('playerStatusError');
     }
@@ -3969,17 +4027,31 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         album:track?.album||'',
         cover:track?.cover||'',
         position:dom.audio.currentTime||0,
-        duration:isFinite(dom.audio.duration)?dom.audio.duration:0
+        duration:isFinite(dom.audio.duration)?dom.audio.duration:0,
+        // <audio> 的真实状态：原生服务据此判断“自报播放中但其实卡住”，
+        // 后台切歌没跑通时由它补发 next/play。
+        elementPaused:dom.audio.paused,
+        elementEnded:dom.audio.ended
       };
       try{window.haloNative.playbackState(JSON.stringify(payload));}catch(error){}
     }
     function setupNativeRemoteCommands(){
+      // 原生 PlaybackService 的看门狗也会调 play()/next()：这里要做最小限度的自愈，
+      // 后台被挂起的媒体加载只靠 play() 是拉不起来的。
       window.haloRemote={
-        play:()=>{if(dom.audio.src)dom.audio.play().catch(()=>{});},
+        play:()=>{
+          if(!dom.audio.src)return;
+          if(dom.audio.ended){advanceAfterTrackEnds();return;}
+          if(dom.audio.paused&&dom.audio.readyState===0)dom.audio.load();
+          dom.audio.play().catch(()=>{});
+        },
         pause:()=>{playbackHandoff=false;dom.audio.pause();},
         next:()=>playNext('next',{continuePlayback:true}),
         prev:()=>playNext('prev',{continuePlayback:true})
       };
+      // 心跳：原生服务的看门狗要拿到当前 <audio> 的实时状态，不能只依赖 timeupdate
+      // （后台卡住时 timeupdate 会停，原生就永远收不到样本）。
+      if(isNativeBridgeAvailable())window.setInterval(()=>pushNativePlaybackState(),1000);
     }
 
     function updateBatchToolbar(){
@@ -6525,6 +6597,8 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       dom.audio.addEventListener('ended',()=>{
         audioLevel = 0;
         audioAnalyser.sync(dom.audio);
+        // 立刻把「元素已结束」上报给原生服务：切歌万一卡住，它能据此补发 next。
+        pushNativePlaybackState(true);
         // 睡眠定时命中时停在当前这首，不触发自动切歌。
         if(consumeSleepTimerAtTrackEnd()){
           state.isPlaying=false;
@@ -6613,11 +6687,19 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         });
       });
 
-      // iOS 后台可能拒绝自动起播；回到前台后补一次播放请求。
+      // iOS/Android 后台可能拒绝起播或把媒体加载挂起；回到前台后重新拉起一次。
       document.addEventListener('visibilitychange',()=>{
         if(document.hidden||!pendingResumeOnVisible)return;
         pendingResumeOnVisible=false;
-        if(dom.audio.src&&dom.audio.paused)dom.audio.play().catch(()=>{});
+        if(!dom.audio.src)return;
+        const dur=dom.audio.duration;
+        const finished=dom.audio.ended||(Number.isFinite(dur)&&dur>0&&dom.audio.currentTime>=dur-1);
+        // 后台期间这首已经播完但没切歌：回前台直接补切下一首。
+        if(finished){advanceAfterTrackEnds();return;}
+        if(!dom.audio.paused)return;
+        // 被挂起的资源加载不会自己恢复，回前台必须重新触发一次加载。
+        if(dom.audio.readyState===0)dom.audio.load();
+        dom.audio.play().catch(()=>{});
       });
 
       // 进度条：按住拖拽即可连续快进/快退。
