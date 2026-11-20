@@ -5,11 +5,12 @@ import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const CHARTS = {
-  hot: { id: "3778678", name: "热歌榜" },
-  new: { id: "3779629", name: "新歌榜" },
-  rise: { id: "19723756", name: "飙升榜" },
-};
+// 网易云榜单歌单 ID 与接口共用 wrangler.toml 的 NETEASE_TOPLIST_CHARTS。
+const NETEASE_CHARTS = parseNeteaseCharts(readConfig("NETEASE_TOPLIST_CHARTS"));
+if (!Object.keys(NETEASE_CHARTS).length) {
+  console.error("wrangler.toml 中没有配置 NETEASE_TOPLIST_CHARTS");
+  process.exit(1);
+}
 // 英文界面使用的国际榜单（公开榜单源，地址只写在 wrangler.toml）。
 const EN_CHARTS = {
   "en-hot": { country: "us", name: "US Top 20" },
@@ -23,6 +24,16 @@ function readConfig(key) {
   const toml = readFileSync("wrangler.toml", "utf8");
   const match = new RegExp(`${key}\\s*=\\s*"([^"]+)"`).exec(toml);
   return match ? match[1] : "";
+}
+
+function parseNeteaseCharts(value) {
+  const charts = {};
+  for (const item of String(value || "").split(",")) {
+    const [key, id, name] = item.split(":").map((part) => String(part || "").trim());
+    if (!key || !/^\d{1,20}$/.test(id)) continue;
+    charts[key] = { id, name: name || key };
+  }
+  return charts;
 }
 
 async function fetchAppleChart(country, endpoint) {
@@ -142,7 +153,7 @@ const statements = [
 const now = Date.now();
 let written = 0;
 
-for (const [key, chart] of Object.entries(CHARTS)) {
+for (const [key, chart] of Object.entries(NETEASE_CHARTS)) {
   console.log(`抓取 ${chart.name} (${chart.id})`);
   const rows = await fetchChart(chart.id, providers);
   if (!rows.length) {
@@ -173,17 +184,48 @@ if (appleChartEndpoint) {
   console.log("未配置 APPLE_CHART_URL，跳过英文榜单");
 }
 
-if (!written) {
-  console.error("所有榜单抓取失败，未写入数据库");
-  process.exit(1);
-}
+// “大家都在听”每日快照：全表聚合放在 D1 里一次算完，推荐接口只读这一行。
+// 用 INSERT ... SELECT 让 SQLite 自己聚合，避免把结果读回 Node 再拼 SQL。
+statements.push(`
+INSERT INTO toplist_cache (chart, payload_json, updated_at)
+SELECT 'global-popular',
+       json_group_array(json_object(
+         'track_uid', track_uid,
+         'title', title,
+         'artist', artist,
+         'source', source,
+         'cover', cover,
+         'plays', plays
+       )),
+       ${now}
+FROM (
+  SELECT track_uid,
+         MAX(title) AS title,
+         MAX(artist) AS artist,
+         MAX(source) AS source,
+         MAX(cover) AS cover,
+         COUNT(*) AS plays
+  FROM music_play_history
+  GROUP BY track_uid
+  ORDER BY plays DESC, MAX(played_at) DESC
+  LIMIT 8
+)
+WHERE EXISTS (SELECT 1 FROM music_play_history)
+ON CONFLICT(chart) DO UPDATE SET
+  payload_json = excluded.payload_json,
+  updated_at = excluded.updated_at;`);
 
 const sqlFile = join(tmpdir(), `halo-toplists-${now}.sql`);
 writeFileSync(sqlFile, statements.join("\n"));
 try {
-  console.log(`写入 D1（${written} 个榜单）…`);
+  console.log(`写入 D1（${written} 个榜单 + 推荐快照）…`);
   execSync(`npx --yes wrangler@4 d1 execute halo-music-db --remote --file="${sqlFile}"`, { stdio: "inherit" });
   console.log("榜单数据已更新");
 } finally {
   try { unlinkSync(sqlFile); } catch {}
+}
+
+if (!written) {
+  console.error("所有榜单抓取失败，未写入榜单（推荐快照已更新）");
+  process.exit(1);
 }

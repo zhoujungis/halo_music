@@ -77,6 +77,22 @@ function mergeRows(groups) {
   return merged;
 }
 
+// “大家都在听”由 CI 每天凌晨全表聚合一次，写入 toplist_cache 快照；
+// 请求路径只读这一行，游客和个人推荐不足 3 首时都用同一份结果。
+const GLOBAL_SNAPSHOT_KEY = "global-popular";
+
+async function globalPopularTracks(env) {
+  try {
+    const row = await env.DB.prepare(
+      "SELECT payload_json FROM toplist_cache WHERE chart = ?",
+    ).bind(GLOBAL_SNAPSHOT_KEY).first();
+    return normalizeRows(row ? JSON.parse(row.payload_json) : []);
+  } catch (error) {
+    console.warn("global popular snapshot read failed", error);
+    return [];
+  }
+}
+
 // 推荐歌曲：基于全站用户的播放记录。
 //  - 登录用户：同歌手（别人的记录里，你常听的歌手）+ 同好（听过你最爱那首的人还听了什么）
 //  - 游客 / 数据不足：全站播放最多的歌（“大家都在听”）
@@ -146,12 +162,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   // 全站播放最多的歌：所有用户都算，包括游客场景。
-  const globalRows = await env.DB.prepare(
-    `SELECT track_uid, title, artist, source, cover, COUNT(*) AS plays
-     FROM music_play_history
-     GROUP BY track_uid ORDER BY plays DESC, MAX(played_at) DESC LIMIT ?`,
-  ).bind(LIMIT).all();
-  const globalTracks = normalizeRows(globalRows?.results);
+  const globalTracks = await globalPopularTracks(env);
   if (globalTracks.length >= MIN_TRACKS) {
     return json({ basis: "global", tracks: globalTracks });
   }

@@ -35,6 +35,11 @@ function renderDashboard(data) {
     搜索缓存: data.stats.searchCache,
   }).map(([label, value]) => `<div class="stat"><span class="stat-label">${label}</span><strong class="stat-value">${value}</strong></div>`).join("");
   $("users").innerHTML = data.recentUsers.map((user) => `<tr><td>${escapeHtml(user.username)}</td><td>${formatDate(user.created_at)}</td><td>${formatDate(user.last_login_at)}</td></tr>`).join("") || `<tr><td colspan="3">暂无账号</td></tr>`;
+  const announcement = data.announcement || {};
+  $("announcement-content").value = announcement.content || "";
+  $("announcement-updated").textContent = announcement.updatedAt
+    ? `最近保存：${formatDate(announcement.updatedAt)}`
+    : "尚未设置";
   loginView.hidden = true;
   dashboardView.hidden = false;
 }
@@ -74,6 +79,29 @@ $("login-form").addEventListener("submit", async (event) => {
 });
 
 $("refresh-button").addEventListener("click", () => loadDashboard().catch((error) => setMessage(dashboardMessage, error.message)));
+$("announcement-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = event.target.querySelector("button[type=submit]");
+  button.disabled = true;
+  const message = $("announcement-message");
+  setMessage(message, "");
+  try {
+    const response = await fetch("/api/admin", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: $("announcement-content").value }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "公告保存失败");
+    setMessage(message, data.content ? "公告已保存，刷新播放器即可看到。" : "公告已清空，公告栏会隐藏。");
+    $("announcement-updated").textContent = `最近保存：${formatDate(data.updatedAt)}`;
+  } catch (error) {
+    setMessage(message, error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
 $("logout-button").addEventListener("click", async () => {
   await fetch("/api/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
   window.location.reload();

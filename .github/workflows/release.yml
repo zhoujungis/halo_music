@@ -205,3 +205,31 @@ jobs:
             artifacts/*.yml
             artifacts/*.blockmap
             artifacts/SHA256SUMS.txt
+      # 国内镜像：每次覆盖 latest 发行版，只放 exe 与 apk（Gitee 单附件 100MB，
+      # MSI 102MB 传不上去；固定 latest 也避免仓库附件总量撞 1GB 上限）。
+      - name: Remove previous Gitee release
+        if: ${{ vars.GITEE_OWNER != '' && vars.GITEE_REPO != '' }}
+        continue-on-error: true
+        uses: nicennnnnnnlee/action-gitee-release@master
+        with:
+          gitee_action: delete_release
+          gitee_owner: ${{ vars.GITEE_OWNER }}
+          gitee_repo: ${{ vars.GITEE_REPO }}
+          gitee_token: ${{ secrets.GITEE_TOKEN }}
+          gitee_tag_name: latest
+      - name: Publish Gitee mirror
+        if: ${{ vars.GITEE_OWNER != '' && vars.GITEE_REPO != '' }}
+        uses: nicennnnnnnlee/action-gitee-release@master
+        with:
+          gitee_action: create_release
+          gitee_owner: ${{ vars.GITEE_OWNER }}
+          gitee_repo: ${{ vars.GITEE_REPO }}
+          gitee_token: ${{ secrets.GITEE_TOKEN }}
+          gitee_tag_name: latest
+          gitee_release_name: HALO Music 最新版
+          gitee_release_body: 国内直连下载（GitHub 需要梯子）。只提供 Windows 安装包和安卓 APK。
+          gitee_target_commitish: main
+          gitee_upload_retry_times: 3
+          gitee_files: |
+            artifacts/HALO-Music-Setup-x64.exe
+            artifacts/HALO-Music.apk

@@ -28,6 +28,12 @@ export async function onRequestGet(context) {
     env.HALO_MUSIC_ANDROID_URL
       || `https://github.com/zhoujungis/halo_music/releases/download/v${version}/HALO-Music-${version}.apk`
   ).trim();
+  // Gitee 镜像固定发布在 latest 标签下，链接不随版本变化。
+  const giteeOwner = String(env.GITEE_OWNER || "").trim();
+  const giteeRepo = String(env.GITEE_REPO || "").trim();
+  const giteeBase = giteeOwner && giteeRepo
+    ? `https://gitee.com/${giteeOwner}/${giteeRepo}`
+    : "";
 
   return new Response(JSON.stringify({
     version,
@@ -35,7 +41,12 @@ export async function onRequestGet(context) {
     android: {
       version,
       url: apkUrl
-    }
+    },
+    gitee: giteeBase ? {
+      releases: `${giteeBase}/releases`,
+      windows: `${giteeBase}/releases/download/latest/HALO-Music-Setup-x64.exe`,
+      android: `${giteeBase}/releases/download/latest/HALO-Music.apk`
+    } : null
   }), {
     headers: {
       "cache-control": "no-store, max-age=0",

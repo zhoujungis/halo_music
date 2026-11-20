@@ -19,14 +19,22 @@ RESEND_SENDER_NAME = "HALO Music"
 # dead (521) and stays removed.
 # Values here are deployment configuration, not hardcoded in Functions.
 NETEASE_SOURCE_URLS = "https://api.qijieya.cn/meting,https://api.injahow.cn/meting,https://music.duanjinglin.com/api,https://met.liiiu.cn/meting/api"
+# 解析接口根地址：歌曲搜索/解析都走这里。
+HALO_MUSIC_API_BASE = "https://apicx.asia/api"
 JOOX_API_URL = "https://apicx.asia/api/joox_music"
-JOOX_TOKEN = "f84ao9lMF_q7husBWRfgUw"
-# apicx 账号 token 池（逗号分隔）。同一个 token 对 joox_music / kuwo_music /
-# migu 等接口通用；某个 token 被限流时会冷却并轮换到下一个。
-# 生产环境建议改用 `wrangler pages secret put JOOX_TOKENS`。
-JOOX_TOKENS = "-Hdg4SKzZdhEhnNICoFfgQ,rVshOsurI5M6spGWAe71Ow,C1Jr3_ScRbxP8lndfYasWg"
+# apicx token 属于密钥，不提交到仓库：JOOX_TOKEN（单个）和 JOOX_TOKENS（逗号分隔
+# 的 token 池）都用 `wrangler pages secret put` 设置，本地开发写进 .dev.vars。
+# 同一个 token 对 joox_music / kuwo_music / migu 等接口通用；某个 token 被限流时
+# 会冷却并轮换到下一个。
+# 网易云榜单歌单 ID：key:id:名称，逗号分隔。接口与每日抓取脚本共用这一份配置。
+NETEASE_TOPLIST_CHARTS = "hot:3778678:热歌榜,new:3779629:新歌榜,rise:19723756:飙升榜"
 # 英文界面榜单的公开数据源（CI 每日抓取到 D1；{country} 由抓取脚本替换）。
 APPLE_CHART_URL = "https://rss.marketingtools.apple.com/api/v2/{country}/music/most-played/25/songs.json"
+# Gitee 国内下载镜像。填上 owner/repo 后，下载弹窗会出现「Gitee 国内直连」入口。
+# 留空则只显示 GitHub 链接。CI 侧还需要在 GitHub 仓库 Variables 里配置同名变量，
+# 以及 Secrets 里的 GITEE_TOKEN。
+GITEE_OWNER = "zhoujun928"
+GITEE_REPO = "halo_music"
 
 # Registration secrets. Do not commit real values: put them in .dev.vars for
 # local development and in the Pages dashboard (or `wrangler pages secret put`)

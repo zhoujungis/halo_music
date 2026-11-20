@@ -209,6 +209,7 @@ import { AudioAnalyser, SleepTimer } from "./js/player.js";
     const LIBRARY_STORAGE_KEY = 'halo-music-library-v1';
     const PLAY_QUEUE_STORAGE_KEY = 'halo-music-play-queue-v1';
     const THEME_STORAGE_KEY = 'halo-music-theme';
+    const ANNOUNCEMENT_STORAGE_KEY = 'halo-music-announcement-dismissed';
     const SEARCH_HISTORY_KEY = 'halo-music-search-history-v1';
     const SEARCH_HISTORY_LIMIT = 8;
     const TOPLIST_TTL = 30 * 60 * 1000;
@@ -6107,8 +6108,9 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       dom.clientDownloadMeta=$('client-download-meta');
       dom.clientDownloadNotes=$('client-download-notes');
       dom.clientDownloadExeSize=$('client-download-exe-size');
-      dom.clientDownloadMsiSize=$('client-download-msi-size');
       dom.clientDownloadApkSize=$('client-download-apk-size');
+      dom.clientDownloadExeGitee=$('client-download-exe-gitee');
+      dom.clientDownloadApkGitee=$('client-download-apk-gitee');
       dom.iosInstallGuide=$('ios-install-guide');
       dom.iosNotSafariTip=$('ios-not-safari-tip');
       dom.iosAlreadyInstalled=$('ios-already-installed');
@@ -6121,6 +6123,10 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       dom.disclaimerLink=$('disclaimer-link');
       dom.disclaimerModal=$('disclaimer-modal');
       dom.disclaimerClose=$('disclaimer-close');
+      dom.announcementModal=$('announcement-modal');
+      dom.announcementContent=$('announcement-content');
+      dom.announcementClose=$('announcement-close');
+      dom.announcementConfirm=$('announcement-confirm');
       dom.workspaceModal=$('workspace-modal');
       dom.workspaceContent=$('workspace-content');
       dom.workspaceTitle=$('workspace-title');
@@ -6278,10 +6284,8 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         return asset?formatFileSize(asset.size):'';
       };
       const exe=sizeOf('setup-x64.exe');
-      const msi=sizeOf('setup-x64.msi');
       const apk=sizeOf('halo-music.apk');
       if(dom.clientDownloadExeSize&&exe)dom.clientDownloadExeSize.textContent=`.exe · NSIS · ${exe}`;
-      if(dom.clientDownloadMsiSize&&msi)dom.clientDownloadMsiSize.textContent=`.msi · ${msi}`;
       if(dom.clientDownloadApkSize&&apk)dom.clientDownloadApkSize.textContent=`.apk · ${apk}`;
       if(!dom.clientDownloadNotes)return;
       dom.clientDownloadNotes.replaceChildren();
@@ -6313,6 +6317,23 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       }
     }
 
+    // Gitee 国内直连镜像：服务端配置齐全时才把入口放出来。
+    let giteeLinksLoaded=false;
+    async function loadGiteeDownloadLinks(){
+      if(giteeLinksLoaded)return;
+      try{
+        const response=await fetch('/api/version',{cache:'no-store',credentials:'same-origin'});
+        if(!response.ok)return;
+        const gitee=(await response.json())?.gitee;
+        if(!gitee)return;
+        if(dom.clientDownloadExeGitee){dom.clientDownloadExeGitee.href=gitee.windows;dom.clientDownloadExeGitee.hidden=false;}
+        if(dom.clientDownloadApkGitee){dom.clientDownloadApkGitee.href=gitee.android;dom.clientDownloadApkGitee.hidden=false;}
+        giteeLinksLoaded=true;
+      }catch(error){
+        console.warn('gitee download links unavailable',error);
+      }
+    }
+
     function openClientDownloadModal(){
       const ios=isIOSDevice();
       if(dom.clientDownloadGeneric)dom.clientDownloadGeneric.hidden=ios;
@@ -6324,6 +6345,7 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       dom.clientDownloadModal.classList.add('show');
       dom.clientDownloadModal.setAttribute('aria-hidden','false');
       loadClientReleaseInfo();
+      loadGiteeDownloadLinks();
     }
 
     function closeClientDownloadModal(){
@@ -6795,6 +6817,9 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       dom.clientDownloadButton.addEventListener('click',openClientDownloadModal);
       dom.clientDownloadClose.addEventListener('click',closeClientDownloadModal);
       dom.clientDownloadModal.addEventListener('click',e=>{if(e.target===dom.clientDownloadModal)closeClientDownloadModal();});
+      dom.announcementClose?.addEventListener('click',dismissAnnouncementModal);
+      dom.announcementConfirm?.addEventListener('click',dismissAnnouncementModal);
+      dom.announcementModal?.addEventListener('click',e=>{if(e.target===dom.announcementModal)dismissAnnouncementModal();});
 
       [
         [dom.aboutLink,dom.aboutModal,dom.aboutClose],
@@ -7413,6 +7438,36 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
         .catch(error=>console.warn('service worker registration failed',error));
     }
 
+    // 公告弹框：只在有内容、且这则公告还没被关掉时弹出。
+    function announcementDismissKey(announcement){
+      return String(announcement?.updatedAt || announcement?.content || '');
+    }
+    function dismissAnnouncementModal(){
+      try{
+        const key=dom.announcementModal?.dataset.dismissKey||'';
+        if(key)localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY,key);
+      }catch(e){}
+      closeInfoModal(dom.announcementModal);
+    }
+    async function loadAnnouncementModal(){
+      if(!dom.announcementModal)return;
+      try{
+        const response=await fetch('/api/announcement',{credentials:'same-origin'});
+        if(!response.ok)return;
+        const announcement=(await response.json())?.announcement;
+        const content=String(announcement?.content||'').trim();
+        if(!content)return;
+        let dismissed='';
+        try{dismissed=localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)||'';}catch(e){}
+        if(dismissed===announcementDismissKey(announcement))return;
+        dom.announcementModal.dataset.dismissKey=announcementDismissKey(announcement);
+        dom.announcementContent.textContent=content;
+        openInfoModal(dom.announcementModal);
+      }catch(error){
+        console.warn('load announcement failed',error);
+      }
+    }
+
     function init(){
       setupDOM();
       window.haloDesktop?.onFloatingLyricsState?.((next)=>{
@@ -7448,6 +7503,7 @@ html[data-pip-size="l"] .pip-current { font-size: 26px; }
       updateFloatingLyricsButton();
       dom.audio.volume=parseFloat(dom.volumeSlider.value);
       updateAuthUI();
+      loadAnnouncementModal();
       updateDownloadButtonState();
       updateQueueAddButtonLabel();
       // 读取已下载索引后再渲染一次列表，给本地已有的歌补上“已下载”标记。

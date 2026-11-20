@@ -33,6 +33,16 @@
       <div id="dashboard-message" class="notice" hidden></div>
       <div id="stats" class="stats-grid"></div>
       <section class="surface">
+        <div class="section-heading"><h2>公告栏</h2><span id="announcement-updated" class="muted"></span></div>
+        <form id="announcement-form" class="login-form">
+          <label>公告内容（留空即隐藏公告栏）<textarea id="announcement-content" rows="3" maxlength="300" placeholder="例如：今晚 23:00 维护，播放服务暂停 30 分钟"></textarea></label>
+          <div class="header-actions">
+            <button class="button" type="submit">保存公告</button>
+            <span id="announcement-message" class="muted"></span>
+          </div>
+        </form>
+      </section>
+      <section class="surface">
         <div class="section-heading"><h2>最近账号</h2><button id="refresh-button" class="button secondary" type="button">刷新</button></div>
         <div class="table-wrap">
           <table>

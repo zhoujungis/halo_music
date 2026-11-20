@@ -57,8 +57,9 @@ h2 { margin-bottom: 10px; font-size: 17px; }
 .muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
 .login-form { display: grid; gap: 14px; margin-top: 22px; }
 label { display: grid; gap: 7px; color: var(--muted); font-size: 12px; }
-input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 9px; outline: 0; color: var(--text); background: var(--bg); transition: border-color .16s, box-shadow .16s; }
-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input, textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 9px; outline: 0; color: var(--text); background: var(--bg); transition: border-color .16s, box-shadow .16s; }
+textarea { min-height: 84px; font: inherit; line-height: 1.6; resize: vertical; }
+input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .button { min-height: 38px; padding: 8px 15px; border: 1px solid var(--accent); border-radius: 9px; color: var(--accent-ink); background: var(--accent); font-weight: 700; transition: filter .16s, background .16s, border-color .16s; }
 .button.secondary { border-color: var(--line-strong); color: var(--text); background: transparent; }
 .button:hover { filter: brightness(1.04); }

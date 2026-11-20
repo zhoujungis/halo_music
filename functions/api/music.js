@@ -437,7 +437,6 @@ async function jooxRequest(env, keyword, index = 0, signal = null, timeoutMs = A
 // ===================== 华语音源（酷我 / 咪咕，经 apicx） =====================
 // apicx 按账号发 token，同一个 token 对 kuwo_music / migu 等接口通用。
 // JOOX_TOKENS 可配多个（逗号分隔），某个 token 被限流时冷却并换下一个。
-const APICX_API_BASE = "https://apicx.asia/api";
 const APICX_TOKEN_COOLDOWN_MS = 5 * 60 * 1000;
 const APICX_SEARCH_CACHE_MS = 30 * 60 * 1000;
 const apicxTokenCooldown = new Map();
@@ -521,7 +520,10 @@ async function apicxRequest(env, name, params, signal = null, timeoutMs = API_TI
   if (!tokens.length) {
     throw Object.assign(new Error("apicx 未配置 token（JOOX_TOKEN / JOOX_TOKENS）"), { status: 503 });
   }
-  const base = clean(env?.APICX_API_BASE) || APICX_API_BASE;
+  const base = clean(env?.HALO_MUSIC_API_BASE);
+  if (!base) {
+    throw Object.assign(new Error("解析接口未配置地址（HALO_MUSIC_API_BASE）"), { status: 503 });
+  }
   const endpoint = new URL(`${base.replace(/\/$/, "")}/${name}`);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== "") {
@@ -998,11 +1000,17 @@ async function searchNetease(keyword, limit, env) {
 
 // 云音乐公开榜单：热歌/新歌/飙升都是公开歌单。优先走 Meting 供应商的
 // type=playlist；供应商不可用时直连 music.163.com 的歌单详情接口兜底。
-const NETEASE_TOPLIST_CHARTS = {
-  hot: { id: "3778678", name: "热歌榜" },
-  new: { id: "3779629", name: "新歌榜" },
-  rise: { id: "19723756", name: "飙升榜" },
-};
+// 榜单歌单 ID 由 wrangler.toml 的 NETEASE_TOPLIST_CHARTS 提供，
+// 格式 key:id:名称，多个用逗号分隔；每日抓取脚本读同一份配置。
+export function neteaseToplistCharts(env) {
+  const charts = {};
+  for (const item of String(env?.NETEASE_TOPLIST_CHARTS || "").split(",")) {
+    const [key, id, name] = item.split(":").map((part) => String(part || "").trim());
+    if (!key || !validNeteaseId(id)) continue;
+    charts[key] = { id, name: name || key };
+  }
+  return charts;
+}
 // 英文界面的榜单来自公开国际榜单（CI 抓取到 toplist_cache 的 en-* 键），
 // 播放仍由站内的 QQ源/JOOX 解析。
 const EN_TOPLIST_NAMES = {
@@ -1851,7 +1859,11 @@ export async function onRequestGet({ request: requestObject, env, waitUntil }) {
 
     if (action === "netease_toplist") {
       const chartKey = clean(url.searchParams.get("chart")) || "hot";
-      const chart = NETEASE_TOPLIST_CHARTS[chartKey];
+      const charts = neteaseToplistCharts(env);
+      if (!Object.keys(charts).length) {
+        return json({ error: "榜单未配置（NETEASE_TOPLIST_CHARTS）" }, 503);
+      }
+      const chart = charts[chartKey];
       if (!chart) return json({ error: "未知榜单" }, 400);
       const locale = clean(url.searchParams.get("locale")).toLowerCase() === "en" ? "en" : "zh";
       const cacheKey = locale === "en" ? `en-${chartKey}` : chartKey;

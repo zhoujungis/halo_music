@@ -406,7 +406,19 @@ npx wrangler pages secret put RESEND_FROM
 npx wrangler pages secret put GOOGLE_CLIENT_ID
 npx wrangler pages secret put GOOGLE_CLIENT_SECRET
 npx wrangler pages secret put AUTH_SECRET
+npx wrangler pages secret put JOOX_TOKEN
+npx wrangler pages secret put JOOX_TOKENS
 ```
+
+音频解析服务的接口地址由 `wrangler.toml` 的 `HALO_MUSIC_API_BASE` 配置，token 走上面的 secret。网易云榜单的歌单 ID 由 `NETEASE_TOPLIST_CHARTS` 配置（格式 `key:id:名称`，逗号分隔），前端接口和每日抓取脚本读的是同一份配置。
+
+国内下载走 Gitee 镜像（GitHub 在本机需要梯子）。配置方式：
+
+1. 在 Gitee 建一个公开仓库并完成实名认证（发行版要求）。
+2. GitHub 仓库 Variables 里加 `GITEE_OWNER` / `GITEE_REPO`，Secrets 里加 `GITEE_TOKEN`（Gitee 私人令牌，勾选 projects 权限）。
+3. `wrangler.toml` 的 `[vars]` 里填同样的 `GITEE_OWNER` / `GITEE_REPO`，下载弹窗才会显示「Gitee 国内直连」入口。
+
+每次发版会自动把 `HALO-Music-Setup-x64.exe` 和 `HALO-Music.apk` 覆盖到 Gitee 的 `latest` 发行版：Gitee 单附件上限 100MB，MSI（约 102MB）不传；固定 `latest` 也避免仓库附件总量超过 1GB。
 
 升级已有数据库时，按顺序执行 `migrations/` 下的 SQL（至少需要 `0005_accounts_and_listening_history.sql` 与 `0006_auth_registration.sql`）：
 

@@ -6,14 +6,32 @@ import {
   detectAudioContainer,
   downloadDayKey,
   downloadFilename,
+  neteaseToplistCharts,
   normalizeBiliSearchResults,
   normalizeQQOfficial,
   normalizeTimedLyric,
+  onRequestGet,
   resolveNeteaseUrl,
 } from "../functions/api/music.js";
 
 test("normalizes lyric timestamps and removes empty lines", () => {
   assert.equal(normalizeTimedLyric("[0:01] hello\\n[00:02.50]\\n[00:03]world"), "[00:01]hello\n[00:03]world");
+});
+
+test("netease toplist charts come from configuration", () => {
+  const charts = neteaseToplistCharts({
+    NETEASE_TOPLIST_CHARTS: "hot:3778678:热歌榜, new:3779629,broken,nope:abc:坏配置",
+  });
+  assert.deepEqual(charts, {
+    hot: { id: "3778678", name: "热歌榜" },
+    new: { id: "3779629", name: "new" },
+  });
+});
+
+test("toplist endpoint reports missing configuration", async () => {
+  const request = new Request("https://example.test/api/music?action=netease_toplist&chart=hot");
+  const response = await onRequestGet({ request, env: { DB: {} } });
+  assert.equal(response.status, 503);
 });
 
 test("detects common audio containers", () => {
